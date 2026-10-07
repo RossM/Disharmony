@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net472;net10.0</TargetFrameworks>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Optimize>true</Optimize>
+    <AssemblyName>Disharmony.TestTargets</AssemblyName>
+    <RootNamespace>Disharmony.Tests</RootNamespace>
+    <NoWarn>$(NoWarn);DISHARMONY0033</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NUnit" Version="4.6.1" />
+  </ItemGroup>
+
+  <Target Name="RequireReleaseConfiguration" BeforeTargets="CoreCompile" Condition="'$(Configuration)' != 'Release'">
+    <Error Text="Disharmony test targets must be built with Configuration=Release." />
+  </Target>
+
+</Project>
