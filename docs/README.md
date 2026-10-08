@@ -2,6 +2,8 @@
 
 Use this guide when contributing to the documentation or previewing changes locally. You need PowerShell and the .NET SDK selected by the repository's `global.json` (10.0.400 or a later patch in the same feature band). The build script restores the pinned DocFX tool automatically.
 
+Before changing documentation content, read [Writing Disharmony documentation](writing-documentation.md) for audience, page-purpose, and content-placement rules.
+
 ## Preview the docs
 
 From the repository root, run:

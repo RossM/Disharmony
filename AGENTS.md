@@ -14,3 +14,11 @@ For non-test code:
 - Treat test failures as diagnostic evidence, not merely conditions to satisfy. Identify the underlying rule or design flaw, and do not add fixture-specific behavior or special cases unless they represent genuine domain distinctions. As requirements become clearer, reshape an inadequate initial design as though those requirements had been known from the start. Passing tests is necessary but does not by itself establish that the implementation is sound.
 - Keep changes proportionate to the requested task. Perform cleanup needed to leave modified code coherent, but report material opportunities outside the task rather than expanding its scope. If a sound solution requires a consequential redesign, explain the diagnosis and design options and obtain approval before proceeding; do not substitute a brittle workaround merely to avoid that discussion.
 - Write code that communicates its structure and intent clearly. Use comments to explain non-obvious intent, constraints, or behavior rather than restating the code. Correct misleading comments in code you modify and report significant problems elsewhere without expanding the task.
+
+For documentation:
+- Before creating or revising documentation, read and follow [Writing Disharmony documentation](docs/writing-documentation.md). It defines the audiences, landing-page admission criteria, and destinations for detailed material.
+- Write for the reader's task and assumed knowledge. Explain unfamiliar patching concepts in context; distinguish hypothetical game source from code readers should put in their mods.
+- Keep the root README and Workshop description focused on their entry questions. Put detailed instructions in the appropriate sub-page and link to them; keep ordinary player installation self-contained on Workshop.
+- Do not put progress reports, test counts, investigation notes, temporary decisions, or planning checklists in public user documentation. Keep planning checklists outside source control.
+- Include implementation details only when they help the intended reader complete the task. Internal contributor documentation can explain design and mechanics; user guides should explain observable behavior and restrictions.
+- Edit source Markdown/XML comments, not generated documentation. Check placement, context, and links against the guide before finishing.
