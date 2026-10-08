@@ -70,6 +70,12 @@ and writable-reference restrictions that depend on target parameters remain runt
 Harmony-only patches are not subject to Disharmony's return-type rules.
 Runtime validation remains necessary, including for methods registered through reflection or constructed generic types.
 
+## Use the analyzer
+
+The analyzer requires a compiler host with Roslyn 5.9 or newer. The .NET 10.0.400 SDK supplies Roslyn 5.9 and is the verified command-line host. Older compiler hosts are not supported; an IDE must also supply a compatible Roslyn version to run the analyzer during editing.
+
+This requirement applies to your build tools, independently of the game's runtime. You can use the analyzer while compiling a mod that targets `net472`.
+
 Reference this project from each project that contains patches (analyzer project references are not transitive):
 
 ```xml

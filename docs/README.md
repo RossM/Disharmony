@@ -1,6 +1,6 @@
 # Building the HTML documentation
 
-Use this guide when contributing to the documentation or previewing changes locally. You need the .NET 10 SDK and PowerShell. The build script restores the pinned DocFX tool automatically.
+Use this guide when contributing to the documentation or previewing changes locally. You need PowerShell and the .NET SDK selected by the repository's `global.json` (10.0.400 or a later patch in the same feature band). The build script restores the pinned DocFX tool automatically.
 
 ## Preview the docs
 

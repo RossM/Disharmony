@@ -32,7 +32,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Restoring the pinned documentation tool failed.' }
 
     # Assembly + XML extraction includes C# 14 extension members that project extraction omits.
-    dotnet build (Join-Path $repositoryRoot 'Disharmony/Disharmony.csproj') --configuration Release --framework net10.0 --output (Join-Path $PSScriptRoot 'obj/reference') -p:GenerateDocumentationFile=true
+    dotnet build (Join-Path $repositoryRoot 'Disharmony/Disharmony.csproj') --configuration Release --framework net10.0 --output (Join-Path $PSScriptRoot 'obj/reference')
     if ($LASTEXITCODE -ne 0) { throw 'Building the documentation assembly failed.' }
 
     dotnet docfx (Join-Path $PSScriptRoot 'docfx.json') --warningsAsErrors

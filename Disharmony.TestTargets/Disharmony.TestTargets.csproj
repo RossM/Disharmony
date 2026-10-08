@@ -4,9 +4,10 @@
     <TargetFrameworks>net472;net10.0</TargetFrameworks>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>14.0</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Optimize>true</Optimize>
+    <IsPackable>false</IsPackable>
     <AssemblyName>Disharmony.TestTargets</AssemblyName>
     <RootNamespace>Disharmony.Tests</RootNamespace>
     <NoWarn>$(NoWarn);DISHARMONY0033</NoWarn>

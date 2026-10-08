@@ -11,7 +11,7 @@ The initial beta supports Mono/net472, Microsoft CLR/net472, and Microsoft CLR/n
 
 ## Build
 
-Use the .NET 10 SDK. The library and runtime tests target .NET Framework 4.7.2 and .NET 10; the analyzers target .NET Standard 2.0.
+Use the .NET 10.0.400 SDK or a later patch in the 10.0.4xx feature band. The repository selects that feature band through `global.json` and uses C# 14. The library and runtime tests target .NET Framework 4.7.2 and .NET 10; the analyzers target .NET Standard 2.0.
 
 ```powershell
 dotnet build .\Disharmony.sln
