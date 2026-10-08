@@ -207,7 +207,7 @@ The direct member price stays at 20; the discount applies only to the call insid
 
 In your mod project, reference the game's assemblies and add the Disharmony package. Choose the actual game method you want to change, and register your patch class once from your mod's initialization code, before the game uses that method. The console application's `Main` method supplies that initialization step for this exercise; your game's mod system supplies the corresponding hook.
 
-[Plan a patch for your game](../docs/planning-a-game-patch.md) explains how to find and understand a suitable target. For RimWorld, follow the [Disharmony dependency guide](../Disharmony.RimWorld/README.md#depend-on-disharmony) to have the official Disharmony mod supply the runtime assemblies. For other games, you can redistribute `Disharmony.dll` with your mod; ensure Harmony is also available when the game loads it.
+[Plan a patch for your game](../docs/planning-a-game-patch.md) explains how to find and understand a suitable target. For RimWorld, follow [Write a RimWorld mod with Disharmony](../Disharmony.RimWorld/README.md) for project setup, registration, and in-game verification using the official Disharmony mod dependency. For other games, you can redistribute `Disharmony.dll` with your mod; ensure Harmony is also available when the game loads it.
 
 ## Control inputs and execution
 

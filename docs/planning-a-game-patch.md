@@ -41,7 +41,7 @@ Choose the smallest change that achieves your goal while preserving the surround
 
 ## Build, load, and test the mod
 
-Follow your game's mod-project setup instructions, add the required references, and arrange for your patches to be applied when the mod loads. Verify that the game loads your mod and its dependencies. For RimWorld, the [Disharmony integration guide](obj/guides/rimworld.md) explains the Disharmony dependency and deployment setup.
+Follow your game's mod-project setup instructions, add the required references, and arrange for your patches to be applied when the mod loads. Verify that the game loads your mod and its dependencies. For RimWorld, [Write a RimWorld mod with Disharmony](obj/guides/rimworld.md) walks through project setup, registration, deployment, and in-game verification.
 
 Reproduce your test situation and check the intended result. Also try other situations that use the same code and check that any effects there are intended. Read the game's logs when something fails.
 

@@ -37,8 +37,10 @@ foreach ($source in $guideSources.Keys) {
     $content = $content.Replace('(Patcher.cs)', '(xref:Disharmony.Patcher)')
     $content = $content.Replace('(../Disharmony.Analyzers/README.md)', '(analyzers.md)')
     $content = $content.Replace('(../Disharmony.Tests/README.md)', '(testing.md)')
+    $content = $content.Replace('(../Disharmony.Tests/README.md#build-the-rimworld-integration)', '(testing.md#build-the-rimworld-integration)')
     $content = $content.Replace('(../Disharmony/README.md#write-your-first-patch)', '(getting-started.md#write-your-first-patch)')
     $content = $content.Replace('(../Disharmony.RimWorld/README.md#depend-on-disharmony)', '(rimworld.md#depend-on-disharmony)')
+    $content = $content.Replace('(../Disharmony.RimWorld/README.md)', '(rimworld.md)')
     [IO.File]::WriteAllText((Join-Path $guideDirectory $guideSources[$source]), $content, [Text.UTF8Encoding]::new($false))
 }
 

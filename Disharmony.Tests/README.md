@@ -21,6 +21,27 @@ Visual Studio Test Explorer and `dotnet test` run the tests for each target thro
 These commands use the referenced Harmony 2.4.2 package. Use the compatibility runner below to test the same
 Disharmony binaries across runtimes, or to exercise the Harmony 3 preview adapter. Harmony 3 runs are development experiments; see [compatibility](../docs/compatibility.md) for the supported release scope.
 
+## Build the RimWorld integration
+
+To build the official Disharmony mod from this repository, run:
+
+```powershell
+dotnet build .\Disharmony.RimWorld\Disharmony.RimWorld.csproj --configuration Release
+```
+
+The project targets RimWorld 1.6 and `net472`; `Krafs.Rimworld.Ref` supplies the compile-time game references. The installable output is `Disharmony.RimWorld/bin/Release/Mod`:
+
+```text
+About/
+  About.xml
+Assemblies/
+  0Harmony.dll
+  Disharmony.dll
+  Disharmony.RimWorld.dll
+```
+
+Copy that folder into RimWorld's `Mods` directory to test it. All source files under `Disharmony.RimWorld/About/` are included with their subdirectories preserved. Each build replaces the generated mod folder; edit the source files rather than the output. For a mod that uses Disharmony, follow [the author setup and deployment guide](../Disharmony.RimWorld/README.md#depend-on-disharmony) instead.
+
 ## Hang detection
 
 NUnit's [`Timeout`](https://docs.nunit.org/articles/nunit/writing-tests/attributes/timeout.html) attributes are enabled only for `net472`; NUnit rejects them on modern .NET because it cannot
