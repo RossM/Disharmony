@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using System.Threading;
+using JetBrains.Annotations;
 
 namespace Disharmony;
 
@@ -62,7 +63,8 @@ public class PatchHandle
 
     internal PatchHandle()
     {
-        id = _nextId++;
+        // Handles are allocated before patch registration takes the registry lock.
+        id = Interlocked.Increment(ref _nextId);
     }
 }
 
