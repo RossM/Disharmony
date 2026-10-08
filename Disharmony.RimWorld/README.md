@@ -39,4 +39,20 @@ Add this dependency to your mod's `About/About.xml`, combining it with any exist
 </loadAfter>
 ```
 
-Compile your mod against the Disharmony library and let this dependency provide `Disharmony.dll` at runtime.
+Compile your mod against the Disharmony NuGet package and let this dependency supply the runtime assemblies.
+The NuGet package includes the library and patch analyzer; the RimWorld integration is distributed as this mod.
+Do not ship `Disharmony.dll`, `Disharmony.RimWorld.dll`, or `0Harmony.dll` in your mod's `Assemblies` directory.
+
+NuGet normally copies runtime dependencies into your build output. To keep Disharmony and Harmony available for
+compilation without copying their DLLs, place this after your existing Disharmony package reference:
+
+```xml
+<ItemGroup>
+  <PackageReference Update="Disharmony" ExcludeAssets="runtime" />
+  <PackageReference Include="Lib.Harmony" Version="[2.4.1,3.0.0-0)" ExcludeAssets="runtime" />
+</ItemGroup>
+```
+
+If your project already references `Lib.Harmony`, add `ExcludeAssets="runtime"` to that reference instead of adding
+a second one. The explicit Harmony reference applies the same exclusion to Disharmony's dependency. The bundled
+Disharmony analyzer remains available.

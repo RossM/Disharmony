@@ -33,10 +33,13 @@ same model for targets selected at runtime.
 ## Write your first patch
 
 The initial beta supports Mono and Microsoft CLR with the `net472` build, and Microsoft CLR with the `net10.0` build.
-Reference the matching `Disharmony.dll` and the relevant game assemblies in your mod project, and ensure the game loads
-Harmony 2 (the current baseline is 2.4.2). See [compatibility](../docs/compatibility.md) for supported runtimes and Harmony versions.
+Add the Disharmony NuGet package to your mod project and reference the relevant game assemblies. NuGet selects the
+matching library build and restores Harmony 2.4.1+ for `net472` or 2.4.2+ for `net10.0`, within the 2.x series. See [compatibility](../docs/compatibility.md)
+for supported runtimes and Harmony versions.
 
-You can redistribute `Disharmony.dll` with your mod.
+For RimWorld, add a dependency on the [official Disharmony mod](../Disharmony.RimWorld/README.md#depend-on-disharmony),
+which supplies the runtime assemblies. For other games, you can redistribute `Disharmony.dll` with your mod; ensure
+Harmony is also available when the game loads it.
 
 The following examples use fictional game types to illustrate the API. Suppose `PriceCalculator` has a method
 `float GetPrice(Character buyer, int quantity)`, and you want colony members to receive a 10% discount:

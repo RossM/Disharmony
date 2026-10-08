@@ -6,7 +6,7 @@ The initial beta supports Mono/net472, Microsoft CLR/net472, and Microsoft CLR/n
 
 - [Introduction and usage](Disharmony/README.md)
 - [RimWorld library mod](Disharmony.RimWorld/README.md)
-- [Optional analyzers](Disharmony.Analyzers/README.md)
+- [Patch analyzers](Disharmony.Analyzers/README.md)
 - [Tests and runtime compatibility](Disharmony.Tests/README.md)
 - [Deferred test-coverage proposals](Disharmony.Tests/Test-Plan.md)
 
@@ -21,6 +21,16 @@ dotnet test .\Disharmony.Analyzers.Tests\Disharmony.Analyzers.Tests.csproj
 ```
 
 The solution builds test-target fixtures in Release configuration for predictable generated IL, including during Debug builds. See the test guide for Mono and Harmony 3 preview compatibility runs.
+
+## NuGet package
+
+Build the library package in Release configuration:
+
+```powershell
+dotnet pack .\Disharmony\Disharmony.csproj --configuration Release --output .\artifacts\packages
+```
+
+The default version is `1.0.0-beta.1`, shared by the library, analyzer, and RimWorld integration through `Directory.Build.props`. Override it with `-p:Version=VERSION` when needed. The output contains the NuGet package and its `.snupkg` symbol package. The package includes both library builds, XML API documentation, and the analyzer. The RimWorld mod is distributed separately.
 
 ## HTML documentation
 

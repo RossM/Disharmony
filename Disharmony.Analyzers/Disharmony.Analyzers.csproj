@@ -6,6 +6,8 @@
     <AssemblyName>Disharmony.Analyzers</AssemblyName>
     <RootNamespace>Disharmony.Analyzers</RootNamespace>
     <IsRoslynComponent>true</IsRoslynComponent>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <IsPackable>false</IsPackable>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
   </PropertyGroup>

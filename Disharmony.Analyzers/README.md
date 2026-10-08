@@ -9,7 +9,12 @@ The analyzer requires a compiler host with Roslyn 5.9 or newer. The .NET 10.0.40
 
 This requirement applies to your build tools, independently of the game's runtime. You can use the analyzer while compiling a mod that targets `net472`.
 
-Reference this project from each project that contains patches (analyzer project references are not transitive):
+The Disharmony NuGet package includes the analyzer, so no separate analyzer reference is needed. Modern SDKs skip
+it when their compiler is older than Roslyn 5.9. See [getting started](../Disharmony/README.md#write-your-first-patch)
+to add Disharmony to your mod project.
+
+When building against a local checkout instead of NuGet, reference this project from each project that contains patches
+(analyzer project references are not transitive):
 
 ```xml
 <ProjectReference Include="..\Disharmony.Analyzers\Disharmony.Analyzers.csproj"

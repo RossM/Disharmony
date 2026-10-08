@@ -14,9 +14,11 @@ Choose the build for the runtime that will load your code. For example, a mod lo
 
 ## Harmony version
 
-Use Harmony 2. Disharmony is currently built and tested against **Harmony 2.4.2**; other Harmony 2 versions have not all been validated.
+The `net472` build requires **Harmony 2.4.1 or later in the 2.x series**. The `net10.0` build requires
+**Harmony 2.4.2 or later in the 2.x series**; Harmony 2.4.1 does not support the .NET 10 runtime.
+The NuGet package restores the appropriate Harmony dependency for your project's target framework.
 
-Harmony 3 is not supported by the initial beta because it is still in beta and its interfaces may change.
+Harmony 3 support is incomplete and subject to change.
 
 ## Experimental options
 

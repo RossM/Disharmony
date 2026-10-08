@@ -4,6 +4,7 @@ obj/
 *.user
 *.suo
 *.DotSettings.user
+artifacts/
 TestResults/
 *.log
 temp/

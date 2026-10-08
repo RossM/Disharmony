@@ -14,6 +14,7 @@ New-Item -ItemType Directory -Path $guideDirectory -Force | Out-Null
 $guideSources = @{
     'Disharmony/README.md' = 'getting-started.md'
     'Disharmony.Analyzers/README.md' = 'analyzers.md'
+    'Disharmony.RimWorld/README.md' = 'rimworld.md'
     'Disharmony.Tests/README.md' = 'testing.md'
 }
 foreach ($source in $guideSources.Keys) {
@@ -33,6 +34,8 @@ foreach ($source in $guideSources.Keys) {
     $content = $content.Replace('(Patcher.cs)', '(xref:Disharmony.Patcher)')
     $content = $content.Replace('(../Disharmony.Analyzers/README.md)', '(analyzers.md)')
     $content = $content.Replace('(../Disharmony.Tests/README.md)', '(testing.md)')
+    $content = $content.Replace('(../Disharmony/README.md#write-your-first-patch)', '(getting-started.md#write-your-first-patch)')
+    $content = $content.Replace('(../Disharmony.RimWorld/README.md#depend-on-disharmony)', '(rimworld.md#depend-on-disharmony)')
     [IO.File]::WriteAllText((Join-Path $guideDirectory $guideSources[$source]), $content, [Text.UTF8Encoding]::new($false))
 }
 

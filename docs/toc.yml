@@ -6,6 +6,8 @@
   href: usage-examples.md
 - name: Compatibility
   href: compatibility.md
+- name: RimWorld integration
+  href: obj/guides/rimworld.md
 - name: Analyzers
   href: obj/guides/analyzers.md
 - name: Reading extension members

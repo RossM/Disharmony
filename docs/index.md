@@ -8,7 +8,7 @@ Check [compatibility](compatibility.md) to choose the library build for your gam
 
 Explore [usage examples](usage-examples.md) for inner patches, state, private-method delegates, exception recovery, and compiler-generated targets.
 
-The optional [analyzers](obj/guides/analyzers.md) help you find mistakes in patch definitions and parameter bindings while compiling your project.
+The bundled [analyzers](obj/guides/analyzers.md) help you find mistakes in patch definitions and parameter bindings while compiling your project.
 
 ## API reference
 
