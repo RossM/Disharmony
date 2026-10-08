@@ -57,13 +57,21 @@ public static class Patcher
     private static PatchRegistry Registry => PatchRegistry.Instance;
     private static HarmonyInterface Harmony => HarmonyInterface.Instance;
 
+    [ThreadStatic]
+    private static bool isHandlingRuntimeException;
+
     /// <summary>
     ///     Occurs when Disharmony encounters an error while generating or applying patched IL.
     /// </summary>
     /// <remarks>
-    ///     Subscribers receive the underlying exception synchronously. When the event has no subscribers, Disharmony
+    ///     Subscribers receive the exception synchronously. When the event has no subscribers, Disharmony
     ///     writes the exception to Harmony's file log. This event does not report exceptions thrown by target or patch
     ///     methods during normal execution.
+    ///     <para>
+    ///         Handlers must not add or remove patches, or wait for another thread to do so. Patching and unpatching
+    ///         through <see cref="Patcher" /> from a handler throws <see cref="InvalidOperationException" />.
+    ///         Use handlers to record or display errors. Exceptions thrown by a handler propagate to the caller.
+    ///     </para>
     /// </remarks>
     public static event Action<Exception>? RuntimeExceptionHandler;
 
@@ -74,9 +82,26 @@ public static class Patcher
     internal static void ReportException(Exception exception)
     {
         if (RuntimeExceptionHandler is { } handler)
-            handler(exception);
+        {
+            bool wasHandlingRuntimeException = isHandlingRuntimeException;
+            isHandlingRuntimeException = true;
+            try
+            {
+                handler(exception);
+            }
+            finally
+            {
+                isHandlingRuntimeException = wasHandlingRuntimeException;
+            }
+        }
         else
             FileLog.Log($"!!! Unhandled exception: {exception}");
+    }
+
+    private static void ValidatePatchingAllowed()
+    {
+        if (isHandlingRuntimeException)
+            throw new InvalidOperationException("Patches cannot be added or removed from a runtime exception handler.");
     }
 
     /// <summary>
@@ -90,8 +115,10 @@ public static class Patcher
     /// </remarks>
     /// <returns>A handle for removing the patches added by this call.</returns>
     /// <exception cref="PatchException">A patch definition is invalid or a patch could not be applied.</exception>
+    /// <exception cref="InvalidOperationException">Called from a runtime exception handler.</exception>
     public static PatchHandle PatchAll(Assembly assembly)
     {
+        ValidatePatchingAllowed();
         PatchHandle handle = new();
         Registry.PatchAll(assembly, handle);
         return handle;
@@ -110,8 +137,10 @@ public static class Patcher
     /// </remarks>
     /// <returns>A handle for removing the patches added by this call.</returns>
     /// <exception cref="PatchException">A patch definition is invalid or a patch could not be applied.</exception>
+    /// <exception cref="InvalidOperationException">Called from a runtime exception handler.</exception>
     public static PatchHandle PatchCategory(Assembly assembly, string? category)
     {
+        ValidatePatchingAllowed();
         PatchHandle handle = new();
         Registry.PatchCategory(assembly, category, handle);
         return handle;
@@ -127,8 +156,10 @@ public static class Patcher
     /// </remarks>
     /// <returns>A handle for removing the patches added by this call.</returns>
     /// <exception cref="PatchException">A patch definition is invalid or a patch could not be applied.</exception>
+    /// <exception cref="InvalidOperationException">Called from a runtime exception handler.</exception>
     public static PatchHandle PatchAll(Type type)
     {
+        ValidatePatchingAllowed();
         PatchHandle handle = new();
         Registry.PatchAll(type, handle);
         return handle;
@@ -144,8 +175,10 @@ public static class Patcher
     /// </remarks>
     /// <returns>A handle for removing the patches added by this call.</returns>
     /// <exception cref="PatchException">A patch definition is invalid or a patch could not be applied.</exception>
+    /// <exception cref="InvalidOperationException">Called from a runtime exception handler.</exception>
     public static PatchHandle Patch(params IEnumerable<MethodInfo> methods)
     {
+        ValidatePatchingAllowed();
         PatchHandle handle = new();
         Registry.Patch(methods, handle);
         return handle;
@@ -160,8 +193,10 @@ public static class Patcher
     ///     <paramref name="patch" /> does not specify a patch type, patch method, or outer target.
     /// </exception>
     /// <exception cref="PatchException">The patch definition is invalid or the patch could not be applied.</exception>
+    /// <exception cref="InvalidOperationException">Called from a runtime exception handler.</exception>
     public static PatchHandle Patch(PatchConfig patch)
     {
+        ValidatePatchingAllowed();
         return Patch([patch]);
     }
 
@@ -175,8 +210,10 @@ public static class Patcher
     ///     <paramref name="patch" /> does not specify a patch type or patch method.
     /// </exception>
     /// <exception cref="PatchException">The patch definition is invalid or a patch could not be applied.</exception>
+    /// <exception cref="InvalidOperationException">Called from a runtime exception handler.</exception>
     public static PatchHandle Patch(PatchConfig patch, params IEnumerable<MethodBase> methods)
     {
+        ValidatePatchingAllowed();
         return Patch(methods.Select(patch.Of));
     }
 
@@ -190,8 +227,10 @@ public static class Patcher
     ///     A configuration in <paramref name="patches" /> does not specify a patch type or patch method.
     /// </exception>
     /// <exception cref="PatchException">A patch definition is invalid or a patch could not be applied.</exception>
+    /// <exception cref="InvalidOperationException">Called from a runtime exception handler.</exception>
     public static PatchHandle Patch(MethodBase method, params IEnumerable<PatchConfig> patches)
     {
+        ValidatePatchingAllowed();
         return Patch(patches.Select(patch => patch.Of(method)));
     }
 
@@ -209,8 +248,10 @@ public static class Patcher
     ///     A configuration in <paramref name="patches" /> does not specify a patch type, patch method, or outer target.
     /// </exception>
     /// <exception cref="PatchException">A patch definition is invalid or a patch could not be applied.</exception>
+    /// <exception cref="InvalidOperationException">Called from a runtime exception handler.</exception>
     public static PatchHandle Patch(params IEnumerable<PatchConfig> patches)
     {
+        ValidatePatchingAllowed();
         PatchHandle handle = new();
         Registry.Patch(patches, handle);
         return handle;
@@ -224,8 +265,10 @@ public static class Patcher
     ///     Patches added by other calls remain active, even when they patch the same methods.
     /// </remarks>
     /// <exception cref="RuntimePatchException">One or more affected methods could not be updated.</exception>
+    /// <exception cref="InvalidOperationException">Called from a runtime exception handler.</exception>
     public static void Unpatch(PatchHandle handle)
     {
+        ValidatePatchingAllowed();
         Registry.Unpatch(handle);
     }
 
@@ -234,9 +277,15 @@ public static class Patcher
     /// </summary>
     /// <remarks>
     ///     Patches are already active without this call. Use it during a convenient idle period when avoiding first-use
-    ///     delay matters. Patches added afterward may require another call.
+    ///     delay matters. This call continues until no deferred patches remain, including patches added while it runs.
+    ///     <para>
+    ///         If a method cannot be compiled, the error is reported through <see cref="RuntimeExceptionHandler" />
+    ///         (or Harmony's file log when no handler is registered), and compilation continues for the other methods.
+    ///         A later call does not retry that failed method. This error-handling behavior is provisional and may change
+    ///         in a future release. Exceptions thrown by a handler or by Harmony while recovering from a failure still
+    ///         propagate to the caller.
+    ///     </para>
     /// </remarks>
-    /// <exception cref="RuntimePatchException">One or more deferred patches could not be applied.</exception>
     public static void ForceApply()
     {
         Harmony.ResolveAllTrampolines();

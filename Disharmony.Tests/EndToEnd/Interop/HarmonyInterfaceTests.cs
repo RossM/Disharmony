@@ -131,6 +131,73 @@ public sealed class HarmonyInterfaceTests : PatchTestBase
         }
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public void ForceApply_CompilationFailure_ReportsUnlessHarmonyRecoveryFails(bool failRecovery)
+    {
+        HarmonyInterface harmonyInterface = HarmonyInterface.Instance;
+        const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+        object internals = harmonyInterface.GetType().GetProperty("HarmonyInternals", flags)!.GetValue(harmonyInterface)!;
+        FieldInfo updateWrapperField = internals.GetType().GetField("UpdateWrapper")!;
+        var updateWrapper = (Func<MethodBase, HarmonyPatchInfo, MethodInfo>)updateWrapperField.GetValue(internals)!;
+        MethodInfo failedTarget = typeof(HarmonyInterfaceTargets).GetMethod(nameof(HarmonyInterfaceTargets.Value))!;
+        MethodInfo secondTarget = typeof(StaticMethodTargets).GetMethod(nameof(StaticMethodTargets.RegistrationResultA))!;
+        MethodInfo thirdTarget = typeof(StaticMethodTargets).GetMethod(nameof(StaticMethodTargets.RegistrationResultB))!;
+        MethodInfo postfix = typeof(HarmonyInterfaceTargets).GetMethod(nameof(HarmonyInterfaceTargets.IncrementResult))!;
+        var failure = new InvalidOperationException("Injected compilation failure");
+        int failedAttempts = 0;
+        List<Exception> reportedExceptions = [];
+        Action<Exception> handler = reportedExceptions.Add;
+        Patcher.RuntimeExceptionHandler -= ThrowRuntimeException;
+        Patcher.RuntimeExceptionHandler += handler;
+        PatchHandle? handle = null;
+        try
+        {
+            handle = Patcher.Patch(Patch.Postfix.With(postfix), failedTarget, secondTarget, thirdTarget);
+            // Fail either the initial compilation alone, or its recovery attempt as well.
+            // Other targets still use Harmony's actual compilation and publication path.
+            updateWrapperField.SetValue(internals, new Func<MethodBase, HarmonyPatchInfo, MethodInfo>((method, info) =>
+            {
+                if (method == failedTarget)
+                {
+                    failedAttempts++;
+                    if (failRecovery || failedAttempts == 1)
+                        throw failure;
+                }
+                return updateWrapper(method, info);
+            }));
+
+            if (failRecovery)
+            {
+                var thrown = Assert.Throws<InvalidOperationException>(Patcher.ForceApply);
+                Assert.That(thrown, Is.SameAs(failure));
+                Assert.That(reportedExceptions, Is.Empty, "Harmony recovery failures must propagate directly.");
+                return;
+            }
+
+            Assert.That(() => Patcher.ForceApply(), Throws.Nothing);
+            Assert.That(reportedExceptions, Has.Count.EqualTo(1));
+            Assert.That(reportedExceptions[0], Is.TypeOf<RuntimePatchException>());
+            Assert.That(reportedExceptions[0].InnerException, Is.SameAs(failure));
+            Assert.That(reportedExceptions[0].Message, Does.Contain(failedTarget.FullName));
+            Assert.That(StaticMethodTargets.RegistrationResultA(), Is.EqualTo(2));
+            Assert.That(StaticMethodTargets.RegistrationResultB(), Is.EqualTo(3));
+            Assert.That(HarmonyInterfaceTargets.Value(), Is.EqualTo(10));
+
+            Assert.That(() => Patcher.ForceApply(), Throws.Nothing);
+            Assert.That(failedAttempts, Is.EqualTo(2), "The failed work item must not be retried.");
+            Assert.That(reportedExceptions, Has.Count.EqualTo(1));
+        }
+        finally
+        {
+            updateWrapperField.SetValue(internals, updateWrapper);
+            Patcher.RuntimeExceptionHandler -= handler;
+            Patcher.RuntimeExceptionHandler += ThrowRuntimeException;
+            if (handle != null)
+                Patcher.Unpatch(handle);
+        }
+    }
+
     [Test]
     public void Instance_SelectsImplementationForLoadedHarmony()
     {

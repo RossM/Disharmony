@@ -182,6 +182,25 @@ Patcher.Unpatch(pricePatches);
 
 Patches registered by other calls remain active.
 
+### Deferred compilation and errors
+
+Disharmony may generate a patched method's body when the method is first called. Call `Patcher.ForceApply()` during
+loading if you want to do that work earlier. It keeps processing pending methods until none remain, including methods
+added while it runs.
+
+Subscribe to `Patcher.RuntimeExceptionHandler` to receive errors encountered while generating or applying patches.
+Without a subscriber, Disharmony writes them to Harmony's file log. These are patching errors, rather than exceptions
+thrown by your target or patch methods during normal execution.
+
+Use a handler to record or display the error. It must not add or remove patches, or wait for another thread to do so.
+Calling Disharmony's patching or unpatching methods from a handler throws `InvalidOperationException`. Make any patch
+changes after the handler returns.
+
+If `ForceApply()` cannot compile a method, it reports the error and continues compiling the other methods. A later
+`ForceApply()` call does not retry that failed method. This error-handling behavior is provisional and may change in a
+future release. An exception thrown by your handler, or by Harmony while recovering from a failure, still propagates
+to the caller.
+
 ### Use alongside Harmony
 
 Register Harmony patches through Harmony's API and Disharmony patches through `Patcher`, even when they target

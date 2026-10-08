@@ -104,30 +104,30 @@ internal abstract class HarmonyInterface
     }
 
     /// <summary>
-    ///     Eagerly apply all patches that are currently defered using trampolines.
+    ///     Resolves deferred trampolines until the worklist is empty.
     /// </summary>
     /// <remarks>
-    ///     This method is thread-safe, but its exact behavior when another thread
-    ///     is concurrently accessing Harmony can vary. It will definitely apply
-    ///     all trampolines that exist when it is called, but may or may not apply
-    ///     trampolines added after that point.
+    ///     PatchDirectly runs under Harmony's lock. Other threads may add or remove trampolines between iterations.
+    ///     Returned failures are reported after releasing the lock, and processing continues. Exceptions from Harmony's
+    ///     recovery path or the error handler propagate. This error-handling behavior is provisional.
     /// </remarks>
-    /// <exception cref="RuntimePatchException"></exception>
     public void ResolveAllTrampolines()
     {
         while (true)
         {
+            MethodBase method;
+            Exception? exception;
             lock (Locker)
             {
                 if (trampolines.Count == 0)
                     return;
-                var method = trampolines.Keys.First();
-
-                Exception? e = PatchDirectly(method);
+                method = trampolines.Keys.First();
+                exception = PatchDirectly(method);
                 trampolines.Remove(method);
-                if (e != null)
-                    throw new RuntimePatchException($"Error patching {method.FullName}", e);
             }
+
+            if (exception != null)
+                Patcher.ReportException(new RuntimePatchException($"Error patching {method.FullName}", exception));
         }
     }
 
