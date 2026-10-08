@@ -36,7 +36,7 @@ The initial beta supports Mono and Microsoft CLR with the `net472` build, and Mi
 Reference the matching `Disharmony.dll` and the relevant game assemblies in your mod project, and ensure the game loads
 Harmony 2 (the current baseline is 2.4.2). See [compatibility](../docs/compatibility.md) for supported runtimes and Harmony versions.
 
-You can redistribute `Disharmony.dll` with your mod. `Iced.dll` is optional and is only used for native-code disassembly in diagnostics; normal patching does not require it.
+You can redistribute `Disharmony.dll` with your mod.
 
 The following examples use fictional game types to illustrate the API. Suppose `PriceCalculator` has a method
 `float GetPrice(Character buyer, int quantity)`, and you want colony members to receive a 10% discount:

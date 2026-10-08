@@ -8,8 +8,6 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AssemblyName>Disharmony</AssemblyName>
     <RootNamespace>Disharmony</RootNamespace>
-    <EnableDisassembly Condition="'$(EnableDisassembly)' == ''">true</EnableDisassembly>
-    <DefineConstants Condition="'$(EnableDisassembly)' == 'true'">$(DefineConstants);ENABLE_DISASSEMBLY</DefineConstants>
     <NoWarn>$(NoWarn);DISHARMONY0033</NoWarn>
   </PropertyGroup>
 
@@ -21,10 +19,6 @@
     <PackageReference Include="Lib.Harmony" Version="2.4.2" />
     <PackageReference Include="PolySharp" Version="1.16.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="Iced" Version="1.21.0" Condition="'$(EnableDisassembly)' == 'true'">
-      <IncludeAssets>runtime</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>

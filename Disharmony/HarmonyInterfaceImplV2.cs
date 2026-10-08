@@ -58,10 +58,6 @@ internal sealed class HarmonyInterfaceImplV2 : HarmonyInterface
         try
         {
             replacement = HarmonyInternals.UpdateWrapper(original, patchInfo);
-#if ENABLE_DISASSEMBLY
-            if (patchInfo.transpilers.Any(p => p.debug && p.owner == HarmonyID))
-                JitAssemblyLogger.TryLog(original, replacement);
-#endif
         }
         catch (Exception e)
         {
@@ -130,10 +126,6 @@ internal sealed class HarmonyInterfaceImplV2 : HarmonyInterface
                 try
                 {
                     replacement = HarmonyInternals.UpdateWrapper(original.MethodBase, patchInfo);
-#if ENABLE_DISASSEMBLY
-                    if (patchInfo.transpilers.Any(p => p.debug && p.owner == HarmonyID))
-                        JitAssemblyLogger.TryLog(original.MethodBase, replacement);
-#endif
                 }
                 catch (Exception e)
                 {
