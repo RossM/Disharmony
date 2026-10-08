@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Disharmony.Analyzers", "Dis
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Disharmony.Analyzers.Tests", "Disharmony.Analyzers.Tests\Disharmony.Analyzers.Tests.csproj", "{BF5ED722-D56D-402C-84F4-AF5EE67C3C77}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Disharmony.RimWorld", "Disharmony.RimWorld\Disharmony.RimWorld.csproj", "{8A485533-B76C-488F-8BA3-C2D3DAFAB35B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{BF5ED722-D56D-402C-84F4-AF5EE67C3C77}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BF5ED722-D56D-402C-84F4-AF5EE67C3C77}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BF5ED722-D56D-402C-84F4-AF5EE67C3C77}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A485533-B76C-488F-8BA3-C2D3DAFAB35B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A485533-B76C-488F-8BA3-C2D3DAFAB35B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A485533-B76C-488F-8BA3-C2D3DAFAB35B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A485533-B76C-488F-8BA3-C2D3DAFAB35B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

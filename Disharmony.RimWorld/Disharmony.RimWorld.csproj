@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>14.0</LangVersion>
+    <IsPackable>false</IsPackable>
+    <ModOutputDirectory>$(MSBuildProjectDirectory)\bin\$(Configuration)\Mod</ModOutputDirectory>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="About\**\*" />
+    <EmbeddedResource Remove="About\**\*" />
+    <PackageReference Include="Krafs.Rimworld.Ref" Version="1.6.4871" PrivateAssets="all" />
+    <ProjectReference Include="..\Disharmony\Disharmony.csproj" />
+  </ItemGroup>
+
+  <Target Name="BuildRimWorldMod" AfterTargets="Build" Condition="'$(DesignTimeBuild)' != 'true'">
+    <ItemGroup>
+      <_ModAboutFiles Include="$(MSBuildProjectDirectory)\About\**\*" />
+      <_ModAssemblies Include="$(TargetPath);$(TargetDir)Disharmony.dll;$(TargetDir)0Harmony.dll" />
+    </ItemGroup>
+
+    <!-- Recreate the generated mod folder so removed About files and stale assemblies are not shipped. -->
+    <RemoveDir Directories="$(ModOutputDirectory)" />
+    <Copy SourceFiles="@(_ModAboutFiles)"
+          DestinationFiles="@(_ModAboutFiles->'$(ModOutputDirectory)\About\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(_ModAssemblies)" DestinationFolder="$(ModOutputDirectory)\Assemblies" />
+    <Message Importance="high" Text="RimWorld mod: $(ModOutputDirectory)" />
+  </Target>
+
+  <Target Name="CleanRimWorldMod" AfterTargets="Clean">
+    <RemoveDir Directories="$(ModOutputDirectory)" />
+  </Target>
+
+</Project>
