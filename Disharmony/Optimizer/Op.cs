@@ -60,7 +60,8 @@ internal sealed record Prefix(OpCode OpCode, object? Operand);
 /// <param name="Prefixes"></param>
 internal sealed record ILInstruction(OpCode OpCode, object? Operand, IReadOnlyList<Prefix> Prefixes)
 {
-    private string OperandDescription(object operand)
+    // ReSharper disable once ReturnTypeCanBeNotNullable
+    private string? OperandDescription(object operand)
     {
         var data = OpCodeData.Get(OpCode);
         return operand switch

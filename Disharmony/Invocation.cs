@@ -30,6 +30,8 @@ internal abstract record Invocation
     /// </summary>
     protected const string InstanceParameterName = "<instance>";
 
+    protected const string UnknownParameterName = "<unknown>";
+
     public abstract string FullName { get; }
     public abstract Type ReturnType { get; }
     public abstract Type[] ParameterTypes { get; }
@@ -130,8 +132,8 @@ internal record MethodInvocation(MethodInfo MethodInfo) : MethodBaseInvocation
 
     public override string[] ParameterNames => field ??=
         MethodInfo.HasThis
-            ? [InstanceParameterName, .. MethodInfo.GetParameters().Select(p => p.Name)]
-            : [.. MethodInfo.GetParameters().Select(p => p.Name)];
+            ? [InstanceParameterName, .. MethodInfo.GetParameters().Select(p => p.Name ?? UnknownParameterName)]
+            : [.. MethodInfo.GetParameters().Select(p => p.Name ?? UnknownParameterName)];
 
     protected override CodeInstruction GetCodeInstruction() => new(MethodInfo.IsVirtual ? OpCodes.Callvirt : OpCodes.Call, MethodInfo);
 
@@ -172,7 +174,7 @@ internal record InnerConstructorInvocation(ConstructorInfo ConstructorInfo) : Co
     public override Type[] ParameterTypes => field ??= [.. ConstructorInfo.GetParameters().Select(p => p.ParameterType)];
 
     public override bool IsStatic => true;
-    public override string[] ParameterNames => field ??= [.. ConstructorInfo.GetParameters().Select(p => p.Name)];
+    public override string[] ParameterNames => field ??= [.. ConstructorInfo.GetParameters().Select(p => p.Name ?? UnknownParameterName)];
 
     protected override CodeInstruction GetCodeInstruction() => new(OpCodes.Newobj, ConstructorInfo);
 
@@ -198,8 +200,8 @@ internal record OuterConstructorInvocation(ConstructorInfo ConstructorInfo) : Co
 
     public override string[] ParameterNames => field ??=
         ConstructorInfo.HasThis
-            ? [InstanceParameterName, .. ConstructorInfo.GetParameters().Select(p => p.Name)]
-            : [.. ConstructorInfo.GetParameters().Select(p => p.Name)];
+            ? [InstanceParameterName, .. ConstructorInfo.GetParameters().Select(p => p.Name ?? UnknownParameterName)]
+            : [.. ConstructorInfo.GetParameters().Select(p => p.Name ?? UnknownParameterName)];
 
     protected override CodeInstruction GetCodeInstruction() => throw new NotSupportedException();
 
