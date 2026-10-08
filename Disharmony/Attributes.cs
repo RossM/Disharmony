@@ -6,6 +6,11 @@ namespace Disharmony;
 ///     Represents a <see langword="ref" /> <typeparamref name="T" /> parameter in a target or inner-member signature.
 /// </summary>
 /// <typeparam name="T">The parameter's element type.</typeparam>
+/// <remarks>
+///     Use <c>typeof(Ref&lt;int&gt;)</c> in the parameter signature of <see cref="TargetAttribute" /> or
+///     <see cref="InnerAttribute" /> to select a <c>ref int</c> parameter. This type is a selector marker;
+///     declare the patch method's own parameter with the ordinary C# <see langword="ref" /> modifier.
+/// </remarks>
 [PublicAPI]
 public static class Ref<T>;
 
@@ -13,6 +18,11 @@ public static class Ref<T>;
 ///     Represents an <see langword="in" /> <typeparamref name="T" /> parameter in a target or inner-member signature.
 /// </summary>
 /// <typeparam name="T">The parameter's element type.</typeparam>
+/// <remarks>
+///     Use <c>typeof(In&lt;int&gt;)</c> in the parameter signature of <see cref="TargetAttribute" /> or
+///     <see cref="InnerAttribute" /> to select an <c>in int</c> parameter. This type is a selector marker;
+///     declare the patch method's own parameter with the ordinary C# <see langword="in" /> modifier.
+/// </remarks>
 [PublicAPI]
 public static class In<T>;
 
@@ -20,6 +30,11 @@ public static class In<T>;
 ///     Represents an <see langword="out" /> <typeparamref name="T" /> parameter in a target or inner-member signature.
 /// </summary>
 /// <typeparam name="T">The parameter's element type.</typeparam>
+/// <remarks>
+///     Use <c>typeof(Out&lt;int&gt;)</c> in the parameter signature of <see cref="TargetAttribute" /> or
+///     <see cref="InnerAttribute" /> to select an <c>out int</c> parameter. This type is a selector marker;
+///     declare the patch method's own parameter with the ordinary C# <see langword="out" /> modifier.
+/// </remarks>
 [PublicAPI]
 public static class Out<T>;
 
@@ -40,7 +55,7 @@ public static class Out<T>;
 ///         A type specified directly by <see cref="TargetAttribute" /> or <see cref="TargetsAttribute" /> takes
 ///         precedence.
 ///         Harmony's <see cref="HarmonyLib.HarmonyPatch" /> is also recognized for compatibility, but this attribute is
-///         preferred for new patch classes. See <see cref="Patcher" /> for the complete authoring and targeting model.
+///         preferred for new patch classes. See <see cref="Patcher" /> for patch registration and execution rules.
 ///     </para>
 /// </remarks>
 [PublicAPI]
@@ -100,7 +115,7 @@ public abstract class PatchTypeAttribute(PatchKind patchKind) : Attribute
 ///     Without an inner-target attribute, the operation is the outer member selected by <see cref="TargetAttribute" />
 ///     or <see cref="TargetsAttribute" />. With <see cref="InnerAttribute" /> or <see cref="InnerConstantAttribute" />,
 ///     it is each matching operation inside the outer member. A prefix that returns <see langword="false" /> skips
-///     that operation. See <see cref="Patcher" /> for the complete patch model.
+///     that operation. See <see cref="Patcher" /> for patch registration and execution rules.
 /// </remarks>
 [PublicAPI]
 [MeansImplicitUse]
@@ -115,7 +130,7 @@ public sealed class PrefixAttribute() : PatchTypeAttribute(PatchKind.Prefix);
 ///     or <see cref="TargetsAttribute" />. With <see cref="InnerAttribute" /> or <see cref="InnerConstantAttribute" />,
 ///     it is each matching operation inside the outer member. Bind the operation's return value with
 ///     <see cref="ReturnValueAttribute" /> or the conventional parameter name <c>__result</c>; pass it by reference to
-///     replace it. See <see cref="Patcher" /> for the complete patch model.
+///     replace it. See <see cref="Patcher" /> for patch registration and execution rules.
 /// </remarks>
 [PublicAPI]
 [MeansImplicitUse]
@@ -214,7 +229,7 @@ public sealed class InnerAttribute(
 ///     Combine this attribute with <see cref="PrefixAttribute" /> or <see cref="PostfixAttribute" />. Bind the constant
 ///     value with <see cref="ReturnValueAttribute" /> or the conventional parameter name <c>__result</c>; pass it by
 ///     reference to replace it. Select outer members with <see cref="TargetAttribute" /> or
-///     <see cref="TargetsAttribute" />. See <see cref="Patcher" /> for the complete patch model.
+///     <see cref="TargetsAttribute" />. See <see cref="Patcher" /> for patch registration and execution rules.
 /// </remarks>
 [PublicAPI]
 [MeansImplicitUse]
@@ -318,6 +333,8 @@ public sealed class PriorityAttribute(int priority) : Attribute
 /// <summary>
 ///     Provides standard values for ordering patches.
 /// </summary>
+/// <seealso cref="PriorityAttribute" />
+/// <seealso cref="Patch.Priority(PatchConfig, int)" />
 /// <remarks>
 ///     Higher-priority <see cref="PrefixAttribute">prefixes</see> run earlier. Higher-priority patches of other types run
 ///     later. Use <see cref="Default" /> when no explicit ordering is required.
@@ -711,6 +728,7 @@ public sealed class InstanceAttribute(Scope scope = Scope.Any) : ParameterBindin
 /// </summary>
 /// <remarks>
 ///     <para>
+///     The selected operation must produce a value; this binding is not available for <see langword="void" /> operations.
 ///         Pass the parameter by reference to replace the bound return value. A parameter named <c>__result</c>
 ///         with no binding attribute is treated as if it has this attribute.
 ///     </para>

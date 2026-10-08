@@ -23,7 +23,7 @@ Here, `targetMethod` and `patchMethod` are the `MethodInfo` objects for the meth
 
 ## Extension properties
 
-An entry named `get_...` represents a property getter. Use the property name after the dot in your C# code:
+An entry named `get_...` represents a property getter. The property syntax below uses C# 14 extension properties. Use the property name after the dot in your C# code:
 
 | Displayed reference entry | C# usage |
 | --- | --- |

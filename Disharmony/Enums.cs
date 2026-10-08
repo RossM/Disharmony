@@ -6,6 +6,9 @@ namespace Disharmony;
 /// <summary>
 ///     Specifies whether a patch runs before or after its target operation.
 /// </summary>
+/// <seealso cref="PrefixAttribute" />
+/// <seealso cref="PostfixAttribute" />
+/// <seealso cref="Patch" />
 public enum PatchKind
 {
     /// <summary>
@@ -43,7 +46,8 @@ public enum PatchOptions
     ///     Requests Disharmony's optional, experimental IL optimization pass.
     /// </summary>
     /// <remarks>
-    ///     The optimization pass must be enabled separately.
+    ///     The optimization pass is disabled by default and has no public enablement API in the initial beta.
+    ///     Setting this flag alone does not run the optimizer.
     /// </remarks>
     [Experimental("DISHARMONY0033")] Optimize = 0x2,
 
@@ -99,6 +103,15 @@ public enum PatchOptions
 /// <summary>
 ///     Specifies whether an inner patch binds data from the inner member or its containing outer member.
 /// </summary>
+/// <remarks>
+///     In an inner patch, the outer member is the method whose body is modified and the inner member is the
+///     operation selected inside it. For example, <c>[Argument("buyer", Scope.Outer)]</c> binds the containing
+///     method's buyer argument rather than the selected call's argument.
+/// </remarks>
+/// <seealso cref="InnerAttribute" />
+/// <seealso cref="ArgumentAttribute" />
+/// <seealso cref="FieldAttribute" />
+/// <seealso cref="InstanceAttribute" />
 public enum Scope
 {
     /// <summary>
@@ -124,6 +137,9 @@ public enum Scope
 /// <summary>
 ///     Specifies the kind of member or member access selected by a target or inner-patch attribute.
 /// </summary>
+/// <seealso cref="TargetAttribute" />
+/// <seealso cref="InnerAttribute" />
+/// <seealso cref="MethodAttribute" />
 [PublicAPI]
 public enum MemberType
 {

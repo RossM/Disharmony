@@ -3,6 +3,7 @@
 /// <summary>
 ///     Represents an error encountered while defining or applying a Disharmony patch.
 /// </summary>
+/// <seealso cref="Patcher" />
 public class PatchException : Exception
 {
     /// <summary>
@@ -51,6 +52,10 @@ public class PatchDefinitionException(MethodInfo method, string message) : Patch
 /// <summary>
 ///     Represents an error that occurs while applying a patch at run time.
 /// </summary>
+/// <remarks>
+///     This reports failure to generate or apply patched code, not an exception thrown by a target or patch method
+///     during normal execution. See <see cref="Patcher.RuntimeExceptionHandler" /> for deferred error notifications.
+/// </remarks>
 /// <param name="message">The message that describes the run-time error.</param>
 /// <param name="innerException">The exception that caused the run-time error.</param>
 public class RuntimePatchException(string message, Exception innerException) : PatchException(message, innerException);

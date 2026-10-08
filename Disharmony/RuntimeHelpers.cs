@@ -1,10 +1,13 @@
-﻿using System.Runtime.ExceptionServices;
+using System.Runtime.ExceptionServices;
 
 namespace Disharmony;
 
 /// <summary>
 ///     Provides run-time operations used by generated patch code.
 /// </summary>
+/// <remarks>
+///     These helpers are used by Disharmony's generated patch code and are not intended to be called directly by user code.
+/// </remarks>
 public static class RuntimeHelpers
 {
     /// <summary>

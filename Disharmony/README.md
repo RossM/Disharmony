@@ -1,4 +1,4 @@
-# Disharmony
+# Getting started with Disharmony
 
 Disharmony is a C# game-modding framework built on Harmony. It lets mod authors change game behavior at runtime by
 writing small methods called patches. A patch can run before or after a game method, inspect its inputs, change its
@@ -9,8 +9,8 @@ property access, or constant while keeping the surrounding game logic intact. Yo
 to change, and Disharmony handles the underlying IL (intermediate language) instructions.
 
 Disharmony patches coexist and interact sensibly with Harmony patches on the same method, and Disharmony understands
-selected Harmony attributes and conventions. You can adopt Disharmony as you need it without rewriting existing
-Harmony patches or compromising compatibility with other mods.
+selected Harmony attributes and conventions. You can use Disharmony alongside existing Harmony patches.
+As with any patching framework, interactions depend on the changes each mod makes.
 
 ## Why patch inside a method?
 
@@ -34,7 +34,9 @@ same model for targets selected at runtime.
 
 The initial beta supports Mono and Microsoft CLR with the `net472` build, and Microsoft CLR with the `net10.0` build.
 Reference the matching `Disharmony.dll` and the relevant game assemblies in your mod project, and ensure the game loads
-Harmony 2 (the current baseline is 2.4.2). Harmony 3 is not supported by the initial beta.
+Harmony 2 (the current baseline is 2.4.2). See [compatibility](../docs/compatibility.md) for supported runtimes and Harmony versions.
+
+You can redistribute `Disharmony.dll` with your mod. `Iced.dll` is optional and is only used for native-code disassembly in diagnostics; normal patching does not require it.
 
 The following examples use fictional game types to illustrate the API. Suppose `PriceCalculator` has a method
 `float GetPrice(Character buyer, int quantity)`, and you want colony members to receive a 10% discount:
@@ -125,7 +127,7 @@ public static void ClampQuantity(ref int quantity)
 ```
 
 A prefix can also return `bool`. Returning `false` skips the selected operation, while its postfixes still run. A
-prefix that supplies a replacement result can set it through `[ReturnValue] ref ...` before returning `false`.
+prefix that supplies a replacement result can set it through `[ReturnValue] out ...` before returning `false`. Use `out` because the operation has not yet produced a result.
 For an inner prefix, skipping affects only the matched operation; the surrounding method continues.
 Prefixes otherwise return `void`, and postfixes always return `void`.
 
@@ -136,19 +138,19 @@ explicit binding attributes and several familiar Harmony parameter names:
 
 | Value | Attribute | Parameter-name convention |
 | --- | --- | --- |
-| Argument | `[Argument("name")]` or `[Argument(index)]` | *`name`* |
-| Argument values as an array | `[Arguments]` | `__args` |
-| Return value | `[ReturnValue]` | `__result` |
-| Target instance | `[Instance]` | `__instance`, `__caller` |
-| Per-invocation shared state | `[State("name")]` | `__state` |
-| Instance or static field | `[Field("name")]` | *`___name`* |
-| Delegate to an instance or static method | `[Method("name")]` | None |
-| Delegate to the nearest base-class implementation | `[BaseMethod]` | `__base` |
-| Exception, in an `AlwaysRun` postfix | `[Exception]` | `__exception` |
-| Target member metadata | `[MemberInfo]` | None |
+| Argument | [Argument](Attributes.cs): `[Argument("name")]` or `[Argument(index)]` | *`name`* |
+| Argument values as an array | [Arguments](Attributes.cs) (`[Arguments]`) | `__args` |
+| Return value | [ReturnValue](Attributes.cs) (`[ReturnValue]`) | `__result` |
+| Target instance | [Instance](Attributes.cs) (`[Instance]`) | `__instance`, `__caller` |
+| Per-invocation shared state | [State](Attributes.cs) (`[State("name")]`) | `__state` |
+| Instance or static field | [Field](Attributes.cs) (`[Field("name")]`) | *`___name`* |
+| Delegate to an instance or static method | [Method](Attributes.cs) (`[Method("name")]`) | None |
+| Delegate to the nearest base-class implementation | [BaseMethod](Attributes.cs) (`[BaseMethod]`) | `__base` |
+| Exception, in an `AlwaysRun` postfix | [Exception](Attributes.cs) (`[Exception]`) | `__exception` |
+| Target member metadata | [MemberInfo](Attributes.cs) (`[MemberInfo]`) | None |
 
 Passing a bound value by value lets the patch read it; passing it by `ref` lets the patch replace it where supported.
-Bindings such as `[Argument]` and `[Instance]` accept `Scope.Inner` or `Scope.Outer` to choose the source in an inner patch.
+Bindings such as `[Argument]` and `[Instance]` accept [Scope](Enums.cs) values `Scope.Inner` or `Scope.Outer` to choose the source in an inner patch.
 The [attribute reference](Attributes.cs) describes each binding's behavior and constraints.
 
 ## Configure patches in code
@@ -170,7 +172,7 @@ as `[ReturnValue]` still apply, while the configuration supplies the patch type 
 
 For larger patch sets, `Patcher.PatchAll(assembly)` discovers patch classes marked with `[Patch]` or `[HarmonyPatch]`.
 Group classes with `[Category("name")]` and use `Patcher.PatchCategory(assembly, category)` to apply selected groups.
-If you need to make the same change in multiple places, single patch can target multiple methods.
+If you need to make the same change in multiple places, apply multiple [Target](Attributes.cs) attributes to one patch method, or use [Targets](Attributes.cs) to select every member matching a set of criteria.
 
 Each registration call returns a `PatchHandle`. To remove the patches associated with a handle, call:
 
@@ -191,10 +193,10 @@ Beyond the examples above, Disharmony supports:
 
 * **Build-time checks.** The optional [Disharmony analyzers](../Disharmony.Analyzers/README.md) catch mistakes in
   patch definitions and parameter bindings while you write your mod.
-* **Compiler-generated targets.** Patch local functions, lambdas, and iterator methods, and access captured variables.
-* **Patch ordering and execution options.** Control patch order, inline patch code, or use `AlwaysRun` postfixes to
+* **Compiler-generated targets.** [Target selectors](Attributes.cs) can select local functions, lambdas, and iterator methods.
+* **Patch ordering and execution options.** Use [Priority](Attributes.cs) to control patch order and [PatchOptions](Enums.cs) to inline patch code or run postfixes even after an exception. Use `AlwaysRun` postfixes to
   inspect and handle exceptions.
-* **Diagnostics.** Inspect generated code and report errors encountered while applying patches.
+* **Diagnostics.** Use [PatchOptions](Enums.cs) to log generated code and [Patcher](Patcher.cs) to handle errors encountered while applying patches.
 
 For API details, see the [attribute reference](Attributes.cs), [fluent API](Patch.cs), and
 [patch registration API](Patcher.cs). The [test project](../Disharmony.Tests/README.md) provides examples of more

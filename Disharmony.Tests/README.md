@@ -1,7 +1,7 @@
-# Disharmony tests
+# Development and testing
 
 The library, test project, and test-target fixtures multi-target .NET Framework 4.7.2 (`net472`) and .NET 10
-(`net10.0`). Use the .NET 10 SDK to build them. Running `net472` tests through `dotnet test` requires Windows and
+(`net10.0`). Use the SDK selected by the repository's `global.json` (10.0.400 or a later patch in the same feature band). Running `net472` tests through `dotnet test` requires Windows and
 .NET Framework 4.7.2 or later; the NUnitLite runner also supports Mono.
 
 ## Build and test
@@ -16,10 +16,10 @@ dotnet test .\Disharmony.Tests\Disharmony.Tests.csproj --framework net10.0
 ```
 
 Build outputs are separated by configuration and framework under `bin`. The .NET Framework output directory is
-`net472` (previously `net4.7.2`). Project references select the matching target automatically.
+`net472`. Project references select the matching target automatically.
 Visual Studio Test Explorer and `dotnet test` run the tests for each target through the NUnit test adapter.
 These commands use the referenced Harmony 2.4.2 package. Use the compatibility runner below to test the same
-Disharmony binaries against both Harmony versions.
+Disharmony binaries across runtimes, or to exercise the Harmony 3 preview adapter. Harmony 3 runs are development experiments; see [compatibility](../docs/compatibility.md) for the supported release scope.
 
 ## Hang detection
 

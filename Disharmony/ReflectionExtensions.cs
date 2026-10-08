@@ -3,6 +3,7 @@
 /// <summary>
 ///     Provides reflection helpers used when inspecting and identifying patch targets.
 /// </summary>
+/// <seealso href="../extension-members.html">Reading extension members in the API reference</seealso>
 public static class ReflectionExtensions
 {
     /// <param name="member">The member to describe.</param>

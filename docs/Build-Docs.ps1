@@ -18,6 +18,15 @@ $guideSources = @{
 }
 foreach ($source in $guideSources.Keys) {
     $content = [IO.File]::ReadAllText((Join-Path $repositoryRoot $source))
+    foreach ($attributeName in @('Argument', 'Arguments', 'ReturnValue', 'Instance', 'State', 'Field', 'Method', 'BaseMethod', 'Exception', 'MemberInfo', 'Target', 'Targets', 'Priority')) {
+        $content = $content.Replace("[$attributeName](Attributes.cs)", "[$attributeName](xref:Disharmony.$($attributeName)Attribute)")
+    }
+    $content = $content.Replace('[Target selectors](Attributes.cs)', '[Target selectors](xref:Disharmony.TargetAttribute)')
+    $content = $content.Replace('[Scope](Enums.cs)', '[Scope](xref:Disharmony.Scope)')
+    $content = $content.Replace('[PatchOptions](Enums.cs)', '[PatchOptions](xref:Disharmony.PatchOptions)')
+    $content = $content.Replace('(../Disharmony/Patcher.cs)', '(xref:Disharmony.Patcher)')
+    $content = $content.Replace('(../Disharmony/Enums.cs)', '(xref:Disharmony.PatchOptions)')
+    $content = $content.Replace('(../docs/compatibility.md)', '(../../compatibility.md)')
     $content = $content.Replace('(Attributes.cs)', '(xref:Disharmony)')
     $content = $content.Replace('(Patch.cs)', '(xref:Disharmony.Patch)')
     $content = $content.Replace('(Patcher.cs)', '(xref:Disharmony.Patcher)')

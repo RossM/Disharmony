@@ -3,6 +3,22 @@
 A build-time Roslyn analyzer for patch discovery, patch-method validation, and parameter bindings that do not require target reflection.
 The analyzer targets .NET Standard 2.0 and does not load Disharmony, Harmony, or RimWorld at runtime.
 
+## Use the analyzer
+
+The analyzer requires a compiler host with Roslyn 5.9 or newer. The .NET 10.0.400 SDK supplies Roslyn 5.9 and is the verified command-line host. Older compiler hosts are not supported; an IDE must also supply a compatible Roslyn version to run the analyzer during editing.
+
+This requirement applies to your build tools, independently of the game's runtime. You can use the analyzer while compiling a mod that targets `net472`.
+
+Reference this project from each project that contains patches (analyzer project references are not transitive):
+
+```xml
+<ProjectReference Include="..\Disharmony.Analyzers\Disharmony.Analyzers.csproj"
+                  OutputItemType="Analyzer"
+                  ReferenceOutputAssembly="false" />
+```
+
+## Diagnostics
+
 | ID | Diagnostic |
 | --- | --- |
 | DISHARMONY0001 | Patch method or an enclosing type has open generic parameters. |
@@ -13,8 +29,8 @@ The analyzer targets .NET Standard 2.0 and does not load Disharmony, Harmony, or
 | DISHARMONY0006 | Prefix/postfix has no [Patch] or [HarmonyPatch] on its containing class. |
 | DISHARMONY0007 | Prefix/postfix has no [Target] or [Targets] on the method or containing class. |
 | DISHARMONY0008 | Method has a direct Disharmony attribute but no [Prefix] or [Postfix]. |
-| DISHARMONY0009 | Multiple patch type attributes would make SingleOrDefault throw. |
-| DISHARMONY0010 | Multiple inner target attributes would make SingleOrDefault throw. |
+| DISHARMONY0009 | Patch method has more than one prefix/postfix marker. |
+| DISHARMONY0010 | Patch method has more than one inner target selector. |
 | DISHARMONY0011 | Selector has no explicit/default declaring type or qualified member name. |
 | DISHARMONY0012 | InnerConstant has a null value, which the registry does not support. |
 | DISHARMONY0014 | Multiple patch markers or categories, including mixed Disharmony/Harmony attributes. |
@@ -40,14 +56,16 @@ The analyzer targets .NET Standard 2.0 and does not load Disharmony, Harmony, or
 | DISHARMONY0037 | Inner constant cannot supply member metadata or a base method. |
 | DISHARMONY0038 | MemberInfo parameter cannot accept any supported member metadata type. |
 
-The analyzer assumes assembly discovery through Patcher.PatchAll or Patcher.PatchCategory.
+## Scope and limitations
+
+The analyzer assumes assembly discovery through [patch registration](../Disharmony/Patcher.cs), using `Patcher.PatchAll` or `Patcher.PatchCategory`.
 Methods are identified by the built-in Disharmony Prefix/Postfix attributes. User-defined attribute subclasses are ignored.
 Discovery markers and targets follow reflection inheritance and can be on another part of a partial class.
 DISHARMONY0008 checks only attributes directly on the method, from the built-in set;
 it does not flag helpers for inherited method attributes, class defaults, return attributes, or parameter bindings.
 Method-level PatchOptions replace class-level options; options follow reflection inheritance from base classes, but not enclosing classes,
-matching PatchRegistry.GetAttributes. DISHARMONY0005 takes precedence over DISHARMONY0003 for an AlwaysRun prefix.
-Warnings point to the method, parameter, selector attribute, or discovery class and can be configured individually in .editorconfig.
+as described by [patch options](../Disharmony/Enums.cs). DISHARMONY0005 takes precedence over DISHARMONY0003 for an AlwaysRun prefix.
+Diagnostics point to the method, parameter, selector attribute, or discovery class and can be configured individually in .editorconfig.
 Multiplicity checks follow the built-in attributes' inheritance and multiplicity rules, including suppression of overridden attributes.
 Discovery checks treat [Patch]/[HarmonyPatch] as one group and [Category]/[HarmonyPatchCategory] as another.
 Duplicate discovery warnings include effective inherited attributes, even when their values agree.
@@ -70,21 +88,6 @@ and writable-reference restrictions that depend on target parameters remain runt
 Harmony-only patches are not subject to Disharmony's return-type rules.
 Runtime validation remains necessary, including for methods registered through reflection or constructed generic types.
 
-## Use the analyzer
-
-The analyzer requires a compiler host with Roslyn 5.9 or newer. The .NET 10.0.400 SDK supplies Roslyn 5.9 and is the verified command-line host. Older compiler hosts are not supported; an IDE must also supply a compatible Roslyn version to run the analyzer during editing.
-
-This requirement applies to your build tools, independently of the game's runtime. You can use the analyzer while compiling a mod that targets `net472`.
-
-Reference this project from each project that contains patches (analyzer project references are not transitive):
-
-```xml
-<ProjectReference Include="..\Disharmony.Analyzers\Disharmony.Analyzers.csproj"
-                  OutputItemType="Analyzer"
-                  ReferenceOutputAssembly="false" />
-```
-
-Run tests with `dotnet test Disharmony.Analyzers.Tests/Disharmony.Analyzers.Tests.csproj`.
 Tests use minimal attribute metadata and do not execute patches or load the game.
 
 DISHARMONY0025 flags a void prefix binding __result or [ReturnValue]; DISHARMONY0018 takes precedence for AlwaysRun prefixes. DISHARMONY0031 warns when a patch writes to a parameter passed by value.
@@ -109,3 +112,7 @@ Duplicate checks include effective scope for [Arguments], [MemberInfo], and [Bas
 Field and method identities include the explicit declaring type. Method identities also include the delegate signature and virtualCall.
 Qualified and unqualified names are not equated without resolving the member. Inner field bindings with explicit declaring types or qualified names
 are not rejected solely because the inner target is a constant: they may resolve to static fields.
+## Contributing
+
+Run tests with `dotnet test Disharmony.Analyzers.Tests/Disharmony.Analyzers.Tests.csproj`.
+Tests use minimal attribute metadata and do not execute patches or load the game.

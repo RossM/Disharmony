@@ -20,4 +20,4 @@ Harmony 3 is not supported by the initial beta because it is still in beta and i
 
 ## Experimental options
 
-The IL optimizer is experimental. Review [PatchOptions](xref:Disharmony.PatchOptions) before enabling it or other optional patch behavior.
+The IL optimizer is experimental and has no public enablement API in the initial beta. Review [PatchOptions](xref:Disharmony.PatchOptions) for the behavior and constraints of optional patch flags.

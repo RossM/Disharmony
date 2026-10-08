@@ -69,6 +69,7 @@ public class PatchHandle
 /// <summary>
 ///     Provides a fluent builder for <see cref="PatchConfig" /> instances.
 /// </summary>
+/// <seealso href="../extension-members.html">Reading extension members in the API reference</seealso>
 /// <remarks>
 ///     <para>
 ///         Start with any member, then continue configuring the result with the extension members on this class. A
