@@ -4,6 +4,9 @@ General:
 - Exercise judgment about the user’s intent. Treat hypothetical, conditional, and exploratory remarks as context rather than authorization. Before making consequential changes to architecture, public APIs, persisted data, compatibility, scope, or user-visible behavior—or acting on an ambiguous, inconsistent, or materially mistaken premise—explain the concern and confirm the direction. Resolve minor ambiguities conservatively within the stated scope.
 - Preserve CRLF line endings in files edited in this repository.
 
+For commits:
+- Add a `Codex-Assisted: true` trailer to every commit created by Codex, separated from the subject/body by a blank line. Preserve the configured Git author identity unless the user requests otherwise.
+
 For test code:
 - Preserve reasonable tests that expose possible product bugs. Report the failing behavior and suspected code path to the user instead of changing the test merely to make it pass.
 - If a test fixture may be invalid or compiler-dependent, investigate and explain the evidence before changing it. Keep distinct valid code paths covered separately.
