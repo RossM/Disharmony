@@ -5,6 +5,7 @@ Disharmony is a C# game-modding framework built on Harmony. It supports patches 
 The initial beta supports Mono/net472, Microsoft CLR/net472, and Microsoft CLR/net10.0 with Harmony 2. See [compatibility](docs/compatibility.md) to choose the appropriate build and check Harmony version support.
 
 - [New to C#? Learn the basics](docs/learning-csharp.md)
+- [New to patching? Learn how it works](docs/runtime-patching.md)
 - [Introduction and usage](Disharmony/README.md)
 - [RimWorld library mod](Disharmony.RimWorld/README.md)
 - [Patch analyzers](Disharmony.Analyzers/README.md)

@@ -4,7 +4,7 @@ Disharmony is a C# game-modding framework built on Harmony. Write prefixes and p
 
 ## Start here
 
-If you are new to programming, [start by learning C#](learning-csharp.md).
+If you are new to programming, [start by learning C#](learning-csharp.md). If you know C# but are new to patching, read [How runtime patching works](runtime-patching.md).
 
 Check [compatibility](compatibility.md) to choose the library build for your game or application. Then follow [Getting started](obj/guides/getting-started.md) to write and register your first patch.
 

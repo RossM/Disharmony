@@ -2,7 +2,7 @@
 
 The Disharmony examples give you a target method and explain the change to make. In a real game, you first need to find that method and work out whether changing it will have the effect you want. This guide describes how to approach that investigation and turn it into a mod.
 
-You should be comfortable reading C# and understand how a patch selects a method and changes its behavior. If patching is new to you, read [Getting started with Disharmony](obj/guides/getting-started.md) first.
+You should be comfortable reading C# and understand how a patch selects a method and changes its behavior. If patching is new to you, read [How runtime patching works](runtime-patching.md) first, then follow the [Getting started examples](obj/guides/getting-started.md).
 
 ## Choose a small, testable change
 

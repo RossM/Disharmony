@@ -1,6 +1,6 @@
 ﻿# Learn C# before writing a mod
 
-If you have never programmed before, start by learning C#. Disharmony's examples assume you can read and write methods and classes. If you already can, continue with [Getting started with Disharmony](obj/guides/getting-started.md).
+If you have never programmed before, start by learning C#. Disharmony's examples assume you can read and write methods and classes. If you already can, continue with [How runtime patching works](runtime-patching.md).
 
 ## Start learning C#
 
@@ -19,8 +19,8 @@ Before following the Disharmony examples, practice until you can:
 
 ## Learn patching next
 
-These skills prepare you to follow small patching examples. [Getting started with Disharmony](obj/guides/getting-started.md) explains how patches change a method's behavior and introduces the APIs with examples.
+These skills prepare you to follow small patching examples. [How runtime patching works](runtime-patching.md) explains how game code and mod code work together, using a small method to introduce prefixes and postfixes.
 
 Making a real mod also requires finding and understanding the game code responsible for the behavior you want to change. That often means using a decompiler to read the game code, learning from existing mods, and testing your changes in-game. This investigation can take longer than writing the patch itself.
 
-After the introduction, [Plan a patch for your game](planning-a-game-patch.md) takes you through that work. Start with the small examples so you know how a patch works before deciding where your own should go.
+Follow the patching introduction and [Getting started examples](obj/guides/getting-started.md) before continuing with [Plan a patch for your game](planning-a-game-patch.md), which takes you through that investigation.

@@ -29,6 +29,7 @@ The output is in `docs/_site`. It is a static site that can be hosted later; gen
 | Content to change | Source |
 | --- | --- |
 | C# learning prerequisites | `docs/learning-csharp.md` |
+| Runtime-patching introduction | `docs/runtime-patching.md` |
 | Getting-started guide | `Disharmony/README.md` |
 | Investigating game code and planning a patch | `docs/planning-a-game-patch.md` |
 | Advanced usage examples | `docs/usage-examples.md` |

@@ -12,6 +12,8 @@ Disharmony patches coexist and interact sensibly with Harmony patches on the sam
 selected Harmony attributes and conventions. You can use Disharmony alongside existing Harmony patches.
 As with any patching framework, interactions depend on the changes each mod makes.
 
+If you are new to runtime patching, start with [How runtime patching works](../docs/runtime-patching.md), which explains separate game and mod assemblies, targets, and registration.
+
 ## Why patch inside a method?
 
 Suppose a game calculates prices in a method called `GetPrice`. A patch that changes its return value changes prices

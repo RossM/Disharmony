@@ -19,6 +19,7 @@
         "files": [
           "index.md",
           "learning-csharp.md",
+          "runtime-patching.md",
           "planning-a-game-patch.md",
           "compatibility.md",
           "toc.yml",

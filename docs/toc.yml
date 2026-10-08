@@ -4,6 +4,8 @@
   items:
   - name: Learning C#
     href: learning-csharp.md
+  - name: Runtime patching
+    href: runtime-patching.md
   - name: Getting started
     href: obj/guides/getting-started.md
   - name: Plan a patch for your game
