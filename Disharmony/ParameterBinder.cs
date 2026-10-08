@@ -63,6 +63,7 @@ internal enum BindingType
 /// <param name="outer">The outer method being patched.</param>
 /// <param name="inner">The inner invocation being patched, or <see cref="EmptyInvocation" /> for an outer patch.</param>
 /// <param name="patchKind">The patch type.</param>
+/// <param name="options"></param>
 /// <param name="stateGroupKey">A string for grouping together <see cref="StateAttribute">state</see> parameters.</param>
 internal class ParameterBinder(
     Invocation target,

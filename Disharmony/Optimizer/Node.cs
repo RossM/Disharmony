@@ -44,6 +44,7 @@ internal abstract record ExceptionRegion(BlockLabel EntryLabel, Region Parent) :
 /// </remarks>
 /// <param name="EntryLabel">The <see cref="BlockLabel" /> of the try region's entry <see cref="BasicBlock" />.</param>
 /// <param name="Parent">The <see cref="Region" /> that contains this region.</param>
+/// <param name="Group"></param>
 internal sealed record ProtectedRegion(BlockLabel EntryLabel, Region Parent, ExceptionGroup Group) : ExceptionRegion(EntryLabel, Parent)
 {
     public override string ToString() => "try";
@@ -155,6 +156,7 @@ internal sealed record ExceptionGroup(IReadOnlyList<HandlerRegion> HandlerRegion
 ///     replaced with a new block with the same label without updating other data structures.
 /// </remarks>
 /// <param name="Label">The original IL label, or <see langword="null" /> if the block did not have an IL label.</param>
+/// <param name="Id"></param>
 internal sealed record BlockLabel(int Id, Label? Label = null)
 {
     public override string ToString() => $"Block{Id}";
@@ -229,6 +231,7 @@ internal record Leave(BlockLabel Label) : UnconditionalBranch(Label)
 /// </remarks>
 /// <param name="Labels">The fallthrough and branch-target <see cref="BlockLabel" />s.</param>
 /// <param name="OpCode">The conditional branch or switch opcode.</param>
+/// <param name="Inputs"></param>
 internal sealed record ConditionalBranch(OpCode OpCode, IReadOnlyList<Op> Inputs, IReadOnlyList<BlockLabel> Labels) : Branch(Labels)
 {
     public override string ToString() => $"{OpCode} ({string.Join(", ", Inputs)}) {{ {string.Join(", ", Labels)} }}";

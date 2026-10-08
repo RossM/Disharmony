@@ -862,6 +862,7 @@ public sealed class BaseMethodAttribute(Scope scope = Scope.Any) : ParameterBind
 ///     The instance used for instance methods and the default type for unqualified method names.
 ///     The default, <see cref="Scope.Any" />, uses the inner instance for an inner patch and the outer instance otherwise.
 /// </param>
+/// <param name="memberType">The kind of member or accessor to target.</param>
 /// <param name="virtualCall">
 ///     A value indicating whether to use a virtual call if the method is virtual.
 /// </param>
@@ -935,6 +936,9 @@ public sealed class MethodAttribute(
     /// </summary>
     public Type? Type { get; } = type;
 
+    /// <summary>
+    ///     Gets the kind of member or accessor used to select the method.
+    /// </summary>
     public MemberType MemberType { get; } = memberType;
 }
 

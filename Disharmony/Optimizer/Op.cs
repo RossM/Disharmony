@@ -113,6 +113,7 @@ internal sealed record ILInstruction(OpCode OpCode, object? Operand, IReadOnlyLi
 /// </remarks>
 /// <param name="Inputs">The <see cref="Op" />s that produce the instruction's stack inputs.</param>
 /// <param name="Type">The type of value produced by the instruction.</param>
+/// <param name="IL"></param>
 internal sealed record ILOp(ILInstruction IL, IReadOnlyList<Op> Inputs, Type Type) : Op(Type)
 {
     public override string ToString() => Inputs.Count > 0 ? $"{IL} ({string.Join(", ", Inputs)}) :{Type}" : $"{IL} :{Type}";
@@ -151,6 +152,7 @@ internal abstract record Variable(Type Type) : Op(Type);
 /// </summary>
 /// <param name="Depth">The stack depth, where zero is the bottom of the stack.</param>
 /// <param name="Type">The type of value stored in the slot.</param>
+/// <param name="Id"></param>
 internal sealed record StackSlot(int Depth, Type Type, int Id) : Variable(Type)
 {
     public override string ToString() => $"Stack{Id}_{Depth} :{Type}";
@@ -222,6 +224,7 @@ internal sealed record Local : MemoryVariable
 ///     during optimization but needs to be recreated during IL emission.
 /// </remarks>
 /// <param name="Type">The type of value stored by the temporary.</param>
+/// <param name="Id"></param>
 internal sealed record Temporary(Type Type, int Id) : Variable(Type)
 {
     public override string ToString() => $"Temp{Id} :{Type}";
