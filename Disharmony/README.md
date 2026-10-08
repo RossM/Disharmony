@@ -34,17 +34,60 @@ same model for targets selected at runtime.
 
 ## Write your first patch
 
-The initial beta supports Mono and Microsoft CLR with the `net472` build, and Microsoft CLR with the `net10.0` build.
-Add the Disharmony NuGet package to your mod project and reference the relevant game assemblies. NuGet selects the
-matching library build and restores Harmony 2.4.1+ for `net472` or 2.4.2+ for `net10.0`, within the 2.x series. See [compatibility](../docs/compatibility.md)
-for supported runtimes and Harmony versions.
+In this exercise, you will run a small console application, apply a 10% member discount, and compare the results before and after patching. Then you will limit the discount to checkout calls.
 
-For RimWorld, add a dependency on the [official Disharmony mod](../Disharmony.RimWorld/README.md#depend-on-disharmony),
-which supplies the runtime assemblies. For other games, you can redistribute `Disharmony.dll` with your mod; ensure
-Harmony is also available when the game loads it.
+The application includes fictional game classes and your patch code in one project so you can run the example. In a real mod, the game supplies those classes through assembly references; your patch code and initialization belong in your mod project. See [How runtime patching works](../docs/runtime-patching.md#game-code-and-mod-code) for that separation.
 
-The following examples use fictional game types to illustrate the API. Suppose `PriceCalculator` has a method
-`float GetPrice(Character buyer, int quantity)`, and you want colony members to receive a 10% discount:
+### Create the example project
+
+Use the [.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0), version 10.0.400 or newer, and a C# editor. Open a terminal in the directory where you want to create the example and run:
+
+```shell
+dotnet new console --name FirstDisharmonyPatch --framework net10.0
+cd FirstDisharmonyPatch
+dotnet add package Disharmony --version 1.0.0-beta.1
+```
+
+The last command adds Disharmony to the project and restores its Harmony dependency and bundled analyzer. This console example uses `net10.0`; for a game mod, choose the target framework that matches the game's runtime. See [compatibility](../docs/compatibility.md) for the supported builds and Harmony versions.
+
+### Add the fictional game source
+
+Create `Game.cs` in the project directory with this complete source:
+
+```csharp
+using System.Runtime.CompilerServices;
+
+public sealed class Customer
+{
+    public bool IsMember { get; set; }
+}
+
+public class PriceCalculator
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public float GetPrice(Customer buyer, int quantity)
+    {
+        return 10f * quantity;
+    }
+}
+
+public sealed class Checkout
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public float Total(PriceCalculator calculator, Customer buyer, int quantity)
+    {
+        return calculator.GetPrice(buyer, quantity);
+    }
+}
+```
+
+Each item costs 10. `GetPrice` currently charges members and non-members the same amount, and `Checkout.Total` calls it to calculate the total.
+
+The runtime can copy a called method's code into its caller to make it run faster. This is called **inlining**. If it happens before a patch is registered, the copied code can keep running without the patch. The sample's `NoInlining` attributes prevent this so you can reliably compare behavior before and after registration.
+
+### Add the discount patch
+
+Create `PriceCalculatorPatches.cs` with this **mod source**:
 
 ```csharp
 using Disharmony;
@@ -53,36 +96,74 @@ using Disharmony;
 public static class PriceCalculatorPatches
 {
     [Postfix]
-    [Target(nameof(PriceCalculator.GetPrice), typeof(Character), typeof(int))]
-    public static void ApplyMemberDiscount(Character buyer, [ReturnValue] ref float result)
+    [Target(nameof(PriceCalculator.GetPrice), typeof(Customer), typeof(int))]
+    public static void ApplyMemberDiscount(Customer buyer, [ReturnValue] ref float result)
     {
-        if (buyer.IsColonyMember)
+        if (buyer.IsMember)
             result *= 0.9f;
     }
 }
 ```
 
-`[Patch(typeof(PriceCalculator))]` groups the patches in this class and supplies the type whose members they target.
-`[Target]` selects `GetPrice`; the parameter types identify the intended overload. `[Postfix]` tells Disharmony to
-run `ApplyMemberDiscount` after that method returns.
+`[Patch(typeof(PriceCalculator))]` supplies the game type to target. `[Target]` selects `GetPrice` with the parameter types `Customer` and `int`. `[Postfix]` makes `ApplyMemberDiscount` run after that method returns.
 
-Disharmony supplies the patch's arguments. The `buyer` parameter receives the game method's argument with the same
-name, and `[ReturnValue]` binds `result` to its return value. Passing `result` by `ref` lets the patch change the price
-returned to the caller. Patch methods must be static and only need to declare the values they use.
+Disharmony supplies the patch's arguments. `buyer` receives the game method's argument with the same name, and `[ReturnValue]` supplies its result. The `ref` modifier lets the patch change the result returned to the caller. For a member buying two items, the game calculates 20 and the patch changes it to 18.
 
-To activate the patch, call this once from your mod's initialization code:
+### Register the patch and run the example
+
+Replace the generated `Program.cs` with:
 
 ```csharp
-PatchHandle pricePatches = Patcher.PatchAll(typeof(PriceCalculatorPatches));
+using System;
+using Disharmony;
+
+public static class Program
+{
+    public static void Main()
+    {
+        var buyer = new Customer { IsMember = true };
+        var calculator = new PriceCalculator();
+        var checkout = new Checkout();
+
+        Console.WriteLine($"Before patch: {calculator.GetPrice(buyer, 2)}");
+
+        PatchHandle pricePatches = Patcher.PatchAll(typeof(PriceCalculatorPatches));
+
+        Console.WriteLine($"Member price: {calculator.GetPrice(buyer, 2)}");
+        Console.WriteLine($"Member checkout: {checkout.Total(calculator, buyer, 2)}");
+
+        buyer.IsMember = false;
+        Console.WriteLine($"Non-member price: {calculator.GetPrice(buyer, 2)}");
+        Console.WriteLine($"Non-member checkout: {checkout.Total(calculator, buyer, 2)}");
+    }
+}
 ```
 
-The patch is then active for calls to `GetPrice` throughout the game. The returned handle identifies this group of
-patches and can be kept if you need to remove it later.
+`Patcher.PatchAll(typeof(PriceCalculatorPatches))` registers the patches in that class. The returned `PatchHandle` identifies this group of patches if you want to [remove them later](#select-and-manage-patches).
+
+Run the application from the project directory:
+
+```shell
+dotnet run --configuration Release
+```
+
+It prints:
+
+```text
+Before patch: 20
+Member price: 18
+Member checkout: 18
+Non-member price: 20
+Non-member checkout: 20
+```
+
+The discount applies to `GetPrice` wherever it is called, including the call inside `Checkout.Total`. The condition in the patch leaves non-member prices unchanged.
 
 ## Patch an operation inside a method
 
-Now suppose the same member discount should apply only at checkout. Instead of patching `GetPrice` itself, you can
-patch its calls within `Checkout.Total`:
+Now make the discount apply only at checkout. A direct call to `GetPrice` should return the original price, even for a member.
+
+Create `CheckoutPatches.cs` in the same project:
 
 ```csharp
 using Disharmony;
@@ -93,27 +174,40 @@ public static class CheckoutPatches
     [Postfix]
     [Target(nameof(Checkout.Total))]
     [Inner(typeof(PriceCalculator), nameof(PriceCalculator.GetPrice),
-        typeof(Character), typeof(int))]
-    public static void ApplyMemberDiscount(Character buyer, [ReturnValue] ref float result)
+        typeof(Customer), typeof(int))]
+    public static void ApplyMemberDiscount(Customer buyer, [ReturnValue] ref float result)
     {
-        if (buyer.IsColonyMember)
+        if (buyer.IsMember)
             result *= 0.9f;
     }
 }
 ```
 
-The patch body is the same, but the selectors give it a different scope. `[Target]` identifies `Checkout.Total` as
-the **outer target**: the method whose code Disharmony modifies. `[Inner]` selects the `GetPrice` calls within it.
-The postfix receives each selected call's buyer and result, and adjusts the price before `Total` uses it.
+The patch body is the same, but the selectors give it a different scope. `[Target]` identifies `Checkout.Total` as the **outer target**: the method containing the operation to change. `[Inner]` selects the `GetPrice` call within it. The postfix adjusts that call's result before `Total` uses it.
 
-For this version, register `CheckoutPatches` in place of `PriceCalculatorPatches`:
+In `Program.cs`, replace the registration line with:
 
 ```csharp
 PatchHandle pricePatches = Patcher.PatchAll(typeof(CheckoutPatches));
 ```
 
-The discount now applies only to calls within `Total`; calls to `GetPrice` elsewhere keep their original behavior.
-Inner patches can also target field and property accesses with `[Inner]`, or constants with `[InnerConstant]`.
+This registers `CheckoutPatches` instead of `PriceCalculatorPatches`. Run `dotnet run --configuration Release` again. The new process applies only the newly selected patch class, and prints:
+
+```text
+Before patch: 20
+Member price: 20
+Member checkout: 18
+Non-member price: 20
+Non-member checkout: 20
+```
+
+The direct member price stays at 20; the discount applies only to the call inside `Total`. Inner patches can also target field and property accesses with `[Inner]`, or constants with `[InnerConstant]`.
+
+### Use the patch in a game mod
+
+In your mod project, reference the game's assemblies and add the Disharmony package. Choose the actual game method you want to change, and register your patch class once from your mod's initialization code, before the game uses that method. The console application's `Main` method supplies that initialization step for this exercise; your game's mod system supplies the corresponding hook.
+
+[Plan a patch for your game](../docs/planning-a-game-patch.md) explains how to find and understand a suitable target. For RimWorld, follow the [Disharmony dependency guide](../Disharmony.RimWorld/README.md#depend-on-disharmony) to have the official Disharmony mod supply the runtime assemblies. For other games, you can redistribute `Disharmony.dll` with your mod; ensure Harmony is also available when the game loads it.
 
 ## Control inputs and execution
 
@@ -123,13 +217,15 @@ quantity from reaching `GetPrice`:
 
 ```csharp
 [Prefix]
-[Target(nameof(PriceCalculator.GetPrice), typeof(Character), typeof(int))]
+[Target(nameof(PriceCalculator.GetPrice), typeof(Customer), typeof(int))]
 public static void ClampQuantity(ref int quantity)
 {
     if (quantity < 0)
         quantity = 0;
 }
 ```
+
+When trying this prefix, use the first example's registration of `PriceCalculatorPatches` instead of `CheckoutPatches`. A call to `GetPrice(buyer, -1)` then receives a quantity of zero and returns zero.
 
 A prefix can also return `bool`. Returning `false` skips the selected operation, while its postfixes still run. A
 prefix that supplies a replacement result can set it through `[ReturnValue] out ...` before returning `false`. Use `out` because the operation has not yet produced a result.
@@ -217,7 +313,7 @@ To apply these ideas to your own game, [Plan a patch for your game](../docs/plan
 
 The [usage examples](../docs/usage-examples.md) show advanced features with complete hypothetical target source. Beyond the examples above, Disharmony supports:
 
-* **Build-time checks.** The optional [Disharmony analyzers](../Disharmony.Analyzers/README.md) catch mistakes in
+* **Build-time checks.** The bundled [Disharmony analyzers](../Disharmony.Analyzers/README.md) catch mistakes in
   patch definitions and parameter bindings while you write your mod.
 * **Compiler-generated targets.** [Target selectors](Attributes.cs) can select local functions, lambdas, and iterator methods.
 * **Patch ordering and execution options.** Use [Priority](Attributes.cs) to control patch order and [PatchOptions](Enums.cs) to inline patch code or run postfixes even after an exception. Use `AlwaysRun` postfixes to
