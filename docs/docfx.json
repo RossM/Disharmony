@@ -18,6 +18,8 @@
       {
         "files": [
           "index.md",
+          "learning-csharp.md",
+          "planning-a-game-patch.md",
           "compatibility.md",
           "toc.yml",
           "api/**.yml",

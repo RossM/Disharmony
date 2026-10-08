@@ -211,6 +211,8 @@ the same method. Both sets of patches remain active and work together.
 
 ## Explore further
 
+To apply these ideas to your own game, [Plan a patch for your game](../docs/planning-a-game-patch.md) explains how to investigate game code, learn from existing mods, and choose where to patch.
+
 The [usage examples](../docs/usage-examples.md) show advanced features with complete hypothetical target source. Beyond the examples above, Disharmony supports:
 
 * **Build-time checks.** The optional [Disharmony analyzers](../Disharmony.Analyzers/README.md) catch mistakes in

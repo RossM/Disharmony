@@ -1,7 +1,13 @@
 - name: Overview
   href: index.md
-- name: Getting started
-  href: obj/guides/getting-started.md
+- name: Learn to mod
+  items:
+  - name: Learning C#
+    href: learning-csharp.md
+  - name: Getting started
+    href: obj/guides/getting-started.md
+  - name: Plan a patch for your game
+    href: planning-a-game-patch.md
 - name: Usage examples
   href: usage-examples.md
 - name: Compatibility
@@ -10,9 +16,9 @@
   href: obj/guides/rimworld.md
 - name: Analyzers
   href: obj/guides/analyzers.md
-- name: Reading extension members
+- name: Extension members
   href: extension-members.md
 - name: API reference
   href: api/toc.yml
-- name: Development and testing
+- name: Development
   href: obj/guides/testing.md
