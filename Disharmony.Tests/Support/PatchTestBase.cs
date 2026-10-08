@@ -19,5 +19,5 @@ public abstract class PatchTestBase
         Patcher.RuntimeExceptionHandler -= ThrowRuntimeException;
 
     protected static void ApplyPatch(Type patchMethodsType, string patchMethodName) =>
-        Patcher.Patch(patchMethodsType.GetMethod(patchMethodName));
+        Patcher.Patch(patchMethodsType.GetMethod(patchMethodName)!);
 }

@@ -44,7 +44,7 @@ public sealed class OpCodeValuesTests
         {
             var opCode = opCodes[valueField.Name];
 
-            var value = (int)valueField.GetRawConstantValue();
+            var value = (int)valueField.GetRawConstantValue()!;
 
             var data = OpCodeData.Get((ushort)value);
 
