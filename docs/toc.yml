@@ -2,6 +2,8 @@
   href: index.md
 - name: Getting started
   href: obj/guides/getting-started.md
+- name: Usage examples
+  href: usage-examples.md
 - name: Compatibility
   href: compatibility.md
 - name: Analyzers

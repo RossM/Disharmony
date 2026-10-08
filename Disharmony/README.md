@@ -189,7 +189,7 @@ the same method. Both sets of patches remain active and work together.
 
 ## Explore further
 
-Beyond the examples above, Disharmony supports:
+The [usage examples](../docs/usage-examples.md) show advanced features with complete hypothetical target source. Beyond the examples above, Disharmony supports:
 
 * **Build-time checks.** The optional [Disharmony analyzers](../Disharmony.Analyzers/README.md) catch mistakes in
   patch definitions and parameter bindings while you write your mod.

@@ -6,6 +6,8 @@ Disharmony is a C# game-modding framework built on Harmony. Write prefixes and p
 
 Check [compatibility](compatibility.md) to choose the library build for your game or application. Then follow [Getting started](obj/guides/getting-started.md) to write and register your first patch.
 
+Explore [usage examples](usage-examples.md) for inner patches, state, private-method delegates, exception recovery, and compiler-generated targets.
+
 The optional [analyzers](obj/guides/analyzers.md) help you find mistakes in patch definitions and parameter bindings while compiling your project.
 
 ## API reference

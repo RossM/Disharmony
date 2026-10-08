@@ -88,7 +88,7 @@ and writable-reference restrictions that depend on target parameters remain runt
 Harmony-only patches are not subject to Disharmony's return-type rules.
 Runtime validation remains necessary, including for methods registered through reflection or constructed generic types.
 
-Tests use minimal attribute metadata and do not execute patches or load the game.
+## Diagnostic details
 
 DISHARMONY0025 flags a void prefix binding __result or [ReturnValue]; DISHARMONY0018 takes precedence for AlwaysRun prefixes. DISHARMONY0031 warns when a patch writes to a parameter passed by value.
 

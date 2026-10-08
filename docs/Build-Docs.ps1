@@ -27,6 +27,7 @@ foreach ($source in $guideSources.Keys) {
     $content = $content.Replace('(../Disharmony/Patcher.cs)', '(xref:Disharmony.Patcher)')
     $content = $content.Replace('(../Disharmony/Enums.cs)', '(xref:Disharmony.PatchOptions)')
     $content = $content.Replace('(../docs/compatibility.md)', '(../../compatibility.md)')
+    $content = $content.Replace('(../docs/usage-examples.md)', '(../../usage-examples.md)')
     $content = $content.Replace('(Attributes.cs)', '(xref:Disharmony)')
     $content = $content.Replace('(Patch.cs)', '(xref:Disharmony.Patch)')
     $content = $content.Replace('(Patcher.cs)', '(xref:Disharmony.Patcher)')

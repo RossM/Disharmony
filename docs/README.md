@@ -27,6 +27,7 @@ The output is in `docs/_site`. It is a static site that can be hosted later; gen
 | Content to change | Source |
 | --- | --- |
 | Getting-started guide | `Disharmony/README.md` |
+| Advanced usage examples | `docs/usage-examples.md` |
 | Analyzer diagnostics | `Disharmony.Analyzers/README.md` |
 | Development and testing guide | `Disharmony.Tests/README.md` |
 | API descriptions | C# XML documentation comments |

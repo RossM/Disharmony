@@ -21,7 +21,8 @@
           "compatibility.md",
           "toc.yml",
           "api/**.yml",
-          "extension-members.md"
+          "extension-members.md",
+          "usage-examples.md"
         ]
       },
       {
