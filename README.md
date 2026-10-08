@@ -2,6 +2,8 @@
 
 Disharmony is a C# game-modding framework built on Harmony. It supports patches around methods and around individual calls, member accesses, and constants inside methods.
 
+The initial beta supports Mono/net472, Microsoft CLR/net472, and Microsoft CLR/net10.0 with Harmony 2. See [compatibility](docs/compatibility.md) to choose the appropriate build and check Harmony version support.
+
 - [Introduction and usage](Disharmony/README.md)
 - [Optional analyzers](Disharmony.Analyzers/README.md)
 - [Tests and runtime compatibility](Disharmony.Tests/README.md)
@@ -18,6 +20,10 @@ dotnet test .\Disharmony.Analyzers.Tests\Disharmony.Analyzers.Tests.csproj
 ```
 
 The solution builds test-target fixtures in Release configuration for predictable generated IL, including during Debug builds. See the test guide for Mono and Harmony 3 preview compatibility runs.
+
+## HTML documentation
+
+Run `./docs/Build-Docs.ps1 -Serve` to build the searchable HTML guides and API reference and preview them at `http://localhost:8080`. See [documentation build instructions](docs/README.md).
 
 ## License
 

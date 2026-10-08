@@ -32,8 +32,9 @@ same model for targets selected at runtime.
 
 ## Write your first patch
 
-Disharmony targets .NET Framework 4.7.2. Reference `Disharmony.dll` and the relevant game assemblies in your mod
-project, and ensure the game loads Disharmony and a compatible `0Harmony.dll`.
+The initial beta supports Mono and Microsoft CLR with the `net472` build, and Microsoft CLR with the `net10.0` build.
+Reference the matching `Disharmony.dll` and the relevant game assemblies in your mod project, and ensure the game loads
+Harmony 2 (the current baseline is 2.4.2). Harmony 3 is not supported by the initial beta.
 
 The following examples use fictional game types to illustrate the API. Suppose `PriceCalculator` has a method
 `float GetPrice(Character buyer, int quantity)`, and you want colony members to receive a 10% discount:

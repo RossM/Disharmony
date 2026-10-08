@@ -8,3 +8,5 @@ TestResults/
 *.log
 temp/
 tmp/
+/docs/api/
+/docs/_site/

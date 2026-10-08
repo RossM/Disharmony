@@ -1,0 +1,49 @@
+{
+  "metadata": [
+    {
+      "src": [
+        {
+          "src": "obj/reference",
+          "files": [
+            "Disharmony.dll"
+          ]
+        }
+      ],
+      "dest": "api",
+      "disableGitFeatures": true
+    }
+  ],
+  "build": {
+    "content": [
+      {
+        "files": [
+          "index.md",
+          "compatibility.md",
+          "toc.yml",
+          "api/**.yml",
+          "extension-members.md"
+        ]
+      },
+      {
+        "src": "obj/guides",
+        "files": [
+          "*.md"
+        ],
+        "dest": "guides"
+      }
+    ],
+    "output": "_site",
+    "template": [
+      "default",
+      "modern"
+    ],
+    "disableGitFeatures": true,
+    "globalMetadata": {
+      "_appName": "Disharmony",
+      "_appTitle": "Disharmony documentation",
+      "_appFooter": "Disharmony · Beta documentation",
+      "_enableSearch": true,
+      "_disableContribution": true
+    }
+  }
+}
