@@ -1,5 +1,7 @@
 # Disharmony
 
+**Not yet published:** The NuGet package and Steam Workshop mod are not available yet.
+
 Disharmony is a C# framework for changing game behavior with mods. Built on Harmony, it lets you patch whole methods or individual calls, member accesses, and constants inside them.
 
 ## Why use Disharmony?

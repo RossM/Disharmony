@@ -22,7 +22,23 @@ To generate HTML without starting a server:
 ./docs/Build-Docs.ps1
 ```
 
-The output is in `docs/_site`. It is a static site that can be hosted later; generating it does not publish it.
+The output is in `docs/_site`. Generating the site locally does not publish it.
+
+## Publish to GitHub Pages
+
+The [HTML documentation workflow](../.github/workflows/docs.yml) builds the site with the same script and SDK selection used for local previews. Pull requests build the docs for review; pushes to `main` publish them to GitHub Pages. You can also run the workflow manually from the repository's Actions tab, selecting `main`.
+
+To enable publishing for this repository:
+
+1. Open **Settings > Pages** and set **Build and deployment > Source** to **GitHub Actions**.
+2. Run **Actions > HTML documentation > Run workflow** on `main` once the workflow is committed and pushed.
+3. Follow the URL shown by the **Publish to GitHub Pages** job. Check the home page, a guide, an API page, navigation, and search on the live site before linking readers to it.
+
+The workflow uploads `docs/_site` as a Pages artifact. Generated HTML stays out of Git, and no separate publishing branch or personal access token is needed. The deployment job uses the `github-pages` environment and publishes only `main`; pull requests and manual runs on other branches cannot deploy.
+
+DocFX uses relative links, so the same output works under the repository's Pages path and at the local preview root. Publishing deploys the current documentation from `main`. It does not publish NuGet or Workshop packages.
+
+See [GitHub's custom Pages workflow documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages) for deployment requirements and repository configuration.
 
 ## Edit the source files
 
