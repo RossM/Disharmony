@@ -1,15 +1,15 @@
 # Development and testing
 
 The library, test project, and test-target fixtures multi-target .NET Framework 4.7.2 (`net472`) and .NET 10
-(`net10.0`). Use the SDK selected by the repository's `global.json` (10.0.400 or a later patch in the same feature band). Running `net472` tests through `dotnet test` requires Windows and
+(`net10.0`). Use the SDK selected by the repository's `global.json` (10.0.400 or a later patch in the same feature band); the source uses C# 14. Running `net472` tests through `dotnet test` requires Windows and
 .NET Framework 4.7.2 or later; the NUnitLite runner also supports Mono.
 
 ## Build and test
 
-Run these commands from the repository root. Omit `--framework` to build or test both targets, or select one:
+Run these commands from the repository root. Build the solution, then run the library tests for both targets or select one with `--framework`:
 
 ```powershell
-dotnet build .\Disharmony\Disharmony.csproj
+dotnet build .\Disharmony.sln
 dotnet test .\Disharmony.Tests\Disharmony.Tests.csproj
 dotnet test .\Disharmony.Tests\Disharmony.Tests.csproj --framework net472
 dotnet test .\Disharmony.Tests\Disharmony.Tests.csproj --framework net10.0
@@ -20,6 +20,18 @@ Build outputs are separated by configuration and framework under `bin`. The .NET
 Visual Studio Test Explorer and `dotnet test` run the tests for each target through the NUnit test adapter.
 These commands use the referenced Harmony 2.4.2 package. Use the compatibility runner below to test the same
 Disharmony binaries across runtimes, or to exercise the Harmony 3 preview adapter. Harmony 3 runs are development experiments; see [compatibility](../docs/compatibility.md) for the supported release scope.
+
+## Build the NuGet package
+
+From the repository root, build the library package in Release configuration:
+
+```powershell
+dotnet pack .\Disharmony\Disharmony.csproj --configuration Release --output .\artifacts\packages
+```
+
+The output contains the NuGet package and its `.snupkg` symbol package. The NuGet package includes the `net472` and `net10.0` library builds, XML API documentation, and the analyzer. The RimWorld integration is distributed separately; see [Build the RimWorld integration](#build-the-rimworld-integration).
+
+The default version is `1.0.0-beta.1`, shared by the library, analyzer, and RimWorld integration through `Directory.Build.props`. To build a different version, add `-p:Version=VERSION` to the pack command, replacing `VERSION` with the desired version number.
 
 ## Work on the analyzer
 

@@ -1,43 +1,46 @@
 # Disharmony
 
-Disharmony is a C# game-modding framework built on Harmony. It supports patches around methods and around individual calls, member accesses, and constants inside methods.
+Disharmony is a C# framework for changing game behavior with mods. Built on Harmony, it lets you patch whole methods or individual calls, member accesses, and constants inside them.
 
-The initial beta supports Mono/net472, Microsoft CLR/net472, and Microsoft CLR/net10.0 with Harmony 2. See [compatibility](docs/compatibility.md) to choose the appropriate build and check Harmony version support.
+## Why use Disharmony?
 
-- [New to C#? Learn the basics](docs/learning-csharp.md)
-- [New to patching? Learn how it works](docs/runtime-patching.md)
-- [Introduction and usage](Disharmony/README.md)
-- [RimWorld library mod](Disharmony.RimWorld/README.md)
-- [Patch analyzers](Disharmony.Analyzers/README.md)
-- [Tests and runtime compatibility](Disharmony.Tests/README.md)
-- [Deferred test-coverage proposals](Disharmony.Tests/Test-Plan.md)
+- **Change an operation inside a method.** Write a C# prefix or postfix for a selected call, member access, or constant without writing a transpiler.
+- **Catch mistakes before launching the game.** The bundled analyzer reports problems with your patches as you edit and compile.
+- **Get useful patching errors.** Disharmony checks targets and parameter bindings, and explains why a patch is invalid.
+- **Reduce startup work.** Disharmony can defer patch generation to reduce the work done during mod startup.
 
-## Build
+You can keep existing Harmony patches and add Disharmony where it helps. [From Harmony to Disharmony](docs/harmony-comparison.md) compares the features and APIs and shows how to adopt it in an existing mod.
 
-Use the .NET 10.0.400 SDK or a later patch in the 10.0.4xx feature band. The repository selects that feature band through `global.json` and uses C# 14. The library and runtime tests target .NET Framework 4.7.2 and .NET 10; the analyzers target .NET Standard 2.0.
+## Beta and compatibility
 
-```powershell
-dotnet build .\Disharmony.sln
-dotnet test .\Disharmony.Tests\Disharmony.Tests.csproj
-dotnet test .\Disharmony.Analyzers.Tests\Disharmony.Analyzers.Tests.csproj
-```
+The initial beta supports **Mono/net472**, **Microsoft CLR/net472**, and **Microsoft CLR/net10.0** with Harmony 2. APIs may change during the beta. See [compatibility](docs/compatibility.md) to choose the library build and Harmony version for your game.
 
-The solution builds test-target fixtures in Release configuration for predictable generated IL, including during Debug builds. See the test guide for Mono and Harmony 3 preview compatibility runs.
+## Start writing mods
 
-## NuGet package
+- **New to programming?** [Learn C# first](docs/learning-csharp.md).
+- **Know C# but new to patching?** [Learn how runtime patching works](docs/runtime-patching.md).
+- **Ready to try Disharmony?** [Write your first patch](Disharmony/README.md#write-your-first-patch) with complete examples you can build and run.
+- **Already use Harmony?** [Add Disharmony to an existing mod](docs/harmony-comparison.md#add-disharmony-to-an-existing-harmony-mod).
+- **Writing a RimWorld mod?** [Set up, install, and test your mod](Disharmony.RimWorld/README.md).
 
-Build the library package in Release configuration:
+## Examples and reference
 
-```powershell
-dotnet pack .\Disharmony\Disharmony.csproj --configuration Release --output .\artifacts\packages
-```
+[Usage examples](docs/usage-examples.md) show how to make specific changes, including patching one call inside a method and sharing information between patches.
 
-The default version is `1.0.0-beta.1`, shared by the library, analyzer, and RimWorld integration through `Directory.Build.props`. Override it with `-p:Version=VERSION` when needed. The output contains the NuGet package and its `.snupkg` symbol package. The package includes both library builds, XML API documentation, and the analyzer. The RimWorld mod is distributed separately.
+For `DISHARMONY` warnings and errors, use the [diagnostic reference](docs/analyzer-diagnostics.md). [Analyzer setup and configuration](Disharmony.Analyzers/README.md) explains how the checks work in your editor and build.
 
-## HTML documentation
+API comments in the source describe [attributes and parameter bindings](Disharmony/Attributes.cs), [patch registration](Disharmony/Patcher.cs), and [fluent configuration](Disharmony/Patch.cs).
 
-Run `./docs/Build-Docs.ps1 -Serve` to build the searchable HTML guides and API reference and preview them at `http://localhost:8080`. See [documentation build instructions](docs/README.md).
+## Playing RimWorld?
+
+If a mod requires Disharmony, install and enable the official Disharmony mod. Follow the [installation and load-order instructions](Disharmony.RimWorld/About/README.md). Disharmony does not change gameplay on its own.
+
+## Contributing and support
+
+To work on Disharmony itself, start with [Development and testing](Disharmony.Tests/README.md). To improve the documentation, see [Editing and previewing the docs](docs/README.md).
+
+[Report a problem or suggest an improvement](https://github.com/RossM/Disharmony/issues).
 
 ## License
 
-[MIT](LICENSE). The pinned Harmony test dependency includes its own license under `TestArtifacts/Harmony`.
+[MIT](LICENSE).
