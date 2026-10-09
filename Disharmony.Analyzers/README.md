@@ -1,97 +1,108 @@
 # Disharmony analyzers
 
-A build-time Roslyn analyzer for patch discovery, patch-method validation, and parameter bindings that do not require target reflection.
-The analyzer targets .NET Standard 2.0 and does not load Disharmony, Harmony, or RimWorld at runtime.
+An analyzer is a tool that checks your code and points out possible mistakes while you edit or build it. Disharmony's analyzer checks your patches, helping you find problems before starting the game.
 
-## Use the analyzer
+**If you use the Disharmony NuGet package, the analyzer is already included.** There is nothing else to install or enable. See [Getting started](../Disharmony/README.md#write-your-first-patch) if you have not added the package yet.
 
-The analyzer requires a compiler host with Roslyn 5.9 or newer. The .NET 10.0.400 SDK supplies Roslyn 5.9 and is the verified command-line host. Older compiler hosts are not supported; an IDE must also supply a compatible Roslyn version to run the analyzer during editing.
+<a id="use-the-analyzer"></a>
 
-This requirement applies to your build tools, independently of the game's runtime. You can use the analyzer while compiling a mod that targets `net472`.
+## Compiler and editor requirements
 
-The Disharmony NuGet package includes the analyzer, so no separate analyzer reference is needed. Modern SDKs skip
-it when their compiler is older than Roslyn 5.9. See [getting started](../Disharmony/README.md#write-your-first-patch)
-to add Disharmony to your mod project.
+The analyzer runs inside your C# compiler, Roslyn. It requires **Roslyn 5.9 or newer**; the **.NET 10.0.400 SDK** meets this requirement. With an older compiler, modern SDKs skip the bundled analyzer, so you will not get Disharmony warnings or errors.
 
-When building against a local checkout instead of NuGet, reference this project from each project that contains patches
-(analyzer project references are not transitive):
+To see those messages while editing, your editor must also provide Roslyn 5.9 or newer. It may use a different compiler version from your command-line build.
 
-```xml
-<ProjectReference Include="..\Disharmony.Analyzers\Disharmony.Analyzers.csproj"
-                  OutputItemType="Analyzer"
-                  ReferenceOutputAssembly="false" />
+These requirements apply to your build tools, independently of the game's runtime. You can use the analyzer while compiling a `net472` mod. It adds no runtime dependency to your mod.
+
+## Check that analysis is running
+
+Add this temporary class to a project that references Disharmony. It deliberately declares a prefix without `static`:
+
+```csharp
+using Disharmony;
+
+[Patch(typeof(AnalyzerCheck))]
+public class AnalyzerCheck
+{
+    public void TargetMethod() { }
+
+    [Prefix]
+    [Target(nameof(TargetMethod))]
+    public void BeforeTarget() { }
+}
 ```
 
-## Diagnostics
+Building should report **DISHARMONY0002** because `BeforeTarget` is not static. A compatible IDE should report it while editing too. No patch registration or game launch is needed. Remove the class after checking.
 
-| ID | Diagnostic |
-| --- | --- |
-| DISHARMONY0001 | Patch method or an enclosing type has open generic parameters. |
-| DISHARMONY0002 | Patch method is not static. |
-| DISHARMONY0003 | Prefix does not return bool or void (by-ref bool is not bool). |
-| DISHARMONY0004 | Postfix does not return void. |
-| DISHARMONY0005 | Prefix with AlwaysRun does not return void. |
-| DISHARMONY0006 | Prefix/postfix has no [Patch] or [HarmonyPatch] on its containing class. |
-| DISHARMONY0007 | Prefix/postfix has no [Target] or [Targets] on the method or containing class. |
-| DISHARMONY0008 | Method has a direct Disharmony attribute but no [Prefix] or [Postfix]. |
-| DISHARMONY0009 | Patch method has more than one prefix/postfix marker. |
-| DISHARMONY0010 | Patch method has more than one inner target selector. |
-| DISHARMONY0011 | Selector has no explicit/default declaring type or qualified member name. |
-| DISHARMONY0012 | InnerConstant has a null value, which the registry does not support. |
-| DISHARMONY0014 | Multiple patch markers or categories, including mixed Disharmony/Harmony attributes. |
-| DISHARMONY0015 | Target/inner selector lacks a member name without selecting a constructor. |
-| DISHARMONY0016 | Parameter has multiple binding attributes. |
-| DISHARMONY0017 | Parameter uses __caller or explicit Scope.Inner without an inner patch. |
-| DISHARMONY0018 | AlwaysRun prefix binds the return value. |
-| DISHARMONY0019 | Exception binding is not in an AlwaysRun postfix. |
-| DISHARMONY0020 | Method/base-method binding is not a concrete delegate passed by value. |
-| DISHARMONY0021 | Parameter type/modifier is incompatible with an exception, argument array, or known inner constant result. |
-| DISHARMONY0022 | Parameters sharing a state key in a patch class have incompatible types. |
-| DISHARMONY0024 | Parameter requests an instance, argument, or field from an inner constant. |
-| DISHARMONY0025 | Prefix binds the result but returns void, so it cannot skip the target. |
-| DISHARMONY0027 | Parameter starts with __ but is not a recognized special name or ___field binding, and has no explicit binding attribute. |
-| DISHARMONY0028 | Multiple parameters in one patch bind the same value. |
-| DISHARMONY0029 | State key has no ref/out binding in any patch declared in the same class. |
-| DISHARMONY0030 | State key is only bound through out parameters in its patch class. |
-| DISHARMONY0031 | Patch writes to a parameter that is not ref/out. |
-| DISHARMONY0032 | AlwaysRun patch contains an explicit throw or rethrow. |
-| DISHARMONY0034 | Prefix result binding is ref rather than out. |
-| DISHARMONY0035 | Postfix argument binding is out. |
-| DISHARMONY0036 | Arguments or MemberInfo binding is ref/out/in. |
-| DISHARMONY0037 | Inner constant cannot supply member metadata or a base method. |
-| DISHARMONY0038 | MemberInfo parameter cannot accept any supported member metadata type. |
+If the build reports the diagnostic but the editor does not, check the IDE's compiler compatibility and analyzer settings. If neither reports it, check the package reference and compiler requirements above, and whether analysis or this rule has been disabled. Microsoft explains how to [view and configure analyzer diagnostics in Visual Studio](https://learn.microsoft.com/en-us/visualstudio/code-quality/use-roslyn-analyzers?view=visualstudio#view-rule-violations).
+
+## Configure diagnostics
+
+Disharmony uses standard Roslyn severity settings and has no custom analyzer configuration options. For example, this `.editorconfig` entry treats writing to a patch parameter passed by value as an error:
+
+```ini
+[*.cs]
+dotnet_diagnostic.DISHARMONY0031.severity = error
+```
+
+Use the IDs in the [diagnostic catalog](#diagnostics) to configure individual rules. Microsoft documents [severity settings and configuration precedence](https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/configuration-options#severity-level) and [configuration-file placement and scope](https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/configuration-files). Suppressing an analyzer diagnostic does not change whether Disharmony can apply the patch at runtime.
 
 ## Scope and limitations
 
-The analyzer assumes assembly discovery through [patch registration](../Disharmony/Patcher.cs), using `Patcher.PatchAll` or `Patcher.PatchCategory`.
-Methods are identified by the built-in Disharmony Prefix/Postfix attributes. User-defined attribute subclasses are ignored.
-Discovery markers and targets follow reflection inheritance and can be on another part of a partial class.
-DISHARMONY0008 checks only attributes directly on the method, from the built-in set;
-it does not flag helpers for inherited method attributes, class defaults, return attributes, or parameter bindings.
-Method-level PatchOptions replace class-level options; options follow reflection inheritance from base classes, but not enclosing classes,
-as described by [patch options](../Disharmony/Enums.cs). DISHARMONY0005 takes precedence over DISHARMONY0003 for an AlwaysRun prefix.
-Diagnostics point to the method, parameter, selector attribute, or discovery class and can be configured individually in .editorconfig.
-Multiplicity checks follow the built-in attributes' inheritance and multiplicity rules, including suppression of overridden attributes.
-Discovery checks treat [Patch]/[HarmonyPatch] as one group and [Category]/[HarmonyPatchCategory] as another.
-Duplicate discovery warnings include effective inherited attributes, even when their values agree.
-Duplicate categories also warn on classes without a discovery marker. Runtime precedence remains unchanged.
-Class targets are added to method targets rather than replaced, so every effective selector is checked.
+The analyzer checks source code using Disharmony's built-in `[Prefix]` and `[Postfix]` attributes. Discovery warnings assume you register patch classes with `Patcher.PatchAll` or `Patcher.PatchCategory`. It checks:
 
-Qualified selectors such as Namespace.Type:Member and Namespace.Type.Member can resolve their declaring type at runtime.
-DISHARMONY0011 accepts both forms without attempting that lookup. Inner selectors do not inherit the outer target's type.
+- Patch declarations: whether methods are static, have an allowed return type, and have the attributes needed for discovery and targeting.
+- Parameter bindings: conflicts and combinations that can be rejected without looking up the game's target method.
+- Selected mistakes in patch bodies, such as assigning to a parameter passed by value or explicitly throwing from an `AlwaysRun` patch.
 
-This analyzer does not analyze programmatic PatchConfig registrations,
-resolve target methods, validate target-dependent parameter bindings/signature filters, or enforce style.
-Lookup-dependent failures (missing/ambiguous members, field-versus-method selection, target method restrictions,
-and nested-member resolution) and patch application failures remain runtime checks.
-Explicit built-in parameter binding attributes override reserved names.
-Known-type checks follow the runtime's ref/in/out rules and AllowUnsafe reference-type bypass; delegate shape and state-type checks do not bypass validation.
-State keys are compared within each declaring patch class across its declared patch methods, including methods with different targets.
-DISHARMONY0029 warns when no patch in the declaring class binds a state key through ref or out; it checks declarations, not assignments in method bodies. Ref/in/out modifiers do not change the stored state type.
-Ordinary argument index bounds, argument/result/instance/field type compatibility, delegate signatures, iterator-state-machine restrictions,
-and writable-reference restrictions that depend on target parameters remain runtime checks.
-Harmony-only patches are not subject to Disharmony's return-type rules.
-Runtime validation remains necessary, including for methods registered through reflection or constructed generic types.
+You still need to load and test your mod. The analyzer does not check:
+
+- Whether a target or inner operation exists, whether a selector matches multiple members, or whether a game's update changed its signature.
+- Whether a binding matches the actual target's arguments, result, instance, or fields, or whether a requested delegate matches the selected method.
+- Whether patches apply successfully or produce the intended behavior together with other mods.
+
+It does not analyze fluent `PatchConfig` registrations, patches declared through user-defined attribute subclasses, or generated code. Harmony-only patches are not checked against Disharmony's patch-method rules. See [patch registration](../Disharmony/Patcher.cs) for runtime validation and [usage examples](../docs/usage-examples.md) for working patches.
+
+## Diagnostics
+
+All listed rules are enabled by default. The severity column shows the setting before any project overrides.
+
+| ID | Default severity | Diagnostic |
+| --- | --- | --- |
+| DISHARMONY0001 | Error | Patch method or an enclosing type has open generic parameters. |
+| DISHARMONY0002 | Error | Patch method is not static. |
+| DISHARMONY0003 | Error | Prefix does not return bool or void (by-ref bool is not bool). |
+| DISHARMONY0004 | Error | Postfix does not return void. |
+| DISHARMONY0005 | Error | Prefix with AlwaysRun does not return void. |
+| DISHARMONY0006 | Warning | Prefix/postfix has no [Patch] or [HarmonyPatch] on its containing class. |
+| DISHARMONY0007 | Warning | Prefix/postfix has no [Target] or [Targets] on the method or containing class. |
+| DISHARMONY0008 | Warning | Method has a direct Disharmony attribute but no [Prefix] or [Postfix]. |
+| DISHARMONY0009 | Error | Patch method has more than one prefix/postfix marker. |
+| DISHARMONY0010 | Error | Patch method has more than one inner target selector. |
+| DISHARMONY0011 | Error | Selector has no explicit/default declaring type or qualified member name. |
+| DISHARMONY0012 | Warning | InnerConstant has a null value, which the registry does not support. |
+| DISHARMONY0014 | Warning | Multiple patch markers or categories, including mixed Disharmony/Harmony attributes. |
+| DISHARMONY0015 | Error | Target/inner selector lacks a member name without selecting a constructor. |
+| DISHARMONY0016 | Error | Parameter has multiple binding attributes. |
+| DISHARMONY0017 | Error | Parameter uses __caller or explicit Scope.Inner without an inner patch. |
+| DISHARMONY0018 | Error | AlwaysRun prefix binds the return value. |
+| DISHARMONY0019 | Error | Exception binding is not in an AlwaysRun postfix. |
+| DISHARMONY0020 | Error | Method/base-method binding is not a concrete delegate passed by value. |
+| DISHARMONY0021 | Error | Parameter type/modifier is incompatible with an exception, argument array, or known inner constant result. |
+| DISHARMONY0022 | Error | Parameters sharing a state key in a patch class have incompatible types. |
+| DISHARMONY0024 | Error | Parameter requests an instance, argument, or field from an inner constant. |
+| DISHARMONY0025 | Warning | Prefix binds the result but returns void, so it cannot skip the target. |
+| DISHARMONY0027 | Error | Parameter starts with __ but is not a recognized special name or ___field binding, and has no explicit binding attribute. |
+| DISHARMONY0028 | Warning | Multiple parameters in one patch bind the same value. |
+| DISHARMONY0029 | Warning | State key has no ref/out binding in any patch declared in the same class. |
+| DISHARMONY0030 | Warning | State key is only bound through out parameters in its patch class. |
+| DISHARMONY0031 | Warning | Patch writes to a parameter that is not ref/out. |
+| DISHARMONY0032 | Warning | AlwaysRun patch contains an explicit throw or rethrow. |
+| DISHARMONY0034 | Warning | Prefix result binding is ref rather than out. |
+| DISHARMONY0035 | Warning | Postfix argument binding is out. |
+| DISHARMONY0036 | Error | Arguments or MemberInfo binding is ref/out/in. |
+| DISHARMONY0037 | Error | Inner constant cannot supply member metadata or a base method. |
+| DISHARMONY0038 | Error | MemberInfo parameter cannot accept any supported member metadata type. |
 
 ## Diagnostic details
 
@@ -117,7 +128,7 @@ Duplicate checks include effective scope for [Arguments], [MemberInfo], and [Bas
 Field and method identities include the explicit declaring type. Method identities also include the delegate signature and virtualCall.
 Qualified and unqualified names are not equated without resolving the member. Inner field bindings with explicit declaring types or qualified names
 are not rejected solely because the inner target is a constant: they may resolve to static fields.
+
 ## Contributing
 
-Run tests with `dotnet test Disharmony.Analyzers.Tests/Disharmony.Analyzers.Tests.csproj`.
-Tests use minimal attribute metadata and do not execute patches or load the game.
+For local-checkout analyzer references and analyzer tests, see [Development and testing](../Disharmony.Tests/README.md#work-on-the-analyzer).

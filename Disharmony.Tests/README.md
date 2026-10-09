@@ -21,6 +21,24 @@ Visual Studio Test Explorer and `dotnet test` run the tests for each target thro
 These commands use the referenced Harmony 2.4.2 package. Use the compatibility runner below to test the same
 Disharmony binaries across runtimes, or to exercise the Harmony 3 preview adapter. Harmony 3 runs are development experiments; see [compatibility](../docs/compatibility.md) for the supported release scope.
 
+## Work on the analyzer
+
+The NuGet package includes the analyzer for mod authors. When testing changes from a local checkout, reference `Disharmony.Analyzers` from each project containing patches; analyzer project references are not transitive. Adjust the relative path for the consuming project:
+
+```xml
+<ProjectReference Include="..\Disharmony.Analyzers\Disharmony.Analyzers.csproj"
+                  OutputItemType="Analyzer"
+                  ReferenceOutputAssembly="false" />
+```
+
+Run analyzer tests from the repository root:
+
+```powershell
+dotnet test .\Disharmony.Analyzers.Tests\Disharmony.Analyzers.Tests.csproj
+```
+
+These tests use minimal attribute metadata and do not execute patches or load the game. For supported compiler hosts and consumer setup, see [Disharmony analyzers](../Disharmony.Analyzers/README.md).
+
 ## Build the RimWorld integration
 
 To build the official Disharmony mod from this repository, run:
