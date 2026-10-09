@@ -1,33 +1,35 @@
 # Disharmony
 
-Disharmony is a C# game-modding framework built on Harmony. Write prefixes and postfixes around whole methods, or around individual calls, member accesses, and constants inside them.
+Disharmony is a C# framework for changing game behavior with mods. Built on Harmony, it lets you patch whole methods or individual calls, member accesses, and constants inside them.
 
-## Start here
+The initial release is a beta. See [compatibility](compatibility.md) for supported runtimes and Harmony versions.
 
-If you are new to programming, [start by learning C#](learning-csharp.md). If you know C# but are new to patching, read [How runtime patching works](runtime-patching.md).
+**Quick lookup:** [API reference](xref:Disharmony) · [Usage examples](usage-examples.md) · [Diagnostic reference](analyzer-diagnostics.md).
 
-Check [compatibility](compatibility.md) to choose the library build for your game or application. Then follow [Getting started](obj/guides/getting-started.md) to write and register your first patch.
+## Playing RimWorld?
 
-Once you understand the patching examples, [Plan a patch for your game](planning-a-game-patch.md) explains how to investigate game code, learn from existing mods, and choose where to make your change.
+If a mod requires Disharmony, follow the [installation instructions](obj/guides/rimworld-players.md) to subscribe, enable it, and set the load order. Disharmony does not change gameplay on its own.
 
-If you already use Harmony, [From Harmony to Disharmony](harmony-comparison.md) compares the APIs and shows how to keep existing patches while adding Disharmony.
+## Learn to write mods
 
-Explore [usage examples](usage-examples.md) for inner patches, state, private-method delegates, exception recovery, and compiler-generated targets.
+- **New to programming?** [Learn C# first](learning-csharp.md), with a recommended tutorial and the skills you need before starting the patching guides.
+- **Know C# but new to patching?** [How runtime patching works](runtime-patching.md) explains how a separate mod changes game behavior without replacing the game's assemblies.
+- **Ready to write a patch?** [Getting started](obj/guides/getting-started.md) takes you through complete examples you can build and run. For RimWorld, continue with [Write a mod with Disharmony](obj/guides/rimworld.md) to apply a patch in-game.
 
-The bundled [analyzers](obj/guides/analyzers.md) help you find mistakes in patch definitions and parameter bindings while compiling your project.
+After the introductory examples, [Plan a patch for your game](planning-a-game-patch.md) explains how to investigate game code, learn from existing mods, and choose where to make your change.
 
-## API reference
+## Already use Harmony?
 
-Use the reference when you need the available overloads, parameter meanings, or constraints for a particular API:
+[From Harmony to Disharmony](harmony-comparison.md) compares the features and APIs, shows an alternative to a transpiler, and explains how to add Disharmony while keeping your existing Harmony patches.
 
-- [Patch registration](xref:Disharmony.Patcher): apply and remove patches, or generate them before their first use.
-- [Fluent configuration](xref:Disharmony.Patch): select targets and construct patches in code.
-- [Patch configuration](xref:Disharmony.PatchConfig): inspect the configuration produced by the fluent API.
-- [Attributes and types](xref:Disharmony): look up target selectors, parameter bindings, execution options, and exceptions.
-- [IL rewrite rules](xref:Disharmony.RulesEngine): work directly with the lower-level rules engine.
+## Find examples and reference
 
-Some extension properties appear as accessor methods in the reference. [Reading extension members](extension-members.md) shows how to use those entries in C#.
+- [Usage examples](usage-examples.md): choose an example for the change you want to make, such as modifying one call inside a method or sharing information between patches.
+- [API reference](xref:Disharmony): look up attributes, types, method signatures, and parameter meanings. Go directly to [patch registration](xref:Disharmony.Patcher) or [fluent configuration](xref:Disharmony.Patch).
+- [Diagnostic reference](analyzer-diagnostics.md): look up a `DISHARMONY` warning or error to understand the problem and how to fix it. [Analyzer setup and configuration](obj/guides/analyzers.md) explains how to enable or configure these checks.
 
-## Contributing
+If an extension property appears as a `get_...` method in the API reference, see [Reading extension members](extension-members.md).
 
-[Development and testing](obj/guides/testing.md) explains how to build Disharmony and run its tests.
+## Contribute to Disharmony
+
+[Development and testing](obj/guides/testing.md) explains how to build Disharmony, work on the analyzer or RimWorld integration, and run tests for your changes.

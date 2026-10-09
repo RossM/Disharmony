@@ -32,7 +32,7 @@ The output is in `docs/_site`. It is a static site that can be hosted later; gen
 | Runtime-patching introduction | `docs/runtime-patching.md` |
 | Getting-started guide | `Disharmony/README.md` |
 | RimWorld author setup and deployment | `Disharmony.RimWorld/README.md` |
-| Steam Workshop description | `Disharmony.RimWorld/About/README.md` |
+| Steam Workshop description and HTML player installation instructions | `Disharmony.RimWorld/About/README.md` |
 | In-game mod-manager description | `<description>` in `Disharmony.RimWorld/About/About.xml` |
 | Investigating game code and planning a patch | `docs/planning-a-game-patch.md` |
 | Harmony comparison, coexistence, and migration | `docs/harmony-comparison.md` |
@@ -41,12 +41,12 @@ The output is in `docs/_site`. It is a static site that can be hosted later; gen
 | Diagnostic explanations and corrections | `docs/analyzer-diagnostics.md` |
 | Development and testing guide | `Disharmony.Tests/README.md` |
 | API descriptions | C# XML documentation comments |
-| Overview | `docs/index.md` |
+| HTML home page and audience routes | `docs/index.md` |
 | Supported runtimes and Harmony versions | `docs/compatibility.md` |
 | How to read extension-member signatures | `docs/extension-members.md` |
 | Site navigation | `docs/toc.yml` |
 
-Do not edit `docs/api`, `docs/obj`, or `docs/_site`. They contain generated files and are ignored by Git. The build copies the guide READMEs and adapts their source-code links for the HTML reference.
+Do not edit `docs/api`, `docs/obj`, or `docs/_site`. They contain generated files and are ignored by Git. The build copies the guide READMEs and adapts their links for the HTML site. The player installation page reuses the Workshop description with a title identifying its installation task; edit `Disharmony.RimWorld/About/README.md` to update both.
 
 ## API generation and diagnostics
 

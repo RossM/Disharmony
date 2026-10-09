@@ -1,10 +1,10 @@
-- name: Overview
+- name: Home
   href: index.md
 - name: Learn to mod
   items:
-  - name: Learning C#
+  - name: Learn C# first
     href: learning-csharp.md
-  - name: Runtime patching
+  - name: How runtime patching works
     href: runtime-patching.md
   - name: Getting started
     href: obj/guides/getting-started.md
@@ -16,19 +16,21 @@
     href: harmony-comparison.md
   - name: Usage examples
     href: usage-examples.md
-- name: Compatibility
-  href: compatibility.md
-- name: RimWorld
-  href: obj/guides/rimworld.md
-- name: Analyzers
-  items:
-  - name: Setup and configuration
+  - name: Compatibility
+    href: compatibility.md
+  - name: Analyzer setup and configuration
     href: obj/guides/analyzers.md
   - name: Diagnostic reference
     href: analyzer-diagnostics.md
-- name: Extension members
-  href: extension-members.md
+  - name: Reading extension members
+    href: extension-members.md
+- name: RimWorld
+  items:
+  - name: Install Disharmony (players)
+    href: obj/guides/rimworld-players.md
+  - name: Write a mod with Disharmony
+    href: obj/guides/rimworld.md
 - name: API reference
   href: api/toc.yml
-- name: Development
+- name: Contributing
   href: obj/guides/testing.md
