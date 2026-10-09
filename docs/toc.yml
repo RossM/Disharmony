@@ -10,8 +10,12 @@
     href: obj/guides/getting-started.md
   - name: Plan a patch for your game
     href: planning-a-game-patch.md
-- name: Usage examples
-  href: usage-examples.md
+- name: Using Disharmony
+  items:
+  - name: From Harmony to Disharmony
+    href: harmony-comparison.md
+  - name: Usage examples
+    href: usage-examples.md
 - name: Compatibility
   href: compatibility.md
 - name: RimWorld

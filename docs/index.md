@@ -10,6 +10,8 @@ Check [compatibility](compatibility.md) to choose the library build for your gam
 
 Once you understand the patching examples, [Plan a patch for your game](planning-a-game-patch.md) explains how to investigate game code, learn from existing mods, and choose where to make your change.
 
+If you already use Harmony, [From Harmony to Disharmony](harmony-comparison.md) compares the APIs and shows how to keep existing patches while adding Disharmony.
+
 Explore [usage examples](usage-examples.md) for inner patches, state, private-method delegates, exception recovery, and compiler-generated targets.
 
 The bundled [analyzers](obj/guides/analyzers.md) help you find mistakes in patch definitions and parameter bindings while compiling your project.

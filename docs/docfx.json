@@ -22,6 +22,7 @@
           "runtime-patching.md",
           "planning-a-game-patch.md",
           "compatibility.md",
+          "harmony-comparison.md",
           "toc.yml",
           "api/**.yml",
           "extension-members.md",

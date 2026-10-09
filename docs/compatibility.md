@@ -20,6 +20,10 @@ The NuGet package restores the appropriate Harmony dependency for your project's
 
 Harmony 3 support is incomplete and subject to change.
 
+## Existing Harmony mods
+
+You can keep Harmony patches and add Disharmony patches in the same mod. [From Harmony to Disharmony](harmony-comparison.md#add-disharmony-to-an-existing-harmony-mod) shows shared metadata, separate registration, deployment, and the behavior differences to check before converting a patch.
+
 ## Experimental options
 
 The IL optimizer is experimental and has no public enablement API in the initial beta. Review [PatchOptions](xref:Disharmony.PatchOptions) for the behavior and constraints of optional patch flags.

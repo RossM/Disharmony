@@ -35,6 +35,7 @@ The output is in `docs/_site`. It is a static site that can be hosted later; gen
 | Steam Workshop description | `Disharmony.RimWorld/About/README.md` |
 | In-game mod-manager description | `<description>` in `Disharmony.RimWorld/About/About.xml` |
 | Investigating game code and planning a patch | `docs/planning-a-game-patch.md` |
+| Harmony comparison, coexistence, and migration | `docs/harmony-comparison.md` |
 | Advanced usage examples | `docs/usage-examples.md` |
 | Analyzer diagnostics | `Disharmony.Analyzers/README.md` |
 | Development and testing guide | `Disharmony.Tests/README.md` |
