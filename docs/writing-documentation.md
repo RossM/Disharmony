@@ -72,7 +72,9 @@ Do not put these in the root README:
 
 ### Steam Workshop description: allowed content and shape
 
-Primary readers are players arriving because another mod requires Disharmony. The description must be sufficient for the ordinary installation task without requiring a visit to GitHub.
+Primary readers are players arriving because another mod requires Disharmony. The description must be sufficient for the ordinary installation task without requiring a visit to GitHub. Its source is `Disharmony.RimWorld/About/README.md`.
+
+The `<description>` in `Disharmony.RimWorld/About/About.xml` is separate: players see it in the in-game mod manager when enabling, disabling, and sorting installed mods. Keep it short and focused on the mod's purpose, whether to enable it, and load order; subscription instructions belong on Workshop.
 
 Include:
 
