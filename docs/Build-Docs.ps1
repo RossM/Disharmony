@@ -29,6 +29,8 @@ foreach ($source in $guideSources.Keys) {
     $content = $content.Replace('(../Disharmony/Enums.cs)', '(xref:Disharmony.PatchOptions)')
     $content = $content.Replace('(../docs/compatibility.md)', '(../../compatibility.md)')
     $content = $content.Replace('(../docs/usage-examples.md)', '(../../usage-examples.md)')
+    $content = $content.Replace('(../docs/analyzer-diagnostics.md)', '(../../analyzer-diagnostics.md)')
+    $content = $content.Replace('(../docs/analyzer-diagnostics.md#diagnostic-index)', '(../../analyzer-diagnostics.md#diagnostic-index)')
     $content = $content.Replace('(../docs/planning-a-game-patch.md)', '(../../planning-a-game-patch.md)')
     $content = $content.Replace('(../docs/runtime-patching.md)', '(../../runtime-patching.md)')
     $content = $content.Replace('(../docs/runtime-patching.md#game-code-and-mod-code)', '(../../runtime-patching.md#game-code-and-mod-code)')

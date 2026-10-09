@@ -23,6 +23,7 @@
           "planning-a-game-patch.md",
           "compatibility.md",
           "harmony-comparison.md",
+          "analyzer-diagnostics.md",
           "toc.yml",
           "api/**.yml",
           "extension-members.md",

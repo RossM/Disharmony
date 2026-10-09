@@ -21,7 +21,11 @@
 - name: RimWorld
   href: obj/guides/rimworld.md
 - name: Analyzers
-  href: obj/guides/analyzers.md
+  items:
+  - name: Setup and configuration
+    href: obj/guides/analyzers.md
+  - name: Diagnostic reference
+    href: analyzer-diagnostics.md
 - name: Extension members
   href: extension-members.md
 - name: API reference
