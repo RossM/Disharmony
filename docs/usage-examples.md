@@ -1,18 +1,36 @@
 # Usage examples
 
-These examples build on [Getting started](obj/guides/getting-started.md). They use a small shop to show how to patch calls inside a method, read information from the caller, and share values between patches.
+Choose an example for the change you want to make. The examples share the [fictional shop source](#target-source) below; each applies its patches separately.
 
-| Task | Example |
+These examples build on [Getting started](obj/guides/getting-started.md) and assume you have completed its tutorial. To find a suitable target in an actual game, see [Plan a patch for your game](planning-a-game-patch.md).
+
+| What you want to do | Features used |
 | --- | --- |
-| Change a call using information from its caller | [Inner calls and scope](#inner-calls-and-scope) |
-| Change a field read in two methods | [Field reads and multiple targets](#field-reads-and-multiple-targets) |
-| Change the value passed to a property setter | [Property setters](#property-setters) |
-| Carry data from a constructor patch to a later patch | [Shared state and constants](#shared-state-and-constants) |
-| Reuse a private method | [Private-method delegates](#private-method-delegates) |
-| Call a base implementation instead of an override | [Base-method delegates](#base-method-delegates) |
-| Recover from a specific exception in an inner call | [AlwaysRun postfixes](#alwaysrun-postfixes) |
-| Guard a compiler-generated lambda | [Lambda targets and inlining](#lambda-targets-and-inlining) |
-| Select patch targets at runtime | [Fluent registration](#fluent-registration) |
+| [Change a method call's result using values from its caller](#inner-calls-and-scope) | Inner method calls; outer and inner scope |
+| [Change a field read without changing the stored value](#field-reads-and-multiple-targets) | Field reads; multiple `[Target]` attributes |
+| [Change the value passed to a property setter](#property-setters) | Inner property setters; argument binding |
+| [Pass a value from one patch to another](#shared-state-and-constants) | Constructor results; named state; constants |
+| [Call a private method from a patch](#private-method-delegates) | Method delegates |
+| [Call a base implementation instead of an override](#base-method-delegates) | Base-method delegates; skipping the original method |
+| [Handle an exception from a call inside a method](#alwaysrun-postfixes) | `AlwaysRun` postfixes; exception binding |
+| [Patch a lambda](#lambda-targets-and-inlining) | Lambda selectors; inline patches |
+| [Select patch targets in registration code](#fluent-registration) | Fluent configuration; patch priority |
+
+## Before trying an example
+
+Use the console project from the tutorial:
+
+1. Replace `Game.cs` with the complete [target source](#target-source) below.
+2. Replace the tutorial's patch class with the class from your chosen example. Add imports needed by that class, such as `System.Text` for `StringBuilder`.
+3. Replace the body of `Main` with these declarations, followed by the example's registration and demonstration statements:
+
+```csharp
+var buyer = new Customer { IsMember = true };
+var calculator = new PriceCalculator();
+var checkout = new Checkout { SaleEnabled = true };
+```
+
+Try one example per run, using its registration call as written. Registering the whole assembly would combine the examples and change their results. When switching examples, replace the patch class and the statements after these declarations; each run should start with fresh objects.
 
 ## Target source
 
@@ -111,19 +129,11 @@ public sealed class Checkout
 
 The runtime can optimize a method call by copying the called method's code into its caller. This is called **inlining**. If it happens before the patch is registered, that copied code will keep running without the patch. The sample targets use `NoInlining` to prevent this when you compile and run the examples.
 
-The snippets use nullable annotations such as `string?`. Enable nullable annotations in your project. For the patch classes, add `using Disharmony;` alongside the imports shown in the target source.
+<a id="inner-calls-and-scope"></a>
 
-**Try one example at a time.** Use the registration call shown in that section. `Patcher.PatchAll(typeof(ReceiptPatches))`, for example, registers only the patches in `ReceiptPatches`. Calling `PatchAll` for the entire assembly would apply all the examples together and change their results.
+## Change a method call's result using values from its caller
 
-Keep the returned `PatchHandle` and call `Patcher.Unpatch(handle)` when you finish an example. Start each example with these objects:
-
-```csharp
-var buyer = new Customer { IsMember = true };
-var calculator = new PriceCalculator();
-var checkout = new Checkout { SaleEnabled = true };
-```
-
-## Inner calls and scope
+`Checkout.Total` in the [target source](#target-source) calls `GetPrice` for the item price, then adds a service fee of 2. Two items cost 22, whether the buyer is a member or not. `Estimate` uses the same calculation.
 
 **Goal:** give members a 10% discount during a checkout sale, without changing prices returned by direct calls to `PriceCalculator.GetPrice`.
 
@@ -167,7 +177,11 @@ Without `Scope.Outer`, `[Instance]` would supply the `PriceCalculator` for this 
 
 Related: [InnerAttribute](xref:Disharmony.InnerAttribute), [Scope](xref:Disharmony.Scope), [InstanceAttribute](xref:Disharmony.InstanceAttribute), [ArgumentAttribute](xref:Disharmony.ArgumentAttribute).
 
-## Field reads and multiple targets
+<a id="field-reads-and-multiple-targets"></a>
+
+## Change a field read without changing the stored value
+
+`Total` and `Estimate` in the [target source](#target-source) both read `Checkout.ServiceFee` and add it to the item price. With the stored fee of 2, two items cost 22.
 
 **Goal:** waive the service fee for members in both `Total` and `Estimate`, while keeping the field's stored value unchanged.
 
@@ -204,7 +218,11 @@ Each `[Target]` selects one method. Applying it twice selects both. To select al
 
 Related: [MemberType](xref:Disharmony.MemberType), [TargetAttribute](xref:Disharmony.TargetAttribute), [TargetsAttribute](xref:Disharmony.TargetsAttribute). To access or modify the stored field itself, use [FieldAttribute](xref:Disharmony.FieldAttribute).
 
-## Property setters
+<a id="property-setters"></a>
+
+## Change the value passed to a property setter
+
+`Checkout.ChangeQuantity` in the [target source](#target-source) assigns its `requested` argument to `Order.Quantity` and returns the assigned value. It accepts negative values, so requesting -3 stores and returns -3.
 
 **Goal:** prevent `ChangeQuantity` from assigning a negative quantity, without changing assignments made elsewhere.
 
@@ -236,11 +254,15 @@ Passing that number by `ref` lets `Clamp` change it to 0 before the setter runs.
 
 Related: [InnerAttribute](xref:Disharmony.InnerAttribute), [ArgumentAttribute](xref:Disharmony.ArgumentAttribute), [PrefixAttribute](xref:Disharmony.PrefixAttribute).
 
-## Shared state and constants
+<a id="shared-state-and-constants"></a>
+
+## Pass a value from one patch to another
 
 **Goal:** add a member-account line to a receipt and change its total label.
 
-`GetReceipt` creates a `StringBuilder`, writes the items line, then writes the total label and price. To insert a line into that receipt, a patch needs access to the builder. But `receipt` is a local variable inside `GetReceipt`, so a patch cannot receive it through an argument binding.
+`GetReceipt` in the [target source](#target-source) creates a `StringBuilder`, writes the items line, then writes the total label and price. For two items, it returns `Items: 2` followed by `Total: 22.00` on the next line.
+
+To insert a line into that receipt, a patch needs access to the builder. But `receipt` is a local variable inside `GetReceipt`, so a patch cannot receive it through an argument binding.
 
 Use two patches: one to capture the builder just after it is created, and another to use it when the target reaches the total label. `[State]` provides temporary storage for passing a value between patches during one call to the target method. The `saved` parameters in `Capture` and `Annotate` both use the key `"receipt"`, so they refer to the same stored value. You choose this key; it does not need to match a variable name in the target.
 
@@ -303,7 +325,11 @@ When adapting this pattern, check the target's execution order: the patch that s
 
 Related: [StateAttribute](xref:Disharmony.StateAttribute), [InnerConstantAttribute](xref:Disharmony.InnerConstantAttribute), [InnerAttribute](xref:Disharmony.InnerAttribute).
 
-## Private-method delegates
+<a id="private-method-delegates"></a>
+
+## Call a private method from a patch
+
+`Checkout.Approve` in the [target source](#target-source) requires both a successful private `IsEligible` check and an amount no greater than `SpendingLimit`. The limit is 30, so an otherwise eligible buyer cannot spend 40.
 
 **Goal:** allow a member to spend up to 20 above the checkout limit, while preserving the application's private eligibility check.
 
@@ -341,9 +367,13 @@ The higher limit applies only if `IsEligible` allows the buyer to make a purchas
 
 Related: [MethodAttribute](xref:Disharmony.MethodAttribute), [InstanceAttribute](xref:Disharmony.InstanceAttribute).
 
-## Base-method delegates
+<a id="base-method-delegates"></a>
 
-`PremiumPriceCalculator` adds 5 to the price calculated by `PriceCalculator`:
+## Call a base implementation instead of an override
+
+**Goal:** waive a premium calculator's surcharge for members by using the base implementation, while retaining the override for other buyers.
+
+For this example, add the following subclass to the [fictional game source](#target-source). `PremiumPriceCalculator` adds 5 to the price calculated by `PriceCalculator`, so two items cost 25 for any buyer:
 
 ```csharp
 public sealed class PremiumPriceCalculator : PriceCalculator
@@ -356,7 +386,7 @@ public sealed class PremiumPriceCalculator : PriceCalculator
 }
 ```
 
-**Goal:** waive that surcharge for members by using the base implementation, while retaining the override for other buyers.
+The patch goes in your mod code:
 
 ```csharp
 [Patch(typeof(PremiumPriceCalculator))]
@@ -394,7 +424,11 @@ Use `[BaseMethod]` for an instance method that has a base-class implementation. 
 
 Related: [BaseMethodAttribute](xref:Disharmony.BaseMethodAttribute), [ReturnValueAttribute](xref:Disharmony.ReturnValueAttribute), [PrefixAttribute](xref:Disharmony.PrefixAttribute).
 
-## AlwaysRun postfixes
+<a id="alwaysrun-postfixes"></a>
+
+## Handle an exception from a call inside a method
+
+`PriceCalculator.GetPrice` in the [target source](#target-source) throws `PriceUnavailableException` when `IsOnline` is false. That exception also prevents `Checkout.Total` from returning a total.
 
 **Goal:** return just the service fee from `Total` when pricing is offline. Leave other calls to `GetPrice` unchanged.
 
@@ -436,7 +470,11 @@ Only suppress exceptions when you know how the method should continue after the 
 
 Related: [PatchOptions.AlwaysRun](xref:Disharmony.PatchOptions.AlwaysRun), [ExceptionAttribute](xref:Disharmony.ExceptionAttribute), [ReturnValueAttribute](xref:Disharmony.ReturnValueAttribute).
 
-## Lambda targets and inlining
+<a id="lambda-targets-and-inlining"></a>
+
+## Patch a lambda
+
+`Checkout.VisibleNames` in the [target source](#target-source) calls `Array.FindAll(names, name => name!.Length > 0)`. `Array.FindAll` passes each name to the lambda and keeps it if the lambda returns `true`. An empty string returns `false`, but a null entry throws when the lambda reads `name.Length`. The `!` silences the compiler's nullability warning; it does not check for null.
 
 **Goal:** fix `VisibleNames` failing on null entries, while preserving its existing rule that empty names are hidden.
 
@@ -463,8 +501,6 @@ string?[] names = checkout.VisibleNames(new string?[] { null, "", "Tea" });
 Console.WriteLine(string.Join(", ", names)); // Tea
 ```
 
-`VisibleNames` calls `Array.FindAll(names, name => name!.Length > 0)`. `Array.FindAll` passes each name to the lambda and keeps it if the lambda returns `true`. An empty string returns `false`, but a null entry throws when the lambda reads `name.Length`. The `!` silences the compiler's nullability warning; it does not check for null.
-
 The compiler puts the lambda's code in a separate method. `"VisibleNames.*"` selects the lambda methods belonging to `VisibleNames`, and `typeof(string)` limits the selection to methods that take a string. `[Argument(0)]` gets the first argument without depending on its generated parameter name.
 
 For a null entry, `IgnoreNull` sets `visible` to `false` and returns `false` to skip the lambda. These two values have different jobs: `visible` tells `Array.FindAll` to discard the entry, while the prefix's return value tells Disharmony to skip the original code. For any other entry, the prefix returns `true`, so the original lambda tests its length. Empty strings are still discarded.
@@ -475,9 +511,15 @@ There is one matching lambda in this example. If you add another string-taking l
 
 Related: [TargetsAttribute](xref:Disharmony.TargetsAttribute), [TargetAttribute](xref:Disharmony.TargetAttribute), [ArgumentAttribute](xref:Disharmony.ArgumentAttribute), [PatchOptions.Inline](xref:Disharmony.PatchOptions.Inline).
 
-## Fluent registration
+<a id="fluent-registration"></a>
 
-**Goal:** choose the targets in your registration code and apply the [first example's discount](#inner-calls-and-scope) to `Estimate`. Reuse `SalePricePatches.Discount` without calling `PatchAll` for its class.
+## Select patch targets in registration code
+
+`Checkout.Estimate` in the [target source](#target-source) returns the item price plus a fee of 2, just like `Total`. Both return 22 for two items.
+
+**Goal:** choose the targets in your registration code and apply the member discount to `Estimate`, leaving `Total` unchanged.
+
+This example uses `SalePricePatches` from [Change a method call's result using values from its caller](#inner-calls-and-scope). Include that patch class, but do not run its `PatchAll` registration. The registration below chooses where to apply its `Discount` method.
 
 ```csharp
 var outer = typeof(Checkout).GetMethod(nameof(Checkout.Estimate))!;
