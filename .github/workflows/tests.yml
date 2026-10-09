@@ -1,0 +1,113 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  library:
+    name: Library / ${{ matrix.runtime }} / ${{ matrix.configuration }}
+    runs-on: windows-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        # Debug includes failure-injection tests that are not compiled in Release.
+        configuration: [Debug, Release]
+        runtime: [Clr, Dotnet, Mono]
+        include:
+          - runtime: Clr
+            framework: net472
+          - runtime: Dotnet
+            framework: net10.0
+          - runtime: Mono
+            framework: net472
+    env:
+      TEST_FRAMEWORK: ${{ matrix.framework }}
+      TEST_CONFIGURATION: ${{ matrix.configuration }}
+      DISHARMONY_TEST_HARMONY_MAJOR: '2'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: Prepare result directory
+        run: New-Item -ItemType Directory -Path TestResults -Force | Out-Null
+      - name: Install Mono
+        if: matrix.runtime == 'Mono'
+        timeout-minutes: 5
+        run: |
+          choco install mono --version=6.12.0.206 --yes --no-progress --limit-output
+          if ($LASTEXITCODE -notin @(0, 3010)) { throw "Mono installation failed: $LASTEXITCODE" }
+          $monoPath = Join-Path $env:ProgramFiles 'Mono/bin/mono.exe'
+          if (-not (Test-Path -LiteralPath $monoPath)) { throw "Mono executable missing: $monoPath" }
+          & $monoPath --version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "MONO_EXE=$monoPath" >> $env:GITHUB_ENV
+      - name: Test library on Mono
+        if: matrix.runtime == 'Mono'
+        timeout-minutes: 10
+        run: |
+          ./Disharmony.Tests/Run-DisharmonyTests.ps1 -Runtime Mono -Configuration $env:TEST_CONFIGURATION -HarmonyVersion 2 |
+            Tee-Object -FilePath TestResults/library-output.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Test library on CLR
+        if: matrix.runtime != 'Mono'
+        timeout-minutes: 10
+        run: |
+          dotnet test ./Disharmony.Tests/Disharmony.Tests.csproj --configuration $env:TEST_CONFIGURATION --framework $env:TEST_FRAMEWORK --logger trx --results-directory TestResults --blame-hang --blame-hang-timeout 60s --blame-hang-dump-type none |
+            Tee-Object -FilePath TestResults/library-output.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Retain test results and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: library-${{ matrix.runtime }}-${{ matrix.configuration }}
+          path: |
+            TestResults/
+            Disharmony.Tests/bin/**/disharmony-tests.log
+          retention-days: 14
+
+  analyzer:
+    name: Analyzer / ${{ matrix.configuration }}
+    runs-on: windows-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Debug, Release]
+    env:
+      TEST_CONFIGURATION: ${{ matrix.configuration }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: Prepare result directory
+        run: New-Item -ItemType Directory -Path TestResults -Force | Out-Null
+      - name: Test analyzer
+        timeout-minutes: 10
+        run: |
+          dotnet test ./Disharmony.Analyzers.Tests/Disharmony.Analyzers.Tests.csproj --configuration $env:TEST_CONFIGURATION --logger trx --results-directory TestResults --blame-hang --blame-hang-timeout 60s --blame-hang-dump-type none |
+            Tee-Object -FilePath TestResults/analyzer-output.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Retain test results and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: analyzer-${{ matrix.configuration }}
+          path: TestResults/
+          retention-days: 14
