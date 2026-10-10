@@ -33,6 +33,7 @@ jobs:
           - runtime: Mono
             framework: net472
     env:
+      TEST_RUNTIME: ${{ matrix.runtime }}
       TEST_FRAMEWORK: ${{ matrix.framework }}
       TEST_CONFIGURATION: ${{ matrix.configuration }}
       DISHARMONY_TEST_HARMONY_MAJOR: '2'
@@ -70,6 +71,9 @@ jobs:
           dotnet test ./Disharmony.Tests/Disharmony.Tests.csproj --configuration $env:TEST_CONFIGURATION --framework $env:TEST_FRAMEWORK --logger trx --results-directory TestResults --blame-hang --blame-hang-timeout 60s --blame-hang-dump-type none |
             Tee-Object -FilePath TestResults/library-output.log
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Summarize test results
+        if: always()
+        run: ./.github/scripts/Write-TestSummary.ps1 -Title "Library / $env:TEST_RUNTIME / $env:TEST_CONFIGURATION"
       - name: Retain test results and logs
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -105,6 +109,9 @@ jobs:
           dotnet test ./Disharmony.Analyzers.Tests/Disharmony.Analyzers.Tests.csproj --configuration $env:TEST_CONFIGURATION --logger trx --results-directory TestResults --blame-hang --blame-hang-timeout 60s --blame-hang-dump-type none |
             Tee-Object -FilePath TestResults/analyzer-output.log
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Summarize test results
+        if: always()
+        run: ./.github/scripts/Write-TestSummary.ps1 -Title "Analyzer / $env:TEST_CONFIGURATION"
       - name: Retain test results and logs
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
