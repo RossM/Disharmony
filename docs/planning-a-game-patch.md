@@ -37,6 +37,8 @@ A method may be used by several features. Changing it everywhere may have effect
 
 For example, a pricing method might be called both during checkout and when displaying a price. A postfix on that method affects both uses. If the change belongs only at checkout, an inner patch on the call inside the checkout method may be a better fit. [Getting started's inner-patch example](obj/guides/getting-started.md#patch-an-operation-inside-a-method) shows this distinction.
 
+The runtime can **inline** a method by copying its code into a caller. A patch on the original method does not change code already copied that way. Register before the game uses the target; if a patch has no effect, investigate its callers and consider patching the containing method or an operation inside it. The [first tutorial](obj/guides/getting-started.md#add-the-fictional-game-source) explains why its examples prevent inlining.
+
 Choose the smallest change that achieves your goal while preserving the surrounding behavior. The [usage examples](usage-examples.md) show several ways to express a change once you know which code to target.
 
 ## Build, load, and test the mod

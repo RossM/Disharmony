@@ -1,5 +1,7 @@
 # Getting started with Disharmony
 
+**Not yet published:** The NuGet package is not available yet. The installation steps below use the planned first beta version.
+
 Disharmony is a C# game-modding framework built on Harmony. It lets mod authors change game behavior at runtime by
 writing small methods called patches. A patch can run before or after a game method, inspect its inputs, change its
 result, or replace its behavior.
@@ -201,13 +203,15 @@ Non-member price: 20
 Non-member checkout: 20
 ```
 
-The direct member price stays at 20; the discount applies only to the call inside `Total`. Inner patches can also target field and property accesses with `[Inner]`, or constants with `[InnerConstant]`.
+The direct member price stays at 20; the discount applies only to the call inside `Total`. Inner patches can also target field and property accesses with `[Inner]`, or constants with `[InnerConstant]`. The [usage examples](../docs/usage-examples.md) show these selectors and how to choose values from the caller or inner operation.
 
 ### Use the patch in a game mod
 
 In your mod project, reference the game's assemblies and add the Disharmony package. Choose the actual game method you want to change, and register your patch class once from your mod's initialization code, before the game uses that method. The console application's `Main` method supplies that initialization step for this exercise; your game's mod system supplies the corresponding hook.
 
 [Plan a patch for your game](../docs/planning-a-game-patch.md) explains how to find and understand a suitable target. For RimWorld, follow [Write a RimWorld mod with Disharmony](../Disharmony.RimWorld/README.md) for project setup, registration, and in-game verification using the official Disharmony mod dependency. For other games, you can redistribute `Disharmony.dll` with your mod; ensure Harmony is also available when the game loads it.
+
+The sections below cover additional bindings and registration options. You can return to them as needed while working on your own patches.
 
 ## Control inputs and execution
 
@@ -256,6 +260,8 @@ The [attribute reference](Attributes.cs) describes each binding's behavior and c
 
 ## Configure patches in code
 
+For a complete example with target lookup, registration, and expected results, see [Select patch targets in registration code](../docs/usage-examples.md#fluent-registration).
+
 When targets are selected at runtime, the fluent API lets you configure patches using reflection objects. With
 `getPrice` and `applyMemberDiscount` holding the `MethodInfo` objects for `GetPrice` and `ApplyMemberDiscount`, the
 same discount patch can be registered as:
@@ -285,6 +291,8 @@ Patches registered by other calls remain active.
 
 ### Deferred compilation and errors
 
+The official RimWorld mod completes deferred compilation in the background and reports patching errors to the game log. RimWorld mods using that dependency ordinarily do not need to call `ForceApply` or install an error handler. The guidance below is for integrating Disharmony with other games or applications.
+
 Disharmony may generate a patched method's body when the method is first called. Call `Patcher.ForceApply()` during
 loading if you want to do that work earlier. It keeps processing pending methods until none remain, including methods
 added while it runs.
@@ -305,7 +313,7 @@ to the caller.
 ### Use alongside Harmony
 
 Register Harmony patches through Harmony's API and Disharmony patches through `Patcher`, even when they target
-the same method. Both sets of patches remain active and work together.
+the same method. Both sets of patches remain active and work together. See [Add Disharmony to an existing Harmony mod](../docs/harmony-comparison.md#add-disharmony-to-an-existing-harmony-mod) for shared class metadata, registration, and conversion advice.
 
 ## Explore further
 
@@ -321,5 +329,4 @@ The [usage examples](../docs/usage-examples.md) show advanced features with comp
 * **Diagnostics.** Use [PatchOptions](Enums.cs) to log generated code and [Patcher](Patcher.cs) to handle errors encountered while applying patches.
 
 For API details, see the [attribute reference](Attributes.cs), [fluent API](Patch.cs), and
-[patch registration API](Patcher.cs). The [test project](../Disharmony.Tests/README.md) provides examples of more
-specialized patches and instructions for running the suite.
+[patch registration API](Patcher.cs).

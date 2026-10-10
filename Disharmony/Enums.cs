@@ -28,6 +28,10 @@ public enum PatchKind
 /// <remarks>
 ///     For an attributed patch, pass the desired flags to <see cref="PatchOptionsAttribute" />. When configuring a patch
 ///     in code, use <see cref="Patch.Options(PatchConfig, PatchOptions)" />.
+///     <para>
+///         See <see href="../usage-examples.md#alwaysrun-postfixes">handling an exception with an AlwaysRun postfix</see>
+///         and <see href="../usage-examples.md#lambda-targets-and-inlining">inlining a patch</see> for worked examples.
+///     </para>
 /// </remarks>
 [Flags]
 public enum PatchOptions
@@ -83,16 +87,16 @@ public enum PatchOptions
     AllowUnsafe = 0x8,
 
     /// <summary>
-    ///     Skips the patch if the target operation is not found.
+    ///     Skips an inner patch when its selected operation is absent from an outer target.
     /// </summary>
     /// <remarks>
-    ///     Ordinarily the rules engine will report an error if a patch's inner target operation is not found.
-    ///     This flag causes the patch to instead be silently skipped.
+    ///     By default, a missing inner operation is reported as an error. Use this flag when the inner patch should be
+    ///     optional for some outer targets.
     /// </remarks>
     AllowMissingInnerTarget = 0x10,
 
     /// <summary>
-    ///     Logs the modified IL and, when available, the generated Mono JIT assembly.
+    ///     Logs the modified IL instructions.
     /// </summary>
     /// <remarks>
     ///     Output is written to the Harmony debug log.
@@ -107,6 +111,9 @@ public enum PatchOptions
 ///     In an inner patch, the outer member is the method whose body is modified and the inner member is the
 ///     operation selected inside it. For example, <c>[Argument("buyer", Scope.Outer)]</c> binds the containing
 ///     method's buyer argument rather than the selected call's argument.
+///     <para>
+///         See <see href="../usage-examples.md#inner-calls-and-scope">choosing caller and inner-call values</see> for a worked example.
+///     </para>
 /// </remarks>
 /// <seealso cref="InnerAttribute" />
 /// <seealso cref="ArgumentAttribute" />

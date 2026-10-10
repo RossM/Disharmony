@@ -24,4 +24,6 @@ If a problem starts after adding or updating another mod, ask that mod's author 
 
 ## For mod authors
 
-[Write a RimWorld mod with Disharmony](../README.md) explains how to set up your project, register patches, and make your mod depend on Disharmony.
+Disharmony lets you change individual calls, member accesses, and constants inside game methods with C# prefixes and postfixes. Its included analyzer catches patch mistakes in your editor and build. [Compare it with Harmony](https://rossm.github.io/Disharmony/harmony-comparison.html) to see how an inner patch can replace a transpiler.
+
+[Write a RimWorld mod with Disharmony](../README.md) covers project setup, patch registration, and the Disharmony dependency. If you are new to making mods, the [author documentation](https://rossm.github.io/Disharmony/) will help you choose where to start.

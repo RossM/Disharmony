@@ -1,8 +1,28 @@
 # Development and testing
 
+Use this guide to work on Disharmony itself. To build a mod that uses the library, follow [Getting started](../Disharmony/README.md#write-your-first-patch) or [the RimWorld author guide](../Disharmony.RimWorld/README.md).
+
 The library, test project, and test-target fixtures multi-target .NET Framework 4.7.2 (`net472`) and .NET 10
 (`net10.0`). Use the SDK selected by the repository's `global.json` (10.0.400 or a later patch in the same feature band); the source uses C# 14. Running `net472` tests through `dotnet test` requires Windows and
 .NET Framework 4.7.2 or later; the NUnitLite runner also supports Mono.
+
+## Get the source
+
+Clone the repository, then run the commands in this guide from its root:
+
+```shell
+git clone https://github.com/RossM/Disharmony.git
+cd Disharmony
+```
+
+| Area you want to change | Source | Validation guidance |
+| --- | --- | --- |
+| Patch targeting, bindings, or code generation | [Disharmony](https://github.com/RossM/Disharmony/tree/main/Disharmony) | [Build and test](#build-and-test), then the [runtime runners](#nunitlite-runners) |
+| IDE diagnostics | [Disharmony.Analyzers](https://github.com/RossM/Disharmony/tree/main/Disharmony.Analyzers) | [Analyzer tests](#work-on-the-analyzer) |
+| Official RimWorld mod | [Disharmony.RimWorld](https://github.com/RossM/Disharmony/tree/main/Disharmony.RimWorld) | [Build the integration](#build-the-rimworld-integration) and check it in-game |
+| Guides or API documentation | Source Markdown or C# XML comments | [Editing and previewing the docs](https://github.com/RossM/Disharmony/blob/main/docs/README.md) |
+
+When proposing a change, explain the resulting behavior and how you checked it. For library changes, run the affected tests in Debug and Release with Harmony 2 on the supported runtimes; a CLR run alone does not cover Mono.
 
 ## Build and test
 

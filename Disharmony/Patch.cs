@@ -10,6 +10,9 @@ namespace Disharmony;
 ///     Build a configuration with <see cref="Patch" />, then apply it with
 ///     <see cref="Patcher.Patch(PatchConfig)" /> or another programmatic patching overload. Builder operations return a
 ///     new configuration and leave the original unchanged.
+///     <para>
+///         See <see href="../usage-examples.md#fluent-registration">selecting targets in registration code</see> for a worked example.
+///     </para>
 /// </remarks>
 [PublicAPI]
 public record PatchConfig
@@ -79,6 +82,9 @@ public class PatchHandle
 ///         <see cref="Of(MethodBase)" />, and a patch method through <see cref="With(MethodInfo)" />. Use an
 ///         <see cref="Inner(MethodBase)" />, <c>InnerGet</c>, <c>InnerSet</c>, or <c>InnerConstant</c> member when the
 ///         patch should surround a matching operation inside the outer target.
+///     </para>
+///     <para>
+///         See <see href="../usage-examples.md#fluent-registration">selecting targets in registration code</see> for a worked example.
 ///     </para>
 /// </remarks>
 /// <example>

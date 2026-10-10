@@ -61,8 +61,9 @@ See [GitHub's custom Pages workflow documentation](https://docs.github.com/en/pa
 | Supported runtimes and Harmony versions | `docs/compatibility.md` |
 | How to read extension-member signatures | `docs/extension-members.md` |
 | Site navigation | `docs/toc.yml` |
+| Collapsible inherited API members | `docs/template/public/main.js` and `docs/template/public/main.css` |
 
-Do not edit `docs/api`, `docs/obj`, or `docs/_site`. They contain generated files and are ignored by Git. The build copies the guide READMEs and adapts their links for the HTML site. The player installation page reuses the Workshop description with a title identifying its installation task; edit `Disharmony.RimWorld/About/README.md` to update both.
+Do not edit `docs/api`, `docs/obj`, or `docs/_site`. They contain generated files and are ignored by Git. The build copies the guide READMEs and adapts their links for the HTML site. The player installation page reuses the Workshop description with a title identifying its installation task; edit `Disharmony.RimWorld/About/README.md` to update both. Its temporary unpublished-mod notice is added by `docs/Build-Docs.ps1` for the HTML page only.
 
 ## API generation and diagnostics
 

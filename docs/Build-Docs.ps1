@@ -21,8 +21,8 @@ $guideSources = @{
 foreach ($source in $guideSources.Keys) {
     $content = [IO.File]::ReadAllText((Join-Path $repositoryRoot $source))
     if ($source -eq 'Disharmony.RimWorld/About/README.md') {
-        $content = $content.Replace("# Disharmony`r`n", "# Install Disharmony for RimWorld`r`n")
-        $content = $content.Replace('(../README.md)', '(rimworld.md)')
+        $content = $content.Replace("# Disharmony`r`n", "# Install Disharmony for RimWorld`r`n`r`n**Not yet published:** The Steam Workshop mod is not available yet.`r`n")
+        $content = $content.Replace('(../README.md', '(rimworld.md')
     }
     foreach ($attributeName in @('Argument', 'Arguments', 'ReturnValue', 'Instance', 'State', 'Field', 'Method', 'BaseMethod', 'Exception', 'MemberInfo', 'Target', 'Targets', 'Priority')) {
         $content = $content.Replace("[$attributeName](Attributes.cs)", "[$attributeName](xref:Disharmony.$($attributeName)Attribute)")
@@ -32,23 +32,16 @@ foreach ($source in $guideSources.Keys) {
     $content = $content.Replace('[PatchOptions](Enums.cs)', '[PatchOptions](xref:Disharmony.PatchOptions)')
     $content = $content.Replace('(../Disharmony/Patcher.cs)', '(xref:Disharmony.Patcher)')
     $content = $content.Replace('(../Disharmony/Enums.cs)', '(xref:Disharmony.PatchOptions)')
-    $content = $content.Replace('(../docs/compatibility.md)', '(../../compatibility.md)')
-    $content = $content.Replace('(../docs/usage-examples.md)', '(../../usage-examples.md)')
-    $content = $content.Replace('(../docs/analyzer-diagnostics.md)', '(../../analyzer-diagnostics.md)')
-    $content = $content.Replace('(../docs/analyzer-diagnostics.md#diagnostic-index)', '(../../analyzer-diagnostics.md#diagnostic-index)')
-    $content = $content.Replace('(../docs/planning-a-game-patch.md)', '(../../planning-a-game-patch.md)')
-    $content = $content.Replace('(../docs/runtime-patching.md)', '(../../runtime-patching.md)')
-    $content = $content.Replace('(../docs/runtime-patching.md#game-code-and-mod-code)', '(../../runtime-patching.md#game-code-and-mod-code)')
+    $content = $content.Replace('(../docs/', '(../../')
     $content = $content.Replace('(Attributes.cs)', '(xref:Disharmony)')
     $content = $content.Replace('(Patch.cs)', '(xref:Disharmony.Patch)')
     $content = $content.Replace('(Patcher.cs)', '(xref:Disharmony.Patcher)')
-    $content = $content.Replace('(../Disharmony.Analyzers/README.md)', '(analyzers.md)')
-    $content = $content.Replace('(../Disharmony.Tests/README.md)', '(testing.md)')
-    $content = $content.Replace('(../Disharmony.Tests/README.md#work-on-the-analyzer)', '(testing.md#work-on-the-analyzer)')
-    $content = $content.Replace('(../Disharmony.Tests/README.md#build-the-rimworld-integration)', '(testing.md#build-the-rimworld-integration)')
-    $content = $content.Replace('(../Disharmony/README.md#write-your-first-patch)', '(getting-started.md#write-your-first-patch)')
-    $content = $content.Replace('(../Disharmony.RimWorld/README.md#depend-on-disharmony)', '(rimworld.md#depend-on-disharmony)')
-    $content = $content.Replace('(../Disharmony.RimWorld/README.md)', '(rimworld.md)')
+    $content = $content.Replace('(../Disharmony.Analyzers/README.md', '(analyzers.md')
+    $content = $content.Replace('(../Disharmony.Tests/README.md', '(testing.md')
+    $content = $content.Replace('(../Disharmony/README.md', '(getting-started.md')
+    $content = $content.Replace('(../Disharmony.RimWorld/README.md', '(rimworld.md')
+    $content = $content.Replace('(https://rossm.github.io/Disharmony/harmony-comparison.html', '(../../harmony-comparison.md')
+    $content = $content.Replace('(https://rossm.github.io/Disharmony/)', '(../../index.md)')
     [IO.File]::WriteAllText((Join-Path $guideDirectory $guideSources[$source]), $content, [Text.UTF8Encoding]::new($false))
 }
 

@@ -20,6 +20,10 @@ The NuGet package restores the appropriate Harmony dependency for your project's
 
 Harmony 3 support is incomplete and subject to change.
 
+## RimWorld
+
+The official Disharmony mod supplies the runtime libraries for RimWorld mods that depend on it. Players should follow [installation and load-order instructions](obj/guides/rimworld-players.md); mod authors should follow [project setup and deployment](obj/guides/rimworld.md).
+
 ## Existing Harmony mods
 
 You can keep Harmony patches and add Disharmony patches in the same mod. [From Harmony to Disharmony](harmony-comparison.md#add-disharmony-to-an-existing-harmony-mod) shows shared metadata, separate registration, deployment, and the behavior differences to check before converting a patch.

@@ -2,7 +2,11 @@
 
 **Not yet published:** The NuGet package and Steam Workshop mod are not available yet.
 
-Disharmony is a C# framework for changing game behavior with mods. Built on Harmony, it lets you patch whole methods or individual calls, member accesses, and constants inside them.
+**Simpler patches for game mod authors.**
+
+Disharmony lets you replace many Harmony transpilers with ordinary C# prefixes and postfixes. Patch a call inside one game method while leaving calls from other methods unchanged. Built on Harmony, it also supports whole-method patches and inner patches on member accesses and constants.
+
+Its bundled analyzer catches patch mistakes as you edit and compile, and its runtime checks explain problems when patches are applied. Keep your existing Harmony patches and try Disharmony on one change. [See a Disharmony patch alongside the equivalent transpiler](harmony-comparison.md#worked-comparison-change-a-call-inside-a-method).
 
 The initial release is a beta. See [compatibility](compatibility.md) for supported runtimes and Harmony versions.
 
@@ -28,10 +32,12 @@ After the introductory examples, [Plan a patch for your game](planning-a-game-pa
 
 - [Usage examples](usage-examples.md): choose an example for the change you want to make, such as modifying one call inside a method or sharing information between patches.
 - [API reference](xref:Disharmony): look up attributes, types, method signatures, and parameter meanings. Go directly to [patch registration](xref:Disharmony.Patcher) or [fluent configuration](xref:Disharmony.Patch).
-- [Diagnostic reference](analyzer-diagnostics.md): look up a `DISHARMONY` warning or error to understand the problem and how to fix it. [Analyzer setup and configuration](obj/guides/analyzers.md) explains how to enable or configure these checks.
-
-If an extension property appears as a `get_...` method in the API reference, see [Reading extension members](extension-members.md).
+- [Diagnostic reference](analyzer-diagnostics.md): look up a `DISHARMONY` warning or error to understand the problem and how to fix it. [Analyzer setup and configuration](obj/guides/analyzers.md) covers compiler requirements and diagnostic settings.
 
 ## Contribute to Disharmony
 
 [Development and testing](obj/guides/testing.md) explains how to build Disharmony, work on the analyzer or RimWorld integration, and run tests for your changes.
+
+For documentation changes, see [Editing and previewing the docs](https://github.com/RossM/Disharmony/blob/main/docs/README.md).
+
+[View the source on GitHub](https://github.com/RossM/Disharmony) or [report a problem or suggest an improvement](https://github.com/RossM/Disharmony/issues).

@@ -57,6 +57,9 @@ public static class Out<T>;
 ///         Harmony's <see cref="HarmonyLib.HarmonyPatch" /> is also recognized for compatibility, but this attribute is
 ///         preferred for new patch classes. See <see cref="Patcher" /> for patch registration and execution rules.
 ///     </para>
+///     <para>
+///         See <see href="../obj/guides/getting-started.md#add-the-discount-patch">writing your first patch</see> for a worked example.
+///     </para>
 /// </remarks>
 [PublicAPI]
 [MeansImplicitUse]
@@ -84,6 +87,9 @@ public sealed class PatchAttribute(Type? type = null) : Attribute
 ///         <see cref="PatchAttribute" />. Existing Harmony metadata can instead supply
 ///         <see cref="HarmonyLib.HarmonyPatch" /> as the patch marker, and
 ///         <see cref="HarmonyLib.HarmonyPatchCategory" /> is recognized as an alternative category declaration.
+///     </para>
+///     <para>
+///         See <see href="../harmony-comparison.md#keep-harmony-and-disharmony-patches-together">registering a patch category</see> for a worked example.
 ///     </para>
 /// </remarks>
 [PublicAPI]
@@ -116,6 +122,9 @@ public abstract class PatchTypeAttribute(PatchKind patchKind) : Attribute
 ///     or <see cref="TargetsAttribute" />. With <see cref="InnerAttribute" /> or <see cref="InnerConstantAttribute" />,
 ///     it is each matching operation inside the outer member. A prefix that returns <see langword="false" /> skips
 ///     that operation. See <see cref="Patcher" /> for patch registration and execution rules.
+///     <para>
+///         See <see href="../obj/guides/getting-started.md#control-inputs-and-execution">changing an argument with a prefix</see> for a worked example.
+///     </para>
 /// </remarks>
 [PublicAPI]
 [MeansImplicitUse]
@@ -131,6 +140,9 @@ public sealed class PrefixAttribute() : PatchTypeAttribute(PatchKind.Prefix);
 ///     it is each matching operation inside the outer member. Bind the operation's return value with
 ///     <see cref="ReturnValueAttribute" /> or the conventional parameter name <c>__result</c>; pass it by reference to
 ///     replace it. See <see cref="Patcher" /> for patch registration and execution rules.
+///     <para>
+///         See <see href="../obj/guides/getting-started.md#add-the-discount-patch">changing a result with a postfix</see> for a worked example.
+///     </para>
 /// </remarks>
 [PublicAPI]
 [MeansImplicitUse]
@@ -163,6 +175,9 @@ public abstract class InnerAttributeBase : Attribute;
 ///     Combine this attribute with <see cref="PrefixAttribute" /> or <see cref="PostfixAttribute" /> and select the outer
 ///     members with <see cref="TargetAttribute" /> or <see cref="TargetsAttribute" />. See <see cref="TargetAttribute" />
 ///     for member-name syntax and overload selection, and <see cref="Scope" /> for parameter-binding scope.
+///     <para>
+///         See <see href="../usage-examples.md#inner-calls-and-scope">changing a call inside a method</see> for a worked example.
+///     </para>
 /// </remarks>
 [PublicAPI]
 [MeansImplicitUse]
@@ -230,6 +245,9 @@ public sealed class InnerAttribute(
 ///     value with <see cref="ReturnValueAttribute" /> or the conventional parameter name <c>__result</c>; pass it by
 ///     reference to replace it. Select outer members with <see cref="TargetAttribute" /> or
 ///     <see cref="TargetsAttribute" />. See <see cref="Patcher" /> for patch registration and execution rules.
+///     <para>
+///         See <see href="../usage-examples.md#shared-state-and-constants">changing a constant and sharing state</see> for a worked example.
+///     </para>
 /// </remarks>
 [PublicAPI]
 [MeansImplicitUse]
@@ -319,6 +337,9 @@ public sealed class PatchOptionsAttribute(PatchOptions options) : Attribute
 /// <remarks>
 ///     Higher-priority <see cref="PrefixAttribute">prefixes</see> run earlier. Higher-priority patches of other types run
 ///     later.
+///     <para>
+///         See <see href="../usage-examples.md#fluent-registration">setting a patch priority</see> for a worked example.
+///     </para>
 /// </remarks>
 [PublicAPI]
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
@@ -338,6 +359,9 @@ public sealed class PriorityAttribute(int priority) : Attribute
 /// <remarks>
 ///     Higher-priority <see cref="PrefixAttribute">prefixes</see> run earlier. Higher-priority patches of other types run
 ///     later. Use <see cref="Default" /> when no explicit ordering is required.
+///     <para>
+///         See <see href="../usage-examples.md#fluent-registration">setting a patch priority</see> for a worked example.
+///     </para>
 /// </remarks>
 [PublicAPI]
 public static class PatchPriority
@@ -415,6 +439,9 @@ public static class PatchPriority
 ///         Use <see cref="Ref{T}" />, <see cref="In{T}" />, and <see cref="Out{T}" /> in the signature for
 ///         by-reference parameters. To select a constructor, set <paramref name="memberType" /> to
 ///         <see cref="MemberType.Constructor" /> and leave <paramref name="methodName" /> <see langword="null" />.
+///     </para>
+///     <para>
+///         See <see href="../obj/guides/getting-started.md#add-the-discount-patch">selecting a target method</see> for a worked example.
 ///     </para>
 /// </remarks>
 [PublicAPI]
@@ -534,6 +561,9 @@ public class TargetAttribute(
 ///     <para>
 ///         See <see cref="TargetAttribute" /> for member-name syntax, overload selection, and constructor selection.
 ///     </para>
+///     <para>
+///         See <see href="../usage-examples.md#lambda-targets-and-inlining">selecting lambda targets</see> for a worked example.
+///     </para>
 /// </remarks>
 [PublicAPI]
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = true)]
@@ -627,6 +657,9 @@ public abstract class ParameterBindingAttribute(Scope scope) : Attribute
 ///         For inner <see cref="MemberType.Setter" /> patches on a field, the new value being assigned is available as
 ///         a parameter named <see langword="value" />.
 ///     </para>
+///     <para>
+///         See <see href="../usage-examples.md#property-setters">changing the argument to a property setter</see> for a worked example.
+///     </para>
 /// </remarks>
 [PublicAPI]
 [AttributeUsage(AttributeTargets.Parameter)]
@@ -717,6 +750,9 @@ public sealed class ArgumentsAttribute(Scope scope = Scope.Any) : ParameterBindi
 ///         For inner patches, a parameter named <c>__caller</c> with no binding attribute is treated as if it has
 ///         this attribute with <see cref="Scope.Outer" />.
 ///     </para>
+///     <para>
+///         See <see href="../usage-examples.md#inner-calls-and-scope">using the caller instance in an inner patch</see> for a worked example.
+///     </para>
 /// </remarks>
 [PublicAPI]
 [AttributeUsage(AttributeTargets.Parameter)]
@@ -731,6 +767,9 @@ public sealed class InstanceAttribute(Scope scope = Scope.Any) : ParameterBindin
 ///     The selected operation must produce a value; this binding is not available for <see langword="void" /> operations.
 ///         Pass the parameter by reference to replace the bound return value. A parameter named <c>__result</c>
 ///         with no binding attribute is treated as if it has this attribute.
+///     </para>
+///     <para>
+///         See <see href="../obj/guides/getting-started.md#add-the-discount-patch">changing a method result</see> for a worked example.
 ///     </para>
 /// </remarks>
 [PublicAPI]
@@ -755,6 +794,9 @@ public sealed class ReturnValueAttribute() : ParameterBindingAttribute(Scope.Any
 ///     </para>
 ///     <para>
 ///         A parameter named <c>__state</c> with no binding attribute is treated as if it has this attribute.
+///     </para>
+///     <para>
+///         See <see href="../usage-examples.md#shared-state-and-constants">passing a value between patches</see> for a worked example.
 ///     </para>
 /// </remarks>
 [PublicAPI]
@@ -860,6 +902,9 @@ public sealed class FieldAttribute(Type? type, string? name, Scope scope = Scope
 ///         method, and base-method binding is not available. Instead use <see cref="MethodAttribute" /> with
 ///         <see cref="MethodAttribute.VirtualCall" /> set to <see langword="false" />.
 ///     </para>
+///     <para>
+///         See <see href="../usage-examples.md#base-method-delegates">calling a base implementation</see> for a worked example.
+///     </para>
 /// </remarks>
 [PublicAPI]
 [AttributeUsage(AttributeTargets.Parameter)]
@@ -898,6 +943,9 @@ public sealed class BaseMethodAttribute(Scope scope = Scope.Any) : ParameterBind
 ///     <para>
 ///         This binding can be used to invoke an otherwise-inaccessible method, or to call a base class method on a
 ///         derived class instance by setting <paramref name="virtualCall" /> to <see langword="false" />.
+///     </para>
+///     <para>
+///         See <see href="../usage-examples.md#private-method-delegates">calling a private method</see> for a worked example.
 ///     </para>
 /// </remarks>
 [PublicAPI]
@@ -975,6 +1023,9 @@ public sealed class MethodAttribute(
 ///     </para>
 ///     <para>
 ///         A parameter named <c>__exception</c> with no binding attribute is treated as if it has this attribute.
+///     </para>
+///     <para>
+///         See <see href="../usage-examples.md#alwaysrun-postfixes">handling an exception from an inner call</see> for a worked example.
 ///     </para>
 /// </remarks>
 [PublicAPI]

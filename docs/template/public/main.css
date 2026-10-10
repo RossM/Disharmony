@@ -1,0 +1,8 @@
+details.inherited-members {
+  margin-bottom: 1rem;
+}
+
+article details.inherited-members > summary {
+  display: list-item;
+  cursor: pointer;
+}

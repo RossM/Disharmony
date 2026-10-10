@@ -41,7 +41,8 @@
     "output": "_site",
     "template": [
       "default",
-      "modern"
+      "modern",
+      "template"
     ],
     "disableGitFeatures": true,
     "globalMetadata": {
@@ -49,6 +50,7 @@
       "_appTitle": "Disharmony documentation",
       "_appFooter": "Disharmony · Beta documentation",
       "_enableSearch": true,
+      "_lang": "en",
       "_disableContribution": true
     }
   }

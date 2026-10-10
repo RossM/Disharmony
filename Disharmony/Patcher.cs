@@ -50,6 +50,9 @@ namespace Disharmony;
 ///         Patches take effect before a patching call returns, but generation of the patched method bodies may be
 ///         deferred until the methods are first called. Use <see cref="ForceApply" /> to complete this work immediately.
 ///     </para>
+///     <para>
+///         See <see href="../obj/guides/getting-started.md#register-the-patch-and-run-the-example">registering patches</see> for a worked example.
+///     </para>
 /// </remarks>
 [PublicAPI]
 public static class Patcher
