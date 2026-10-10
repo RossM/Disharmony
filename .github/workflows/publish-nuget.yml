@@ -55,7 +55,7 @@ jobs:
         id: pack
         env:
           RELEASE_TAG: ${{ inputs.tag }}
-        run: ./.github/scripts/Build-NuGetRelease.ps1 -Tag $env:RELEASE_TAG
+        run: ./scripts/Build-NuGetRelease.ps1 -Tag $env:RELEASE_TAG
       - name: Retain release packages
         id: artifact
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0

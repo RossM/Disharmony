@@ -73,7 +73,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Summarize test results
         if: always()
-        run: ./.github/scripts/Write-TestSummary.ps1 -Title "Library / $env:TEST_RUNTIME / $env:TEST_CONFIGURATION"
+        run: ./scripts/Write-TestSummary.ps1 -Title "Library / $env:TEST_RUNTIME / $env:TEST_CONFIGURATION"
       - name: Retain test results and logs
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -111,7 +111,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Summarize test results
         if: always()
-        run: ./.github/scripts/Write-TestSummary.ps1 -Title "Analyzer / $env:TEST_CONFIGURATION"
+        run: ./scripts/Write-TestSummary.ps1 -Title "Analyzer / $env:TEST_CONFIGURATION"
       - name: Retain test results and logs
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

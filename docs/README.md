@@ -65,6 +65,18 @@ See [GitHub's custom Pages workflow documentation](https://docs.github.com/en/pa
 
 Do not edit `docs/api`, `docs/obj`, or `docs/_site`. They contain generated files and are ignored by Git. The build copies the guide READMEs and adapts their links for the HTML site. The player installation page reuses the Workshop description with a title identifying its installation task; edit `Disharmony.RimWorld/About/README.md` to update both. Its temporary unpublished-mod notice is added by `docs/Build-Docs.ps1` for the HTML page only.
 
+## Prepare the Steam Workshop description
+
+From the repository root, run:
+
+```powershell
+./scripts/Build-WorkshopDescription.ps1
+```
+
+Copy the contents of `artifacts/workshop-description.txt` into the Workshop description editor. The script converts the shared `Disharmony.RimWorld/About/README.md` to [Steam's formatting syntax](https://steamcommunity.com/comment/Guide/formattinghelp), including numbered installation steps and absolute links to the HTML author guides. Edit the Markdown source and rerun the script when changing the description; the output is generated and ignored by Git.
+
+Preview the description in Steam before saving it. Check headings, numbering, bold text, and all links. `About.xml` remains the separate description shown in RimWorld's mod manager.
+
 ## API generation and diagnostics
 
 The reference is extracted from the compiled `net10.0` assembly and its XML comments. This includes C# 14 extension-block members that the pinned DocFX version omits when reading the project directly. Extension properties still appear as `get_...` methods; [reading extension members](extension-members.md) explains their C# usage. Native support is tracked in [DocFX issue 11010](https://github.com/dotnet/docfx/issues/11010).
