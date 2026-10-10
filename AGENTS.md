@@ -21,7 +21,7 @@ For non-test code:
 For documentation:
 - Before creating or revising documentation, read and follow [Writing Disharmony documentation](docs/writing-documentation.md). It defines the audiences, landing-page admission criteria, and destinations for detailed material.
 - Write for the reader's task and assumed knowledge. Explain unfamiliar patching concepts in context; distinguish hypothetical game source from code readers should put in their mods.
-- Keep the root README and Workshop description focused on their entry questions. Put detailed instructions in the appropriate sub-page and link to them; keep Disharmony-specific load-order and Harmony advice on Workshop, and put generic installation help on the HTML player page.
+- Keep the root README and Workshop description focused on their entry questions. Put detailed instructions in the appropriate sub-page and link to them.
 - Do not put progress reports, test counts, investigation notes, temporary decisions, or planning checklists in public user documentation. Keep planning checklists outside source control.
 - Include implementation details only when they help the intended reader complete the task. Internal contributor documentation can explain design and mechanics; user guides should explain observable behavior and restrictions.
 - Edit source Markdown/XML comments, not generated documentation. Check placement, context, and links against the guide before finishing.
