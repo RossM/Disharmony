@@ -8,7 +8,7 @@ Before writing, identify who the page is for, what they should be able to do aft
 
 | Reader | First useful resource | Guidance needed |
 | --- | --- | --- |
-| Players using a dependent mod | Workshop installation instructions or player help | Explicit subscription, enabling, and load-order steps for a short installation task. |
+| Players using a dependent mod | Workshop description or HTML player help | Disharmony-specific load order and Harmony advice on Workshop; general installation steps in HTML player help. |
 | Beginners new to C# and programming | One primary C# tutorial, with prerequisites and a return point | Help choosing where to learn; assume basic programming knowledge in the Disharmony tutorials. |
 | C# readers new to patching | Runtime-patching introduction, then a complete first patch | Explain separate game/mod assemblies, targets, registration, prefixes, and postfixes before relying on them. |
 | Experienced Harmony users | Concrete comparison, then an adoption example | Explain practical benefits, limitations, and coexistence; let them skip the beginner introduction. |
@@ -72,18 +72,19 @@ Do not put these in the root README:
 
 ### Steam Workshop description: allowed content and shape
 
-Primary readers are players arriving because another mod requires Disharmony. The description must be sufficient for the ordinary installation task without requiring a visit to GitHub. Its source is `Disharmony.RimWorld/About/README.md`.
+Primary readers are players arriving because another mod requires Disharmony. Focus on why a player needs Disharmony and any Disharmony-specific setup advice. Steam already provides subscription controls and supported-version tags from About.xml. Its source is `Disharmony.RimWorld/About/README.md`.
 
-The `<description>` in `Disharmony.RimWorld/About/About.xml` is separate: players see it in the in-game mod manager when enabling, disabling, and sorting installed mods. Keep it short and focused on the mod's purpose, whether to enable it, and load order; subscription instructions belong on Workshop.
+The `<description>` in `Disharmony.RimWorld/About/About.xml` is separate: players see it in the in-game mod manager when enabling, disabling, and sorting installed mods. Keep it short and focused on the mod's purpose, whether to enable it, and load order; general subscription and enabling instructions belong in HTML player help.
 
 Include:
 
 1. A brief explanation that it supplies a framework used by other mods, and how a player knows they need it.
-2. Supported public RimWorld version information that affects whether the player can use it.
-3. Subscription, enabling, dependency, and load-order steps required to use it.
-4. Brief advice for the most common installation mistake, with a link to more detailed player help.
-5. A clearly labelled "For mod authors" link to the author documentation.
-6. A support/reporting route where appropriate.
+2. Beta status when it affects a player's expectations.
+3. Disharmony-specific load order and Harmony coexistence advice.
+4. A support/reporting route where appropriate.
+5. A "For mod authors" section with a clearly labelled link to the GitHub project, where authors can find documentation, examples, and source code. Avoid duplicating the project landing page with deep links to individual author guides.
+
+Do not repeat supported-version tags or generic Workshop subscription, enabling, and restart instructions. Keep general installation and missing-mod help in `docs/rimworld-players.md`, the independent source for the HTML player page.
 
 Explain bundled assemblies or Harmony coexistence only to the extent needed to answer a player action or compatibility question. Do not include .NET target-framework terminology, NuGet installation, patch syntax, build instructions, development status reports, or internal design. Keep release history in Workshop change notes rather than accumulating it in the description.
 
@@ -109,7 +110,7 @@ These are logical destinations, not a requirement to create a separate file for 
 | Full runtime support matrix and Harmony dependency policy | `docs/compatibility.md` | Canonical support information; landing pages carry only the relevant summary. |
 | Analyzer host requirements, setup, severity, configuration, and diagnostic corrections | `Disharmony.Analyzers/README.md` and linked diagnostic sections/pages | Explain what the author observes and how to correct it; analyzer implementation belongs in contributor material. |
 | RimWorld author setup, registration location, dependency XML, and deployment | `Disharmony.RimWorld/README.md` and suitable setup links | Author instructions; player subscription/help belongs in the player route. |
-| Player installation and troubleshooting | Workshop description plus short HTML player help | Keep ordinary installation self-contained on Workshop; link to longer symptom-based help. |
+| Player installation and troubleshooting | `docs/rimworld-players.md` for HTML; `Disharmony.RimWorld/About/README.md` for Workshop | Keep generic installation and missing-mod help in HTML; retain load-order and Harmony advice on both pages and keep it consistent. |
 | Building Disharmony, SDK requirements, and supported-runtime tests | Contributor entry/testing guide, currently `Disharmony.Tests/README.md` | Commands and validation expectations for source changes, not instructions to compile an ordinary dependent mod. |
 | Internal subsystems, concurrency mechanisms, IL generation, and design constraints | Contributor architecture overview | Explain details that help locate or safely change the implementation. |
 | Editing/building the docs and generator workarounds | `docs/README.md` | Maintainer instructions; consumer-facing generated-signature explanations stay in `docs/extension-members.md`. |
@@ -135,7 +136,7 @@ Before adding or keeping content on a landing page:
 - Identify its reader and the entry question it answers.
 - Verify it meets that specific page's allowed content above.
 - Check whether a short answer plus a descriptive link would suffice.
-- Confirm that ordinary installation steps remain directly available to players on Workshop.
+- Keep Disharmony-specific player advice on Workshop; use HTML player help for generic installation steps.
 - Check that its claims describe the published product, rather than reporting current work.
 - Place necessary detail in its canonical sub-page; remove incidental detail instead of moving it indiscriminately into another public page.
 - Check that destination links work and their titles explain what the reader will find.

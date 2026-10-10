@@ -8,8 +8,6 @@ $sourcePath = Join-Path $repositoryRoot 'Disharmony.RimWorld/About/README.md'
 $outputPath = Join-Path $repositoryRoot 'artifacts/workshop-description.txt'
 $content = [IO.File]::ReadAllText($sourcePath)
 
-# Keep the Markdown shared with the HTML player guide as the description source.
-$content = $content.Replace('(../README.md)', '(https://rossm.github.io/Disharmony/guides/rimworld.html)')
 $content = [regex]::Replace($content, '(?m)^(#{1,3}) ([^\r\n]+)', [Text.RegularExpressions.MatchEvaluator]{
     param($match)
     $level = $match.Groups[1].Length

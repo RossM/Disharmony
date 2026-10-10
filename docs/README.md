@@ -48,7 +48,8 @@ See [GitHub's custom Pages workflow documentation](https://docs.github.com/en/pa
 | Runtime-patching introduction | `docs/runtime-patching.md` |
 | Getting-started guide | `Disharmony/README.md` |
 | RimWorld author setup and deployment | `Disharmony.RimWorld/README.md` |
-| Steam Workshop description and HTML player installation instructions | `Disharmony.RimWorld/About/README.md` |
+| Steam Workshop description | `Disharmony.RimWorld/About/README.md` |
+| HTML player installation and troubleshooting | `docs/rimworld-players.md` |
 | In-game mod-manager description | `<description>` in `Disharmony.RimWorld/About/About.xml` |
 | Investigating game code and planning a patch | `docs/planning-a-game-patch.md` |
 | Harmony comparison, coexistence, and migration | `docs/harmony-comparison.md` |
@@ -63,7 +64,7 @@ See [GitHub's custom Pages workflow documentation](https://docs.github.com/en/pa
 | Site navigation | `docs/toc.yml` |
 | Collapsible inherited API members | `docs/template/public/main.js` and `docs/template/public/main.css` |
 
-Do not edit `docs/api`, `docs/obj`, or `docs/_site`. They contain generated files and are ignored by Git. The build copies the guide READMEs and adapts their links for the HTML site. The player installation page reuses the Workshop description with a title identifying its installation task; edit `Disharmony.RimWorld/About/README.md` to update both. Its temporary unpublished-mod notice is added by `docs/Build-Docs.ps1` for the HTML page only.
+Do not edit `docs/api`, `docs/obj`, or `docs/_site`. They contain generated files and are ignored by Git. The build copies the repository guides and adapts their links for the HTML site. The Workshop description and HTML player guide have separate sources: edit `Disharmony.RimWorld/About/README.md` for Workshop and `docs/rimworld-players.md` for HTML. Keep their Disharmony-specific load-order and Harmony advice consistent. The HTML guide also contains general installation help and its temporary unpublished-mod notice.
 
 ## Prepare the Steam Workshop description
 
@@ -73,9 +74,9 @@ From the repository root, run:
 ./scripts/Build-WorkshopDescription.ps1
 ```
 
-Copy the contents of `artifacts/workshop-description.txt` into the Workshop description editor. The script converts the shared `Disharmony.RimWorld/About/README.md` to [Steam's formatting syntax](https://steamcommunity.com/comment/Guide/formattinghelp), including numbered installation steps and absolute links to the HTML author guides. Edit the Markdown source and rerun the script when changing the description; the output is generated and ignored by Git.
+Copy the contents of `artifacts/workshop-description.txt` into the Workshop description editor. The script converts `Disharmony.RimWorld/About/README.md` to [Steam's formatting syntax](https://steamcommunity.com/comment/Guide/formattinghelp), including headings, bold text, and absolute links to the project and issue tracker. Edit the Markdown source and rerun the script when changing the description; the output is generated and ignored by Git.
 
-Preview the description in Steam before saving it. Check headings, numbering, bold text, and all links. `About.xml` remains the separate description shown in RimWorld's mod manager.
+Preview the description in Steam before saving it. Check headings, bold text, load-order advice, and all links. `About.xml` remains the separate description shown in RimWorld's mod manager.
 
 ## API generation and diagnostics
 

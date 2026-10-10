@@ -10,20 +10,16 @@ $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $guideDirectory = Join-Path $PSScriptRoot 'obj/guides'
 New-Item -ItemType Directory -Path $guideDirectory -Force | Out-Null
 
-# Keep repository READMEs as the guide sources; adapt their source-code links for HTML.
+# Copy repository guides and adapt their source-code links for HTML.
 $guideSources = @{
     'Disharmony/README.md' = 'getting-started.md'
     'Disharmony.Analyzers/README.md' = 'analyzers.md'
     'Disharmony.RimWorld/README.md' = 'rimworld.md'
-    'Disharmony.RimWorld/About/README.md' = 'rimworld-players.md'
+    'docs/rimworld-players.md' = 'rimworld-players.md'
     'Disharmony.Tests/README.md' = 'testing.md'
 }
 foreach ($source in $guideSources.Keys) {
     $content = [IO.File]::ReadAllText((Join-Path $repositoryRoot $source))
-    if ($source -eq 'Disharmony.RimWorld/About/README.md') {
-        $content = $content.Replace("# Disharmony`r`n", "# Install Disharmony for RimWorld`r`n`r`n**Not yet published:** The Steam Workshop mod is not available yet.`r`n")
-        $content = $content.Replace('(../README.md', '(rimworld.md')
-    }
     foreach ($attributeName in @('Argument', 'Arguments', 'ReturnValue', 'Instance', 'State', 'Field', 'Method', 'BaseMethod', 'Exception', 'MemberInfo', 'Target', 'Targets', 'Priority')) {
         $content = $content.Replace("[$attributeName](Attributes.cs)", "[$attributeName](xref:Disharmony.$($attributeName)Attribute)")
     }
