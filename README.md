@@ -2,40 +2,35 @@
 
 **Not yet published:** The NuGet package and Steam Workshop mod are not available yet.
 
-Disharmony is a C# framework for changing game behavior with mods. Built on Harmony, it lets you patch whole methods or individual calls, member accesses, and constants inside them.
+**Simpler patches for game mod authors.**
 
-## Why use Disharmony?
+Disharmony lets you replace many Harmony transpilers with ordinary C# prefixes and postfixes. Patch a call inside one game method while leaving calls from other methods unchanged. Built on Harmony, it also supports whole-method patches and inner patches on member accesses and constants.
 
-- **Change an operation inside a method.** Write a C# prefix or postfix for a selected call, member access, or constant without writing a transpiler.
-- **Catch mistakes before launching the game.** The bundled analyzer reports problems with your patches as you edit and compile.
-- **Get useful patching errors.** Disharmony checks targets and parameter bindings, and explains why a patch is invalid.
-- **Reduce startup work.** Disharmony can defer patch generation to reduce the work done during mod startup.
+Its bundled analyzer catches patch mistakes as you edit and compile, and its runtime checks explain problems when patches are applied. Disharmony can also defer patch generation to reduce startup work. Keep your existing Harmony patches and try Disharmony on one change.
 
-You can keep existing Harmony patches and add Disharmony where it helps. [From Harmony to Disharmony](docs/harmony-comparison.md) compares the features and APIs and shows how to adopt it in an existing mod.
+[See how a Disharmony patch replaces a transpiler](https://rossm.github.io/Disharmony/harmony-comparison.html#worked-comparison-change-a-call-inside-a-method).
+
+**Installing a RimWorld mod that requires Disharmony?** Follow the [installation and load-order instructions](https://rossm.github.io/Disharmony/guides/rimworld-players.html). Disharmony does not change gameplay on its own.
 
 ## Beta and compatibility
 
-The initial beta supports **Mono/net472**, **Microsoft CLR/net472**, and **Microsoft CLR/net10.0** with Harmony 2. APIs may change during the beta. See [compatibility](docs/compatibility.md) to choose the library build and Harmony version for your game.
+The initial beta supports **Mono/net472**, **Microsoft CLR/net472**, and **Microsoft CLR/net10.0** with Harmony 2. APIs may change during the beta. See [compatibility](https://rossm.github.io/Disharmony/compatibility.html) to choose the library build and Harmony version for your game.
 
 ## Start writing mods
 
-- **New to programming?** [Learn C# first](docs/learning-csharp.md).
-- **Know C# but new to patching?** [Learn how runtime patching works](docs/runtime-patching.md).
-- **Ready to try Disharmony?** [Write your first patch](Disharmony/README.md#write-your-first-patch) with complete examples you can build and run.
-- **Already use Harmony?** [Add Disharmony to an existing mod](docs/harmony-comparison.md#add-disharmony-to-an-existing-harmony-mod).
-- **Writing a RimWorld mod?** [Set up, install, and test your mod](Disharmony.RimWorld/README.md).
+- **New to programming?** [Learn C# first](https://rossm.github.io/Disharmony/learning-csharp.html).
+- **Know C# but new to patching?** [Learn how runtime patching works](https://rossm.github.io/Disharmony/runtime-patching.html).
+- **Ready to try Disharmony?** [Write your first patch](https://rossm.github.io/Disharmony/guides/getting-started.html#write-your-first-patch) with complete examples you can build and run.
+- **Already use Harmony?** [Add Disharmony to an existing mod](https://rossm.github.io/Disharmony/harmony-comparison.html#add-disharmony-to-an-existing-harmony-mod).
+- **Writing a RimWorld mod?** [Set up, install, and test your mod](https://rossm.github.io/Disharmony/guides/rimworld.html).
 
 ## Examples and reference
 
-[Usage examples](docs/usage-examples.md) show how to make specific changes, including patching one call inside a method and sharing information between patches.
+[Usage examples](https://rossm.github.io/Disharmony/usage-examples.html) show how to make specific changes, including patching one call inside a method and sharing information between patches.
 
-For `DISHARMONY` warnings and errors, use the [diagnostic reference](docs/analyzer-diagnostics.md). [Analyzer setup and configuration](Disharmony.Analyzers/README.md) explains how the checks work in your editor and build.
+For `DISHARMONY` warnings and errors, use the [diagnostic reference](https://rossm.github.io/Disharmony/analyzer-diagnostics.html). [Analyzer setup and configuration](https://rossm.github.io/Disharmony/guides/analyzers.html) explains how the checks work in your editor and build.
 
-API comments in the source describe [attributes and parameter bindings](Disharmony/Attributes.cs), [patch registration](Disharmony/Patcher.cs), and [fluent configuration](Disharmony/Patch.cs).
-
-## Playing RimWorld?
-
-If a mod requires Disharmony, install and enable the official Disharmony mod. Follow the [installation and load-order instructions](Disharmony.RimWorld/About/README.md). Disharmony does not change gameplay on its own.
+Use the searchable [HTML documentation](https://rossm.github.io/Disharmony/) and [API reference](https://rossm.github.io/Disharmony/api/Disharmony.html) to look up attributes, parameter bindings, patch registration, and fluent configuration.
 
 ## Contributing and support
 
