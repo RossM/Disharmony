@@ -41,3 +41,25 @@ To work on Disharmony itself, start with [Development and testing](Disharmony.Te
 ## License
 
 [MIT](LICENSE).
+
+## FAQ
+
+### Q: Why did you make this?
+
+A: It started out as a small utility to make it easier to write transpilers for my own mod, and grew from there.
+
+### Q: Isn't this just a copy of Harmony 3?
+
+A: I implemented infix first, back in see [this commit](https://github.com/RossM/RimworldMods/commit/46b8564870c7956e7f0341cde2a660a6f8136916). I bragged about it on Discord and Brrainz was, let's say, "inspired" to add it to Harmony.
+
+### Q: Why should I use this over Harmony 3?
+
+A: Disharmony has a nicer API, does more error checking, has better tooling, and is faster. In my opinion, of course.
+
+### Q: Did you use generative AI?
+
+A: Almost all of the tests and most of the documentation was written by generative AI. Very little of the Disharmony library itself is written by AI, mostly because every time I tried to have it write something I hated it and ended up tearing it out and rewriting it.
+
+### Q: Have you even tested this?
+
+A: There are over 2000 tests, with the goal of having full code coverage of non-error paths independently with both unit tests and end-to-end integration tests.

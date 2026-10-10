@@ -207,9 +207,9 @@ Disharmony's initial beta uses Harmony 2. Check [runtime and dependency compatib
 
 ### Harmony 3 and inner patching
 
-Disharmony implemented inner patching before Harmony 3 introduced its infix-patching support; see [its implementation history in RimworldMods](https://github.com/RossM/RimworldMods/commit/46b8564870c7956e7f0341cde2a660a6f8136916).
-
 [Harmony 3 also offers operation patches](https://harmony.pardeike.net/v3/articles/patching-infix.html). **Harmony 3 support is incomplete and subject to change.**
+
+Disharmony implemented inner patching before Harmony 3 introduced its infix-patching support; see [its implementation history in RimworldMods](https://github.com/RossM/RimworldMods/commit/46b8564870c7956e7f0341cde2a660a6f8136916).
 
 Harmony 2.4.2 exposes inner-patch APIs, but [their insertion implementation is a stub](https://github.com/pardeike/Harmony/blob/v2.4.2.0/Harmony/Internal/Infix.cs).
 
