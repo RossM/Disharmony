@@ -1,8 +1,7 @@
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true)]
-    [ValidatePattern('\Av(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?\z')]
-    [string] $Tag,
+    [ValidatePattern('\A(?:v(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?)?\z')]
+    [string] $Tag = '',
 
     [string] $OutputDirectory = 'artifacts/nuget'
 )
@@ -15,22 +14,27 @@ $changes = @(git status --porcelain)
 if ($LASTEXITCODE -ne 0) { throw 'Could not inspect the checkout.' }
 if ($changes.Count -ne 0) { throw 'Release packaging requires a clean checkout.' }
 
-$commit = git rev-parse --verify "refs/tags/$Tag^{commit}"
-if ($LASTEXITCODE -ne 0) { throw "Release tag $Tag does not exist." }
-git merge-base --is-ancestor $commit HEAD
-if ($LASTEXITCODE -ne 0) { throw 'The release tag must belong to the dispatched main history.' }
+$sourceRef = if ($Tag) { "refs/tags/$Tag^{commit}" } else { 'HEAD' }
+$commit = git rev-parse --verify $sourceRef
+if ($LASTEXITCODE -ne 0) { throw "Build source $sourceRef does not exist." }
+if ($Tag) {
+    git merge-base --is-ancestor $commit HEAD
+    if ($LASTEXITCODE -ne 0) { throw 'The release tag must belong to the dispatched main history.' }
+}
 
 $outputPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($OutputDirectory)
 if (Test-Path -LiteralPath $outputPath) { throw 'Use a new output directory for release packages.' }
 
-git checkout --detach $commit
-if ($LASTEXITCODE -ne 0) { throw 'Could not check out the release tag.' }
+if ($Tag) {
+    git checkout --detach $commit
+    if ($LASTEXITCODE -ne 0) { throw 'Could not check out the release tag.' }
+}
 
-$version = $Tag.Substring(1)
 $packageVersion = dotnet msbuild ./Disharmony/Disharmony.csproj -nologo -getProperty:PackageVersion
 if ($LASTEXITCODE -ne 0) { throw 'Could not read the package version.' }
-if ($packageVersion.Trim() -cne $version) {
-    throw "Tag $Tag does not match package version $packageVersion. Update the version before tagging."
+$version = $packageVersion.Trim()
+if ($Tag -and $version -cne $Tag.Substring(1)) {
+    throw "Tag $Tag does not match package version $version. Update the version before tagging."
 }
 
 dotnet pack ./Disharmony/Disharmony.csproj --configuration Release --output $outputPath -p:ContinuousIntegrationBuild=true
@@ -53,7 +57,7 @@ foreach ($extension in @('nupkg', 'snupkg')) {
             throw "Unexpected package identity in $extension."
         }
         if ($metadata.repository.commit -cne $commit) {
-            throw "The $extension package does not identify the tagged source commit."
+            throw "The $extension package does not identify the selected source commit."
         }
     }
     finally { $archive.Dispose() }
@@ -69,9 +73,9 @@ if ($env:GITHUB_OUTPUT) {
 }
 if ($env:GITHUB_STEP_SUMMARY) {
     @(
-        '### NuGet release packages'
+        '### NuGet packages'
         ''
-        "Tag: $Tag"
+        if ($Tag) { "Tag: $Tag" } else { 'Source: main (build only; no release tag)' }
         "Commit: $commit"
         "Package: Disharmony $version"
         ''

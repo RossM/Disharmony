@@ -1,12 +1,12 @@
 name: NuGet release
 
-# Run from main. By default this only builds downloadable release packages.
+# Run from main. Leave the tag blank to build main without publishing.
 on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing release tag (for example, v1.0.0-beta.1)'
-        required: true
+        description: 'Release tag; leave blank for a build-only run from main'
+        required: false
         type: string
       publish:
         description: 'Publish the packages to NuGet.org'
@@ -23,7 +23,7 @@ defaults:
 
 jobs:
   build:
-    name: Build release packages
+    name: Build NuGet packages
     runs-on: windows-latest
     timeout-minutes: 15
     outputs:
@@ -31,13 +31,18 @@ jobs:
       package-sha256: ${{ steps.pack.outputs.package-sha256 }}
       symbols-sha256: ${{ steps.pack.outputs.symbols-sha256 }}
     steps:
-      - name: Require the official repository and main workflow
+      - name: Validate the release request
         env:
           RELEASE_REPOSITORY: ${{ github.repository }}
           RELEASE_REF: ${{ github.ref }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          PUBLISH_REQUESTED: ${{ inputs.publish }}
         run: |
           if ($env:RELEASE_REPOSITORY -cne 'RossM/Disharmony' -or $env:RELEASE_REF -cne 'refs/heads/main') {
             throw 'Run this workflow from main in RossM/Disharmony.'
+          }
+          if ($env:PUBLISH_REQUESTED -eq 'true' -and [string]::IsNullOrEmpty($env:RELEASE_TAG)) {
+            throw 'Publishing requires a release tag. Leave publishing unchecked to build main without a tag.'
           }
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
@@ -46,7 +51,7 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
-      - name: Build and validate the tagged packages
+      - name: Build and validate packages
         id: pack
         env:
           RELEASE_TAG: ${{ inputs.tag }}
@@ -64,7 +69,7 @@ jobs:
           PUBLISH_REQUESTED: ${{ inputs.publish }}
           ARTIFACT_URL: ${{ steps.artifact.outputs.artifact-url }}
         run: |
-          "[Download release packages]($env:ARTIFACT_URL)" >> $env:GITHUB_STEP_SUMMARY
+          "[Download packages]($env:ARTIFACT_URL)" >> $env:GITHUB_STEP_SUMMARY
           if ($env:PUBLISH_REQUESTED -eq 'true') {
             'Publication was requested; check the Publish job for its outcome.' >> $env:GITHUB_STEP_SUMMARY
           } else {
