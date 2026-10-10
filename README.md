@@ -63,3 +63,7 @@ A: Almost all of the tests and most of the documentation was written by generati
 ### Q: Have you even tested this?
 
 A: There are over 2000 tests, with the goal of having full code coverage of non-error paths independently with both unit tests and end-to-end integration tests.
+
+### Q: Has this been used in a real mod?
+
+A: I've got a fairly substantial [RimWorld mod](https://github.com/RossM/RimworldMods/XylXenos/) in progress that has been entirely switched from Harmony to Disharmony. It should be released Soon(tm).
