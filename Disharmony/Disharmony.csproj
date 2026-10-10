@@ -46,6 +46,7 @@
                       PrivateAssets="all" />
     <None Include="PackageReadme.md" Pack="true" PackagePath="README.md" />
     <None Include="..\LICENSE" Pack="true" PackagePath="" />
+    <None Include="..\THIRD-PARTY-NOTICES.txt" Pack="true" PackagePath="" />
   </ItemGroup>
 
   <Target Name="IncludeBundledAnalyzer" BeforeTargets="_GetPackageFiles">

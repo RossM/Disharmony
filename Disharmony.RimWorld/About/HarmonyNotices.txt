@@ -1,0 +1,61 @@
+HARMONY THIRD-PARTY NOTICES
+
+The RimWorld mod redistributes 0Harmony.dll, which includes the components below.
+Their copyright notices follow; the MIT license text is in LICENSE at the mod root.
+Notices for source incorporated into Disharmony are in THIRD-PARTY-NOTICES.txt
+at the mod root.
+
+===============================================================================
+Harmony
+https://github.com/pardeike/Harmony
+
+MIT License
+
+Copyright (c) 2017 Andreas Pardeike
+
+===============================================================================
+MonoMod (Core, Backports, ILHelpers, Utils)
+https://github.com/MonoMod/MonoMod
+
+The MIT License (MIT)
+
+Copyright (c) 2015 - 2020 0x0ade
+
+===============================================================================
+Mono.Cecil (including Rocks and symbol support)
+https://github.com/jbevain/cecil
+
+Copyright (c) 2008 - 2015 Jb Evain
+Copyright (c) 2008 - 2011 Novell, Inc.
+
+Additional Mono cryptography and symbol-writer source incorporated into Cecil:
+
+(C) 2002 Ximian, Inc.  http://www.ximian.com
+(C) 2003 Motus Technologies Inc. (http://www.motus.com)
+(C) 2003 Ximian, Inc.  http://www.ximian.com
+(C) 2005 Novell, Inc.  http://www.novell.com
+Copyright (C) 2004-2006 Novell Inc. (http://www.novell.com)
+Copyright (C) 2012 Xamarin Inc (http://www.xamarin.com)
+
+===============================================================================
+Microsoft.Cci.Pdb (incorporated into Mono.Cecil.Pdb)
+https://github.com/jbevain/cecil/tree/0.11.6/symbols/pdb/Microsoft.Cci.Pdb
+
+The MIT License (MIT)
+
+Copyright (c) Microsoft
+
+===============================================================================
+Iced
+https://github.com/icedland/iced
+Copyright (C) 2018-present iced project and contributors
+
+===============================================================================
+.NET source in MonoMod backports and System.ValueTuple
+https://github.com/dotnet/runtime
+
+The MIT License (MIT)
+
+Copyright (c) .NET Foundation and Contributors
+
+All rights reserved.

@@ -1,0 +1,31 @@
+THIRD-PARTY NOTICES
+
+Disharmony and its analyzer include source from the following projects.
+The components below use the MIT license text in LICENSE. Their copyright
+notices are preserved below.
+
+===============================================================================
+JetBrains.Annotations.Sources
+https://github.com/JetBrains/JetBrains.Annotations
+
+MIT License
+
+Copyright (c) 2025 JetBrains http://www.jetbrains.com
+
+===============================================================================
+PolySharp
+https://github.com/Sergio0694/PolySharp
+
+MIT License
+
+Copyright (c) 2026 Sergio Pedri
+
+===============================================================================
+.NET source used by generated polyfills
+https://github.com/dotnet/runtime
+
+The MIT License (MIT)
+
+Copyright (c) .NET Foundation and Contributors
+
+All rights reserved.

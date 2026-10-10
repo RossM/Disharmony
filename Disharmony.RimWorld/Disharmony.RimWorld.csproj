@@ -27,6 +27,8 @@
     <Copy SourceFiles="@(_ModAboutFiles)"
           DestinationFiles="@(_ModAboutFiles->'$(ModOutputDirectory)\About\%(RecursiveDir)%(Filename)%(Extension)')" />
     <Copy SourceFiles="@(_ModAssemblies)" DestinationFolder="$(ModOutputDirectory)\Assemblies" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\..\LICENSE;$(MSBuildProjectDirectory)\..\THIRD-PARTY-NOTICES.txt"
+          DestinationFolder="$(ModOutputDirectory)" />
     <Message Importance="high" Text="RimWorld mod: $(ModOutputDirectory)" />
   </Target>
 
