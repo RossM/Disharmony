@@ -64,6 +64,6 @@ foreach ($resultFile in $resultFiles)
 $other = $counts.Total - $counts.Passed - $counts.Failed - $counts.Skipped
 if ($other -gt 0)
 {
-    "$other tests have other outcomes (for example, inconclusive or aborted). Check the test results and job log.`n" |
+    "Tests with other outcomes (such as inconclusive or aborted): $other. Check the test results and job log.`n" |
         Out-File -LiteralPath $SummaryPath -Encoding utf8 -Append
 }
