@@ -149,7 +149,7 @@ A debug-symbol file (`DisharmonyDemo.pdb`) may also be copied if you want it for
 
 ## Verify in-game
 
-1. Launch RimWorld 1.6 and open **Mods**. Enable Disharmony and Disharmony Demo. Keep Core and any enabled official expansions before them, and Disharmony before Disharmony Demo.
+1. Launch RimWorld 1.6 and open **Mods**. Enable Disharmony and Disharmony Demo. Place Disharmony before Disharmony Demo. If Harmony is enabled, place it before Disharmony.
 2. Apply the mod-list changes and restart the game when prompted.
 3. Load a test colony or start a new one, then select a colonist. The pawn information panel should include **Disharmony demo is active.** after its normal text.
 4. Enable **Development mode** in the game's options and open the debug log. Look for `Disharmony Demo: patches registered.` and check for errors from your mod or Disharmony.

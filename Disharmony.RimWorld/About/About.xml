@@ -5,7 +5,7 @@
   <author>Xylthixlm</author>
   <description>Disharmony lets other mods change how RimWorld works. It does not change gameplay on its own.
 
-Enable it when another mod requires Disharmony. Load it after Core and any enabled official expansions, and before the mods that require it.
+Enable it when another mod requires Disharmony. Load it before the mods that require it.
 
 Disharmony includes Harmony. If another mod requires the Harmony mod, keep Harmony enabled and load it before Disharmony.</description>
   <supportedVersions>
