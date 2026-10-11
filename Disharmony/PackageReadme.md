@@ -1,6 +1,6 @@
 # Disharmony
 
-Disharmony is a C# modding framework built on Harmony. Use prefixes and postfixes to patch methods, or to change individual calls, member accesses, and constants inside a method.
+Disharmony is a C# modding framework built on Harmony. You can use prefixes and postfixes on whole methods, or put them around individual method calls inside a specific method. It works on field accesses and constants too.
 
 This is a beta release; APIs may change.
 

@@ -10,7 +10,7 @@ To add Disharmony to an existing mod, review [compatibility and conversion](#com
 
 ### Change an operation without writing a transpiler
 
-An inner patch changes a selected operation inside a method. For example, you can adjust a price-calculation call during checkout while leaving other callers unchanged.
+Disharmony's **inner patches** let you put prefixes and postfixes around individual method calls inside a specific method. For example, you can adjust a price-calculation call during checkout while leaving other callers unchanged.
 
 Write the change as a C# prefix or postfix. Disharmony handles finding the operation and inserting your patch. The [worked comparison](#worked-comparison-change-a-call-inside-a-method) shows the equivalent Harmony transpiler.
 

@@ -29,6 +29,6 @@ If a problem starts after adding or updating another mod, ask that mod's author 
 
 ## For mod authors
 
-Disharmony lets you change individual calls, member accesses, and constants inside game methods with C# prefixes and postfixes. Its included analyzer catches patch mistakes in your editor and build. [Compare it with Harmony](../docs/harmony-comparison.md) to see how an inner patch can replace a transpiler.
+Disharmony lets you put prefixes and postfixes around individual method calls inside a specific game method. It works on field accesses and constants too. Its included analyzer catches patch mistakes in your editor and build. [Compare it with Harmony](../docs/harmony-comparison.md) to see how an inner patch can replace a transpiler.
 
 [Write a RimWorld mod with Disharmony](../Disharmony.RimWorld/README.md) covers project setup, patch registration, and the Disharmony dependency. If you are new to making mods, the [author documentation](../docs/index.md) will help you choose where to start.

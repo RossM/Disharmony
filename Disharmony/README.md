@@ -22,7 +22,7 @@ checkout needs a narrower scope: the calls to `GetPrice` inside `Checkout.Total`
 
 With Harmony, a patch that runs before a method is called a **prefix**, and one that runs afterward is a **postfix**.
 Changes within the method often require a **transpiler**, which searches and rewrites its compiled instructions.
-Disharmony lets you use prefixes and postfixes at that finer level too. These **inner patches** can express many
+Disharmony lets you put prefixes and postfixes around the `GetPrice` calls inside `Checkout.Total`. These **inner patches** can express many
 changes that would otherwise require a hand-written transpiler.
 
 For new mod authors, this means you can write such patches in ordinary C# without first learning to manipulate IL.

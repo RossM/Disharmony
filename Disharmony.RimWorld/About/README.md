@@ -16,6 +16,6 @@ If a problem starts after adding or updating another mod, ask that mod's author 
 
 ## For mod authors
 
-Disharmony lets you change individual calls, member accesses, and constants inside game methods with C# prefixes and postfixes. Its included analyzer catches patch mistakes in your editor and build.
+Disharmony lets you put prefixes and postfixes around individual method calls inside a specific game method. It works on field accesses and constants too. Its included analyzer catches patch mistakes in your editor and build.
 
 Visit [Disharmony on GitHub](https://github.com/RossM/Disharmony) for documentation, examples, and source code.
