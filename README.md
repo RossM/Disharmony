@@ -50,7 +50,7 @@ A: It started out as a small utility to make it easier to write transpilers for 
 
 ### Q: Isn't this just a copy of Harmony 3?
 
-A: I implemented infix first, back in see [this commit](https://github.com/RossM/RimworldMods/commit/46b8564870c7956e7f0341cde2a660a6f8136916). I bragged about it on Discord and Brrainz was, let's say, "inspired" to add it to Harmony.
+A: I implemented infix first, back in [this commit](https://github.com/RossM/RimworldMods/commit/46b8564870c7956e7f0341cde2a660a6f8136916). I shared my progress on Discord and Brrainz was, let's say, "inspired" to add many of my features to Harmony.
 
 ### Q: Why should I use this over Harmony 3?
 
