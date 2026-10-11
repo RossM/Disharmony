@@ -118,7 +118,7 @@ public static class Patcher
     /// </remarks>
     /// <returns>A handle for removing the patches added by this call.</returns>
     /// <exception cref="PatchException">A patch definition is invalid or a patch could not be applied.</exception>
-    /// <exception cref="InvalidOperationException">Called from a runtime exception handler.</exception>
+    /// <exception cref="InvalidOperationException">A patch or unpatch call was made from a <see cref="RuntimeExceptionHandler">runtime exception handler</see>.</exception>
     public static PatchHandle PatchAll(Assembly assembly)
     {
         ValidatePatchingAllowed();
@@ -140,7 +140,7 @@ public static class Patcher
     /// </remarks>
     /// <returns>A handle for removing the patches added by this call.</returns>
     /// <exception cref="PatchException">A patch definition is invalid or a patch could not be applied.</exception>
-    /// <exception cref="InvalidOperationException">Called from a runtime exception handler.</exception>
+    /// <exception cref="InvalidOperationException">A patch or unpatch call was made from a <see cref="RuntimeExceptionHandler">runtime exception handler</see>.</exception>
     public static PatchHandle PatchCategory(Assembly assembly, string? category)
     {
         ValidatePatchingAllowed();
@@ -159,7 +159,7 @@ public static class Patcher
     /// </remarks>
     /// <returns>A handle for removing the patches added by this call.</returns>
     /// <exception cref="PatchException">A patch definition is invalid or a patch could not be applied.</exception>
-    /// <exception cref="InvalidOperationException">Called from a runtime exception handler.</exception>
+    /// <exception cref="InvalidOperationException">A patch or unpatch call was made from a <see cref="RuntimeExceptionHandler">runtime exception handler</see>.</exception>
     public static PatchHandle PatchAll(Type type)
     {
         ValidatePatchingAllowed();
@@ -178,7 +178,7 @@ public static class Patcher
     /// </remarks>
     /// <returns>A handle for removing the patches added by this call.</returns>
     /// <exception cref="PatchException">A patch definition is invalid or a patch could not be applied.</exception>
-    /// <exception cref="InvalidOperationException">Called from a runtime exception handler.</exception>
+    /// <exception cref="InvalidOperationException">A patch or unpatch call was made from a <see cref="RuntimeExceptionHandler">runtime exception handler</see>.</exception>
     public static PatchHandle Patch(params IEnumerable<MethodInfo> methods)
     {
         ValidatePatchingAllowed();
@@ -196,7 +196,7 @@ public static class Patcher
     ///     <paramref name="patch" /> does not specify a patch type, patch method, or outer target.
     /// </exception>
     /// <exception cref="PatchException">The patch definition is invalid or the patch could not be applied.</exception>
-    /// <exception cref="InvalidOperationException">Called from a runtime exception handler.</exception>
+    /// <exception cref="InvalidOperationException">A patch or unpatch call was made from a <see cref="RuntimeExceptionHandler">runtime exception handler</see>.</exception>
     public static PatchHandle Patch(PatchConfig patch)
     {
         ValidatePatchingAllowed();
@@ -213,7 +213,7 @@ public static class Patcher
     ///     <paramref name="patch" /> does not specify a patch type or patch method.
     /// </exception>
     /// <exception cref="PatchException">The patch definition is invalid or a patch could not be applied.</exception>
-    /// <exception cref="InvalidOperationException">Called from a runtime exception handler.</exception>
+    /// <exception cref="InvalidOperationException">A patch or unpatch call was made from a <see cref="RuntimeExceptionHandler">runtime exception handler</see>.</exception>
     public static PatchHandle Patch(PatchConfig patch, params IEnumerable<MethodBase> methods)
     {
         ValidatePatchingAllowed();
@@ -230,7 +230,7 @@ public static class Patcher
     ///     A configuration in <paramref name="patches" /> does not specify a patch type or patch method.
     /// </exception>
     /// <exception cref="PatchException">A patch definition is invalid or a patch could not be applied.</exception>
-    /// <exception cref="InvalidOperationException">Called from a runtime exception handler.</exception>
+    /// <exception cref="InvalidOperationException">A patch or unpatch call was made from a <see cref="RuntimeExceptionHandler">runtime exception handler</see>.</exception>
     public static PatchHandle Patch(MethodBase method, params IEnumerable<PatchConfig> patches)
     {
         ValidatePatchingAllowed();
@@ -251,7 +251,7 @@ public static class Patcher
     ///     A configuration in <paramref name="patches" /> does not specify a patch type, patch method, or outer target.
     /// </exception>
     /// <exception cref="PatchException">A patch definition is invalid or a patch could not be applied.</exception>
-    /// <exception cref="InvalidOperationException">Called from a runtime exception handler.</exception>
+    /// <exception cref="InvalidOperationException">A patch or unpatch call was made from a <see cref="RuntimeExceptionHandler">runtime exception handler</see>.</exception>
     public static PatchHandle Patch(params IEnumerable<PatchConfig> patches)
     {
         ValidatePatchingAllowed();
@@ -268,7 +268,7 @@ public static class Patcher
     ///     Patches added by other calls remain active, even when they patch the same methods.
     /// </remarks>
     /// <exception cref="RuntimePatchException">One or more affected methods could not be updated.</exception>
-    /// <exception cref="InvalidOperationException">Called from a runtime exception handler.</exception>
+    /// <exception cref="InvalidOperationException">A patch or unpatch call was made from a <see cref="RuntimeExceptionHandler">runtime exception handler</see>.</exception>
     public static void Unpatch(PatchHandle handle)
     {
         ValidatePatchingAllowed();
