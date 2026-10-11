@@ -48,6 +48,7 @@ See [GitHub's custom Pages workflow documentation](https://docs.github.com/en/pa
 | Runtime-patching introduction | `docs/runtime-patching.md` |
 | Getting-started guide | `Disharmony/README.md` |
 | RimWorld author setup and deployment | `Disharmony.RimWorld/README.md` |
+| RimWorld modding advice for coding agents | `docs/rimworld-agent-advice.md` |
 | Steam Workshop description | `Disharmony.RimWorld/About/README.md` |
 | HTML player installation and troubleshooting | `docs/rimworld-players.md` |
 | In-game mod-manager description | `<description>` in `Disharmony.RimWorld/About/About.xml` |

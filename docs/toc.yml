@@ -30,6 +30,8 @@
     href: obj/guides/rimworld-players.md
   - name: Write a mod with Disharmony
     href: obj/guides/rimworld.md
+  - name: Advice for coding agents
+    href: rimworld-agent-advice.md
 - name: API reference
   href: api/toc.yml
 - name: Contributing

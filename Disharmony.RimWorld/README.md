@@ -4,6 +4,8 @@ This guide takes you from a C# project to a patch you can see in RimWorld 1.6: s
 
 You will build your own mod against the Disharmony NuGet package. Players install the [official Disharmony mod](https://steamcommunity.com/sharedfiles/filedetails/?id=3818084845) separately; it supplies Disharmony and Harmony when the game runs.
 
+For coding agents, [RimWorld modding advice](../docs/rimworld-agent-advice.md) covers compatibility, naming, translations, and in-game checks.
+
 ## Before you start
 
 You need RimWorld 1.6, the official Disharmony mod installed, a C# editor, and the [.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0), version 10.0.400 or newer. The SDK compiles the project; the mod itself targets **.NET Framework 4.7.2** (`net472`), which matches RimWorld 1.6. It is a class library loaded by the game, rather than a console program you run with `dotnet run`.
