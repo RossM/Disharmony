@@ -14,7 +14,7 @@ Its bundled analyzer catches patch mistakes as you edit and compile, and its run
 
 ## Beta and compatibility
 
-The initial beta supports **Mono/net472**, **Microsoft CLR/net472**, and **Microsoft CLR/net10.0** with Harmony 2. APIs may change during the beta. See [compatibility](https://rossm.github.io/Disharmony/compatibility.html) to choose the library build and Harmony version for your game.
+The initial beta supports **Mono/net472**, **Microsoft CLR/net472**, and **Microsoft CLR/net10.0** with Harmony 2. Harmony 3 support is present but experimental. APIs may change during the beta. See [compatibility](https://rossm.github.io/Disharmony/compatibility.html) to choose the library build and Harmony version for your game.
 
 ## Start writing mods
 
