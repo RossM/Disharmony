@@ -66,4 +66,4 @@ A: There are over 2000 tests, with the goal of having full code coverage of non-
 
 ### Q: Has this been used in a real mod?
 
-A: I've got a fairly substantial [RimWorld mod](https://github.com/RossM/RimworldMods/tree/main/XylXenos.Data) in progress that has been entirely switched from Harmony to Disharmony. It should be released Soon(tm).
+A: I've got a fairly substantial [RimWorld mod](https://github.com/RossM/RimworldMods/tree/main/XylXenos) in progress that has been entirely switched from Harmony to Disharmony. It should be released Soon(tm).
