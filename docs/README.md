@@ -64,7 +64,7 @@ See [GitHub's custom Pages workflow documentation](https://docs.github.com/en/pa
 | Site navigation | `docs/toc.yml` |
 | Collapsible inherited API members | `docs/template/public/main.js` and `docs/template/public/main.css` |
 
-Do not edit `docs/api`, `docs/obj`, or `docs/_site`. They contain generated files and are ignored by Git. The build copies the repository guides and adapts their links for the HTML site. The Workshop description and HTML player guide have separate sources: edit `Disharmony.RimWorld/About/README.md` for Workshop and `docs/rimworld-players.md` for HTML. Keep their Disharmony-specific load-order and Harmony advice consistent. The HTML guide also contains general installation help and its temporary unpublished-mod notice.
+Do not edit `docs/api`, `docs/obj`, or `docs/_site`. They contain generated files and are ignored by Git. The build copies the repository guides and adapts their links for the HTML site. The Workshop description and HTML player guide have separate sources: edit `Disharmony.RimWorld/About/README.md` for Workshop and `docs/rimworld-players.md` for HTML. Keep their Disharmony-specific load-order and Harmony advice consistent. The HTML guide also contains general installation help.
 
 ## Prepare the Steam Workshop description
 

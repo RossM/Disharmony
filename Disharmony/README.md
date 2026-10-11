@@ -1,7 +1,5 @@
 # Getting started with Disharmony
 
-**Not yet published:** The NuGet package is not available yet. The installation steps below use the planned first beta version.
-
 Disharmony is a C# game-modding framework built on Harmony. It lets mod authors change game behavior at runtime by
 writing small methods called patches. A patch can run before or after a game method, inspect its inputs, change its
 result, or replace its behavior.

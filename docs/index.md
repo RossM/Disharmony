@@ -1,7 +1,5 @@
 # Disharmony
 
-**Not yet published:** The NuGet package and Steam Workshop mod are not available yet.
-
 **Simpler patches for game mod authors.**
 
 Disharmony lets you replace many Harmony transpilers with ordinary C# prefixes and postfixes. Patch a call inside one game method while leaving calls from other methods unchanged. Built on Harmony, it also supports whole-method patches and inner patches on member accesses and constants.

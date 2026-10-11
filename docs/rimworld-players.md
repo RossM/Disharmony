@@ -1,7 +1,5 @@
 # Install Disharmony for RimWorld
 
-**Not yet published:** The Steam Workshop mod is not available yet.
-
 Disharmony lets other mods change how RimWorld works. Install it when a mod lists Disharmony as a requirement. It does not change gameplay on its own.
 
 This is a beta release. [Project on GitHub](https://github.com/RossM/Disharmony).

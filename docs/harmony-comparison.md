@@ -232,8 +232,6 @@ Start with one change that benefits from inner patching or Disharmony's bindings
 
 ### Add the package and arrange deployment
 
-**Not yet published:** The Disharmony NuGet package and official Workshop mod are not available yet.
-
 Add `Disharmony` version `1.0.0-beta.1` to the project that contains the new patch. If it already references `Lib.Harmony`, check that its version meets [Disharmony's requirements](compatibility.md#harmony-version). The package includes the analyzer; you do not add Roslyn as a runtime dependency.
 
 For a RimWorld mod, follow [project references](obj/guides/rimworld.md#create-the-project) and [the Disharmony mod dependency](obj/guides/rimworld.md#depend-on-disharmony): the official Disharmony mod supplies the runtime assemblies. Your mod's metadata should require Disharmony and load after it; a separate Harmony mod dependency is unnecessary. For other games, ensure that Disharmony and the required Harmony version are available when your mod loads.
