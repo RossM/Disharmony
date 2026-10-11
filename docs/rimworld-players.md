@@ -10,7 +10,7 @@ This is a beta release. [Project on GitHub](https://github.com/RossM/Disharmony)
 
 ## Installation
 
-1. Subscribe to Disharmony and the mods you want to use that require it.
+1. Subscribe to [Disharmony on Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3818084845) and the mods you want to use that require it.
 2. Wait for Steam to finish downloading them, then launch RimWorld and open **Mods**.
 3. Enable Disharmony and the mods that require it, and arrange them in the [load order below](#load-order).
 4. Apply the changes and restart RimWorld when prompted.

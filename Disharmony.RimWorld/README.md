@@ -4,7 +4,7 @@
 
 This guide takes you from a C# project to a patch you can see in RimWorld 1.6: selecting a pawn will show an extra line in its information panel. It assumes you know basic C# and have worked through [your first Disharmony patch](../Disharmony/README.md#write-your-first-patch), or already understand patch registration and postfixes.
 
-You will build your own mod against the Disharmony NuGet package. Players install the official Disharmony mod separately; it supplies Disharmony and Harmony when the game runs.
+You will build your own mod against the Disharmony NuGet package. Players install the [official Disharmony mod](https://steamcommunity.com/sharedfiles/filedetails/?id=3818084845) separately; it supplies Disharmony and Harmony when the game runs.
 
 ## Before you start
 
@@ -65,6 +65,7 @@ Create `About/About.xml` with:
     <li>
       <packageId>Xylthixlm.Disharmony</packageId>
       <displayName>Disharmony</displayName>
+      <steamWorkshopUrl>https://steamcommunity.com/sharedfiles/filedetails/?id=3818084845</steamWorkshopUrl>
     </li>
   </modDependencies>
   <loadAfter>

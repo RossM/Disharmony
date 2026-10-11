@@ -14,7 +14,7 @@ The initial release is a beta. See [compatibility](compatibility.md) for support
 
 ## Playing RimWorld?
 
-If a mod requires Disharmony, follow the [installation instructions](obj/guides/rimworld-players.md) to subscribe, enable it, and set the load order. Disharmony does not change gameplay on its own.
+If a mod requires Disharmony, install it from [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3818084845), then follow the [installation instructions](obj/guides/rimworld-players.md) to subscribe, enable it, and set the load order. Disharmony does not change gameplay on its own.
 
 ## Learn to write mods
 

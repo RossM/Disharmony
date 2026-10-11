@@ -28,7 +28,7 @@ Look up a `DISHARMONY` warning or error in the [Diagnostic reference](https://ro
 
 ## Deploy a RimWorld mod
 
-Use this NuGet package to compile your mod. When distributing it, declare a dependency on the official Disharmony mod, which supplies the runtime assemblies for players. Do not include `Disharmony.dll` or `0Harmony.dll` in your mod's `Assemblies` directory.
+Use this NuGet package to compile your mod. When distributing it, declare a dependency on the [official Disharmony mod](https://steamcommunity.com/sharedfiles/filedetails/?id=3818084845), which supplies the runtime assemblies for players. Do not include `Disharmony.dll` or `0Harmony.dll` in your mod's `Assemblies` directory.
 
 See [RimWorld dependency setup](https://rossm.github.io/Disharmony/guides/rimworld.html#depend-on-disharmony) for the `About.xml` entries, then [Build and install](https://rossm.github.io/Disharmony/guides/rimworld.html#build-and-install) to deploy and test your mod.
 

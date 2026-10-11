@@ -10,11 +10,11 @@ Its bundled analyzer catches patch mistakes as you edit and compile, and its run
 
 [See how a Disharmony patch replaces a transpiler](https://rossm.github.io/Disharmony/harmony-comparison.html#worked-comparison-change-a-call-inside-a-method).
 
-**Installing a RimWorld mod that requires Disharmony?** Follow the [installation and load-order instructions](https://rossm.github.io/Disharmony/guides/rimworld-players.html). Disharmony does not change gameplay on its own.
+**Installing a RimWorld mod that requires Disharmony?** Install [Disharmony from Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3818084845), then follow the [installation and load-order instructions](https://rossm.github.io/Disharmony/guides/rimworld-players.html). Disharmony does not change gameplay on its own.
 
 ## Beta and compatibility
 
-The initial beta supports **Mono/net472**, **Microsoft CLR/net472**, and **Microsoft CLR/net10.0** with Harmony 2. Harmony 3 support is present but experimental. APIs may change during the beta. See [compatibility](https://rossm.github.io/Disharmony/compatibility.html) to choose the library build and Harmony version for your game.
+The [initial beta NuGet package](https://www.nuget.org/packages/Disharmony/1.0.0-beta.1) supports **Mono/net472**, **Microsoft CLR/net472**, and **Microsoft CLR/net10.0** with Harmony 2. Harmony 3 support is present but experimental. APIs may change during the beta. See [compatibility](https://rossm.github.io/Disharmony/compatibility.html) to choose the library build and Harmony version for your game.
 
 ## Start writing mods
 
