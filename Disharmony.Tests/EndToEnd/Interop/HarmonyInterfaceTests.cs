@@ -68,9 +68,7 @@ public sealed class HarmonyInterfaceTests : PatchTestBase
         const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
         Type implementation = harmonyInterface.GetType();
         object locker = implementation.GetProperty("Locker", flags)!.GetValue(harmonyInterface)!;
-        object internals = harmonyInterface is HarmonyInterfaceImplV2
-            ? implementation.GetProperty("HarmonyInternals", flags)!.GetValue(harmonyInterface)!
-            : implementation.GetField("internals", flags)!.GetValue(harmonyInterface)!;
+        object internals = implementation.GetProperty("HarmonyInternals", flags)!.GetValue(harmonyInterface)!;
         FieldInfo getPatchInfoField = internals.GetType().GetField("GetPatchInfo")!;
         var getPatchInfo = (Func<MethodBase, HarmonyPatchInfo?>)getPatchInfoField.GetValue(internals)!;
         var detourMethod = (Action<MethodBase, MethodBase>)internals.GetType().GetField("DetourMethod")!.GetValue(internals)!;
@@ -224,9 +222,7 @@ public sealed class HarmonyInterfaceTests : PatchTestBase
         const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
         Type implementation = harmonyInterface.GetType();
         object locker = implementation.GetProperty("Locker", flags)!.GetValue(harmonyInterface)!;
-        object internals = harmonyInterface is HarmonyInterfaceImplV2
-            ? implementation.GetProperty("HarmonyInternals", flags)!.GetValue(harmonyInterface)!
-            : implementation.GetField("internals", flags)!.GetValue(harmonyInterface)!;
+        object internals = implementation.GetProperty("HarmonyInternals", flags)!.GetValue(harmonyInterface)!;
         FieldInfo getPatchInfoField = internals.GetType().GetField("GetPatchInfo")!;
         var getPatchInfo = (Func<MethodBase, HarmonyPatchInfo?>)getPatchInfoField.GetValue(internals)!;
         FieldInfo updateWrapperField = internals.GetType().GetField("UpdateWrapper")!;

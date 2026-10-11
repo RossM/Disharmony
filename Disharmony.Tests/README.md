@@ -79,16 +79,31 @@ To build the official Disharmony mod from this repository, run:
 dotnet build .\Disharmony.RimWorld\Disharmony.RimWorld.csproj --configuration Release
 ```
 
-The project targets RimWorld 1.6 and `net472`; `Krafs.Rimworld.Ref` supplies the compile-time game references. The installable output is `Disharmony.RimWorld/bin/Release/Mod`:
+The project builds RimWorld 1.6 assemblies for `net472` and RimWorld 1.7 assemblies for `net10.0`.
+`Krafs.Rimworld.Ref` supplies the compile-time game references. The installable output is
+`Disharmony.RimWorld/bin/Release/Mod`:
 
 ```text
 About/
   About.xml
-Assemblies/
+LoadFolders.xml
+1.6/Assemblies/
   0Harmony.dll
   Disharmony.dll
   Disharmony.RimWorld.dll
+1.7/Assemblies/
+  0Harmony.dll
+  Disharmony.dll
+  Disharmony.RimWorld.dll
+LICENSE
+THIRD-PARTY-NOTICES.txt
 ```
+
+`LoadFolders.xml` selects one version directory when the game loads the mod. The 1.6 directory contains
+Harmony 2; the 1.7 directory contains the merged Harmony 3 DLL from the same pinned dependency used by the
+compatibility tests. To use a different merged .NET 10 Harmony 3 build, pass `-p:HarmonyV3Path=C:\path\to\0Harmony.dll`.
+Build without `--framework` to assemble the complete mod; a single-framework build only produces that framework's
+ordinary compiler output.
 
 Copy that folder into RimWorld's `Mods` directory to test it. All source files under `Disharmony.RimWorld/About/` are included with their subdirectories preserved. Each build replaces the generated mod folder; edit the source files rather than the output. For a mod that uses Disharmony, follow [the author setup and deployment guide](../Disharmony.RimWorld/README.md#depend-on-disharmony) instead.
 
@@ -115,8 +130,8 @@ fresh process:
 * `Disharmony.Tests\Run-DisharmonyTests.ps1 -Runtime Dotnet` runs `net10.0` with both Harmony v2 and v3 on .NET 10.
 
 Harmony v2 comes from the project's pinned NuGet package. The merged .NET 10 Harmony v3 beta DLL is versioned at
-`TestArtifacts\Harmony\3.0.0.0-preview.1\net10.0\0Harmony.dll` and used by default. Use `-HarmonyV3Path` to test a
-different build. The bundled beta identifies itself as `3.0.0.0-preview.1`; its `UpdatePatchInfo` takes serialized bytes and
+`TestArtifacts\Harmony\3.0.0-rc.2\net10.0\0Harmony.dll` and used by default. Use `-HarmonyV3Path` to test a
+different build. The bundled beta identifies itself as `3.0.0-rc.2`; its `UpdatePatchInfo` takes serialized bytes and
 `UpdateWrapper` publishes the patch information itself. A .NET 10 DLL cannot be used for the CLR/Mono runs; v3 is
 currently tested only on .NET 10.
 

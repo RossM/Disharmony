@@ -1,12 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFrameworks>net472;net10.0</TargetFrameworks>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>14.0</LangVersion>
     <IsPackable>false</IsPackable>
     <ModOutputDirectory>$(MSBuildProjectDirectory)\bin\$(Configuration)\Mod</ModOutputDirectory>
+    <HarmonyV3Path Condition="'$(HarmonyV3Path)' == ''">$(MSBuildProjectDirectory)\..\TestArtifacts\Harmony\3.0.0-rc.2\net10.0\0Harmony.dll</HarmonyV3Path>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net472'">
+    <RimWorldVersion>1.6</RimWorldVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <RimWorldVersion>1.7</RimWorldVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,23 +24,47 @@
     <ProjectReference Include="..\Disharmony\Disharmony.csproj" />
   </ItemGroup>
 
-  <Target Name="BuildRimWorldMod" AfterTargets="Build" Condition="'$(DesignTimeBuild)' != 'true'">
+  <Target Name="GetRimWorldModAssemblies" Returns="@(_ModAssemblies)">
+    <Error Condition="'$(RimWorldVersion)' == ''" Text="No RimWorld version configured for $(TargetFramework)." />
+    <Error Condition="'$(TargetFramework)' == 'net10.0' and !Exists('$(HarmonyV3Path)')"
+           Text="Harmony 3 was not found at $(HarmonyV3Path). Set HarmonyV3Path to the merged .NET 10 DLL." />
+    <ItemGroup>
+      <_ModAssemblies Include="$(TargetPath);$(TargetDir)Disharmony.dll" />
+      <_ModAssemblies Include="$(TargetDir)0Harmony.dll" Condition="'$(TargetFramework)' == 'net472'" />
+      <_ModAssemblies Include="$(HarmonyV3Path)" Condition="'$(TargetFramework)' == 'net10.0'" />
+      <_ModAssemblies Update="@(_ModAssemblies)">
+        <RimWorldVersion>$(RimWorldVersion)</RimWorldVersion>
+      </_ModAssemblies>
+    </ItemGroup>
+  </Target>
+
+  <!-- Package only after both framework builds finish; inner builds must not replace each other's output. -->
+  <Target Name="BuildRimWorldMod" AfterTargets="Build"
+          Condition="'$(IsCrossTargetingBuild)' == 'true' and '$(DesignTimeBuild)' != 'true'">
+    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="GetRimWorldModAssemblies"
+             Properties="TargetFramework=net472;Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" ItemName="_AllModAssemblies" />
+    </MSBuild>
+    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="GetRimWorldModAssemblies"
+             Properties="TargetFramework=net10.0;Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" ItemName="_AllModAssemblies" />
+    </MSBuild>
     <ItemGroup>
       <_ModAboutFiles Include="$(MSBuildProjectDirectory)\About\**\*" />
-      <_ModAssemblies Include="$(TargetPath);$(TargetDir)Disharmony.dll;$(TargetDir)0Harmony.dll" />
     </ItemGroup>
 
-    <!-- Recreate the generated mod folder so removed About files and stale assemblies are not shipped. -->
+    <!-- Recreate the generated mod folder so removed files and stale root assemblies are not shipped. -->
     <RemoveDir Directories="$(ModOutputDirectory)" />
     <Copy SourceFiles="@(_ModAboutFiles)"
           DestinationFiles="@(_ModAboutFiles->'$(ModOutputDirectory)\About\%(RecursiveDir)%(Filename)%(Extension)')" />
-    <Copy SourceFiles="@(_ModAssemblies)" DestinationFolder="$(ModOutputDirectory)\Assemblies" />
-    <Copy SourceFiles="$(MSBuildProjectDirectory)\..\LICENSE;$(MSBuildProjectDirectory)\..\THIRD-PARTY-NOTICES.txt"
+    <Copy SourceFiles="@(_AllModAssemblies)"
+          DestinationFiles="@(_AllModAssemblies->'$(ModOutputDirectory)\%(RimWorldVersion)\Assemblies\%(Filename)%(Extension)')" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\LoadFolders.xml;$(MSBuildProjectDirectory)\..\LICENSE;$(MSBuildProjectDirectory)\..\THIRD-PARTY-NOTICES.txt"
           DestinationFolder="$(ModOutputDirectory)" />
     <Message Importance="high" Text="RimWorld mod: $(ModOutputDirectory)" />
   </Target>
 
-  <Target Name="CleanRimWorldMod" AfterTargets="Clean">
+  <Target Name="CleanRimWorldMod" AfterTargets="Clean" Condition="'$(IsCrossTargetingBuild)' == 'true'">
     <RemoveDir Directories="$(ModOutputDirectory)" />
   </Target>
 

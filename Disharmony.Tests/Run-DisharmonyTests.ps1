@@ -11,7 +11,7 @@ param(
     [ValidateSet('2', '3')]
     [string[]] $HarmonyVersion,
 
-    [string] $HarmonyV3Path = (Join-Path $PSScriptRoot '..\TestArtifacts\Harmony\3.0.0.0-preview.1\net10.0\0Harmony.dll'),
+    [string] $HarmonyV3Path = (Join-Path $PSScriptRoot '..\TestArtifacts\Harmony\3.0.0-rc.2\net10.0\0Harmony.dll'),
 
     [switch] $Profile,
 
