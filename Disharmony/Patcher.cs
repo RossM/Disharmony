@@ -280,14 +280,7 @@ public static class Patcher
     /// </summary>
     /// <remarks>
     ///     Patches are already active without this call. Use it during a convenient idle period when avoiding first-use
-    ///     delay matters. This call continues until no deferred patches remain, including patches added while it runs.
-    ///     <para>
-    ///         If a method cannot be compiled, the error is reported through <see cref="RuntimeExceptionHandler" />
-    ///         (or Harmony's file log when no handler is registered), and compilation continues for the other methods.
-    ///         A later call does not retry that failed method. This error-handling behavior is provisional and may change
-    ///         in a future release. Exceptions thrown by a handler or by Harmony while recovering from a failure still
-    ///         propagate to the caller.
-    ///     </para>
+    ///     delay matters.
     /// </remarks>
     public static void ForceApply()
     {
