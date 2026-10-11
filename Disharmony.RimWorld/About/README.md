@@ -6,7 +6,7 @@ This is a beta release.
 
 ## Load order
 
-Place Disharmony after **Core** and any enabled official expansions, and before the mods that require it.
+Place Disharmony after Harmony (if installed), and before the mods that require it.
 
 Disharmony includes Harmony, so you do not need a separate Harmony subscription just to use Disharmony. If another mod requires the Harmony mod, keep it enabled and load it before Disharmony.
 
