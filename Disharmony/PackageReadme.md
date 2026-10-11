@@ -34,4 +34,4 @@ See [RimWorld dependency setup](https://rossm.github.io/Disharmony/guides/rimwor
 
 ## License
 
-Disharmony is licensed under the MIT license. Harmony has its own license.
+Disharmony and Harmony are both licensed under the MIT license.
