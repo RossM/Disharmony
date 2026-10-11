@@ -36,7 +36,7 @@ Open `Source/DisharmonyDemo.csproj` in your editor and replace its contents with
   <ItemGroup>
     <PackageReference Include="Krafs.Rimworld.Ref" Version="1.6.4871" PrivateAssets="all" />
     <PackageReference Include="Disharmony" Version="1.0.0-beta.1" ExcludeAssets="runtime" />
-    <PackageReference Include="Lib.Harmony" Version="[2.4.1,3.0.0-0)" ExcludeAssets="runtime" />
+    <PackageReference Include="Lib.Harmony" Version="2.4.1" ExcludeAssets="runtime" />
   </ItemGroup>
 </Project>
 ```
