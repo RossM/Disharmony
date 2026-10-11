@@ -15,6 +15,9 @@ public static class ReflectionExtensions
         /// </summary>
         /// <remarks>
         ///     If the member has no declaring type, the result starts with <c>::</c>. Parameter types are not included.
+        ///     <para>
+        ///         The HTML documentation displays this property incorrectly; write it as <c>member.FullName</c>.
+        ///     </para>
         /// </remarks>
         public string FullName => $"{member.DeclaringType?.FullName}::{member.Name}";
     }

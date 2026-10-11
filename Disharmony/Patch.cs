@@ -205,11 +205,17 @@ public static class Patch
         /// <summary>
         ///     Gets a copy configured to run before its selected operation.
         /// </summary>
+        /// <remarks>
+        ///     The HTML documentation displays this property incorrectly; write it as <c>patchConfig.Prefix</c>.
+        /// </remarks>
         public PatchConfig Prefix => patchConfig with { Kind = PatchKind.Prefix };
 
         /// <summary>
         ///     Gets a copy configured to run after its selected operation.
         /// </summary>
+        /// <remarks>
+        ///     The HTML documentation displays this property incorrectly; write it as <c>patchConfig.Postfix</c>.
+        /// </remarks>
         public PatchConfig Postfix => patchConfig with { Kind = PatchKind.Postfix };
 
         /// <summary>
