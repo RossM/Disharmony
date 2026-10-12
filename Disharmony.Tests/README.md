@@ -104,8 +104,9 @@ THIRD-PARTY-NOTICES.txt
 ```
 
 `LoadFolders.xml` selects one version directory when the game loads the mod. The 1.6 directory contains
-Harmony 2; the 1.7 directory contains the merged Harmony 3 DLL from the same pinned dependency used by the
-compatibility tests. To use a different merged .NET 10 Harmony 3 build, pass `-p:HarmonyV3Path=C:\path\to\0Harmony.dll`.
+Harmony 2; the 1.7 directory contains the merged Harmony 3 DLL restored from NuGet. The version for the mod
+and compatibility tests is pinned by `HarmonyV3Version` in `Directory.Build.props`. To use a different merged
+.NET 10 Harmony 3 build, pass `-p:HarmonyV3Path=C:\path\to\0Harmony.dll`.
 Build without `--framework` to assemble the complete mod; a single-framework build only produces that framework's
 ordinary compiler output.
 
@@ -133,11 +134,9 @@ fresh process:
 * `Disharmony.Tests\Run-DisharmonyTests.ps1 -Runtime Mono` runs `net472` with Harmony v2 on Mono (the default).
 * `Disharmony.Tests\Run-DisharmonyTests.ps1 -Runtime Dotnet` runs `net10.0` with both Harmony v2 and v3 on .NET 10.
 
-Harmony v2 comes from the project's pinned NuGet package. The merged .NET 10 Harmony v3 beta DLL is versioned at
-`TestArtifacts\Harmony\3.0.0-rc.2\net10.0\0Harmony.dll` and used by default. Use `-HarmonyV3Path` to test a
-different build. The bundled beta identifies itself as `3.0.0-rc.2`; its `UpdatePatchInfo` takes serialized bytes and
-`UpdateWrapper` publishes the patch information itself. A .NET 10 DLL cannot be used for the CLR/Mono runs; v3 is
-currently tested only on .NET 10.
+Both Harmony versions are restored from NuGet. Harmony 3 uses the `HarmonyV3Version` pinned in
+`Directory.Build.props`; use `-HarmonyV3Path` to test a local build instead. Harmony 3 is currently tested only
+on .NET 10.
 
 Pass `-HarmonyVersion 2` or `-HarmonyVersion 3` to select one version. Both runs use the same test and Disharmony
 assemblies, compiled against v2, with only `0Harmony.dll` replaced in the v3 run. Staged outputs are under

@@ -11,7 +11,7 @@ param(
     [ValidateSet('2', '3')]
     [string[]] $HarmonyVersion,
 
-    [string] $HarmonyV3Path = (Join-Path $PSScriptRoot '..\TestArtifacts\Harmony\3.0.0-rc.2\net10.0\0Harmony.dll'),
+    [string] $HarmonyV3Path,
 
     [switch] $Profile,
 
@@ -79,22 +79,14 @@ if ($Profile -and $MonoProfile)
 
 if (-not $HarmonyVersion)
 {
-    # The supplied v3 beta targets .NET 10; CLR and Mono retain their v2 default.
+    # The default v3 assembly targets .NET 10; CLR and Mono retain their v2 default.
     $HarmonyVersion = if ($Runtime -eq 'Dotnet') { @('2', '3') } else { @('2') }
 }
 $HarmonyVersion = @($HarmonyVersion | Select-Object -Unique)
 
-if ('3' -in $HarmonyVersion)
+if ('3' -in $HarmonyVersion -and $HarmonyV3Path)
 {
-    if (-not (Test-Path -LiteralPath $HarmonyV3Path -PathType Leaf))
-    {
-        throw "Harmony v3 was not found at $HarmonyV3Path. Supply -HarmonyV3Path or select -HarmonyVersion 2."
-    }
-    $HarmonyV3Path = (Resolve-Path -LiteralPath $HarmonyV3Path).Path
-    if ([Reflection.AssemblyName]::GetAssemblyName($HarmonyV3Path).Version.Major -ne 3)
-    {
-        throw "The requested Harmony v3 assembly is not version 3: $HarmonyV3Path"
-    }
+    $HarmonyV3Path = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($HarmonyV3Path)
 }
 
 if ($HarmonyVersion.Count -gt 1 -and ($NUnitArguments | Where-Object { $_ -match '^--result(?:=|$)' }))
@@ -130,6 +122,27 @@ try
     if (-not (Test-Path -LiteralPath (Join-Path $buildDirectory $testFileName) -PathType Leaf))
     {
         throw "The test executable was not produced in $buildDirectory."
+    }
+
+    if ('3' -in $HarmonyVersion)
+    {
+        if (-not $HarmonyV3Path)
+        {
+            $packageProperties = & $dotnet.Source msbuild $testProject -nologo `
+                -property:TargetFramework=$targetFramework -property:Configuration=$Configuration -getProperty:NuGetPackageRoot,HarmonyV3Version
+            if ($LASTEXITCODE -ne 0) { throw 'Reading the restored Harmony 3 package location failed.' }
+            $packageProperties = ($packageProperties | Out-String | ConvertFrom-Json).Properties
+            $HarmonyV3Path = Join-Path $packageProperties.NuGetPackageRoot "lib.harmony/$($packageProperties.HarmonyV3Version)/lib/net10.0/0Harmony.dll"
+        }
+        if (-not (Test-Path -LiteralPath $HarmonyV3Path -PathType Leaf))
+        {
+            throw "Harmony v3 was not found at $HarmonyV3Path. Supply -HarmonyV3Path or select -HarmonyVersion 2."
+        }
+        $HarmonyV3Path = (Resolve-Path -LiteralPath $HarmonyV3Path).Path
+        if ([Reflection.AssemblyName]::GetAssemblyName($HarmonyV3Path).Version.Major -ne 3)
+        {
+            throw "The requested Harmony v3 assembly is not version 3: $HarmonyV3Path"
+        }
     }
 
     foreach ($version in $HarmonyVersion)

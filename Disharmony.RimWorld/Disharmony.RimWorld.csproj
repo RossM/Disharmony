@@ -7,7 +7,6 @@
     <LangVersion>14.0</LangVersion>
     <IsPackable>false</IsPackable>
     <ModOutputDirectory>$(MSBuildProjectDirectory)\bin\$(Configuration)\Mod</ModOutputDirectory>
-    <HarmonyV3Path Condition="'$(HarmonyV3Path)' == ''">$(MSBuildProjectDirectory)\..\TestArtifacts\Harmony\3.0.0-rc.2\net10.0\0Harmony.dll</HarmonyV3Path>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'net472'">
@@ -21,10 +20,14 @@
     <Compile Remove="About\**\*" />
     <EmbeddedResource Remove="About\**\*" />
     <PackageReference Include="Krafs.Rimworld.Ref" Version="1.6.4871" PrivateAssets="all" />
+    <PackageReference Include="Lib.Harmony" Version="$(HarmonyV3Version)" PrivateAssets="all" GeneratePathProperty="true" Condition="'$(TargetFramework)' == 'net10.0'" />
     <ProjectReference Include="..\Disharmony\Disharmony.csproj" />
   </ItemGroup>
 
   <Target Name="GetRimWorldModAssemblies" Returns="@(_ModAssemblies)">
+    <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">
+      <HarmonyV3Path Condition="'$(HarmonyV3Path)' == ''">$(PkgLib_Harmony)\lib\net10.0\0Harmony.dll</HarmonyV3Path>
+    </PropertyGroup>
     <Error Condition="'$(RimWorldVersion)' == ''" Text="No RimWorld version configured for $(TargetFramework)." />
     <Error Condition="'$(TargetFramework)' == 'net10.0' and !Exists('$(HarmonyV3Path)')"
            Text="Harmony 3 was not found at $(HarmonyV3Path). Set HarmonyV3Path to the merged .NET 10 DLL." />
