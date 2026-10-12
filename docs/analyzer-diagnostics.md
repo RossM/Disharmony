@@ -402,14 +402,14 @@ Related: [ReturnValue](xref:Disharmony.ReturnValueAttribute), [Prefix](xref:Dish
 
 ### DISHARMONY0035
 
-**A postfix binds an argument with `out`.** It must assign a value without first reading the argument. The target has already run, so this assignment cannot change the input the target used or the result it calculated.
+**A postfix binds an argument with `out`.** It must assign a value without first reading the argument. The target has already run, so this assignment cannot change the input it used.
 
 Choose the correction that matches your intent:
 
+- **Overwrite a value returned through an argument:** if the target declares the parameter as `ref` or `out`, a postfix can change the value its caller receives. Declare the patch parameter `ref` to overwrite or adjust that value. If you deliberately use `out` to replace it without reading it, suppress this warning locally.
 - **Read an argument after the target runs:** remove `out`, or use `in` for read-only reference access. This also applies when the target declares that argument as `out`: the postfix can read the value the target produced, and does not need to copy its modifier.
 - **Change an input before the target uses it:** move the work into a `[Prefix]`. Use `ref` to adjust the incoming value, or `out` to replace it without reading it. For a target argument passed by value, changing `out` to `ref` while keeping the postfix is rejected too. See the [argument-changing prefix](#disharmony0031).
 - **Change the target's return value:** bind `[ReturnValue] ref ...` in the postfix, as in the [discount example](#disharmony0004). Assigning an argument after the calculation does not change its result.
-- **Change a value returned to the caller through a `ref` or `out` argument:** keep the postfix. Use `ref` if you need to read and adjust the value the target produced. If you deliberately replace it without reading it, `out` is appropriate and you can suppress this warning locally.
 
 Related: [Argument](xref:Disharmony.ArgumentAttribute), [ReturnValue](xref:Disharmony.ReturnValueAttribute), [Prefix](xref:Disharmony.PrefixAttribute), [Postfix](xref:Disharmony.PostfixAttribute).
 
