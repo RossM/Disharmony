@@ -199,7 +199,6 @@ public static class Patcher
     /// <exception cref="InvalidOperationException">A patch or unpatch call was made from a <see cref="RuntimeExceptionHandler">runtime exception handler</see>.</exception>
     public static PatchHandle Patch(PatchConfig patch)
     {
-        ValidatePatchingAllowed();
         return Patch([patch]);
     }
 
@@ -216,7 +215,6 @@ public static class Patcher
     /// <exception cref="InvalidOperationException">A patch or unpatch call was made from a <see cref="RuntimeExceptionHandler">runtime exception handler</see>.</exception>
     public static PatchHandle Patch(PatchConfig patch, params IEnumerable<MethodBase> methods)
     {
-        ValidatePatchingAllowed();
         return Patch(methods.Select(patch.Of));
     }
 
@@ -233,7 +231,6 @@ public static class Patcher
     /// <exception cref="InvalidOperationException">A patch or unpatch call was made from a <see cref="RuntimeExceptionHandler">runtime exception handler</see>.</exception>
     public static PatchHandle Patch(MethodBase method, params IEnumerable<PatchConfig> patches)
     {
-        ValidatePatchingAllowed();
         return Patch(patches.Select(patch => patch.Of(method)));
     }
 
