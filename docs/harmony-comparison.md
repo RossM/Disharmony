@@ -2,7 +2,7 @@
 
 If you already write Harmony patches, this guide explains what Disharmony offers, where the APIs differ, and how to add it to an existing mod. You can keep your Harmony patches and adopt Disharmony for individual changes.
 
-The comparison below uses **Harmony 2.4.x**, the series supported by Disharmony's initial beta. See [runtime and dependency compatibility](compatibility.md) for the supported library builds and required Harmony versions.
+The comparison below uses **Harmony 2.4.x**. See [runtime and dependency compatibility](compatibility.md) for the supported library builds and required Harmony versions.
 
 To add Disharmony to an existing mod, review [compatibility and conversion](#compatibility-and-conversion), then follow [the adoption example](#add-disharmony-to-an-existing-harmony-mod).
 
@@ -203,7 +203,7 @@ The member's item price becomes 18, then the unchanged fee of 2 produces a total
 
 ## Compatibility and conversion
 
-Disharmony's initial beta uses Harmony 2. Check [runtime and dependency compatibility](compatibility.md) for the supported builds and required versions before adding the package to your mod.
+Check [runtime and dependency compatibility](compatibility.md) for the supported builds and required versions before adding the package to your mod.
 
 ### Harmony 3 and inner patching
 
@@ -232,7 +232,7 @@ Start with one change that benefits from inner patching or Disharmony's bindings
 
 ### Add the package and arrange deployment
 
-Add `Disharmony` version `1.0.0-beta.1` to the project that contains the new patch. If it already references `Lib.Harmony`, check that its version meets [Disharmony's requirements](compatibility.md#harmony-version). The package includes the analyzer; you do not add Roslyn as a runtime dependency.
+Add `Disharmony` version `1.0.0-beta.2` to the project that contains the new patch. If it already references `Lib.Harmony`, check that its version meets [Disharmony's requirements](compatibility.md#harmony-version). The package includes the analyzer; you do not add Roslyn as a runtime dependency.
 
 For a RimWorld mod, follow [project references](obj/guides/rimworld.md#create-the-project) and [the Disharmony mod dependency](obj/guides/rimworld.md#depend-on-disharmony): the official Disharmony mod supplies the runtime assemblies. Your mod's metadata should require Disharmony and load after it; a separate Harmony mod dependency is unnecessary. For other games, ensure that Disharmony and the required Harmony version are available when your mod loads.
 
@@ -303,7 +303,7 @@ Use the .NET 10 SDK, version 10.0.400 or newer. Create a console project and add
 ```shell
 dotnet new console --name HarmonyComparison --framework net10.0
 cd HarmonyComparison
-dotnet add package Disharmony --version 1.0.0-beta.1
+dotnet add package Disharmony --version 1.0.0-beta.2
 ```
 
 Add [the game classes](#the-game-code) and both patch classes from [the comparison](#worked-comparison-change-a-call-inside-a-method) to your project, including their `using` directives.

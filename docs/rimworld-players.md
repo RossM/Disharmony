@@ -4,7 +4,7 @@ Disharmony lets other mods change how RimWorld works. Install it when a mod list
 
 This is a beta release. [Project on GitHub](https://github.com/RossM/Disharmony).
 
-**Supported version:** RimWorld 1.6.
+**Supported versions:** RimWorld 1.6 and 1.7 unstable.
 
 ## Installation
 

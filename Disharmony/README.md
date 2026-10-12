@@ -45,7 +45,7 @@ Use the [.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0), 
 ```shell
 dotnet new console --name FirstDisharmonyPatch --framework net10.0
 cd FirstDisharmonyPatch
-dotnet add package Disharmony --version 1.0.0-beta.1
+dotnet add package Disharmony --version 1.0.0-beta.2
 ```
 
 The last command adds Disharmony to the project and restores its Harmony dependency and bundled analyzer. This console example uses `net10.0`; for a game mod, choose the target framework that matches the game's runtime. See [compatibility](../docs/compatibility.md) for the supported builds and Harmony versions.

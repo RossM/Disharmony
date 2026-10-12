@@ -2,7 +2,7 @@
 
 ## Choose a library build
 
-The initial beta supports these runtime and target-framework combinations:
+Disharmony supports these runtime and target-framework combinations:
 
 | Runtime hosting your game or application | Disharmony target framework |
 | --- | --- |
@@ -20,7 +20,14 @@ Harmony 3 support is incomplete and subject to change.
 
 ## RimWorld
 
-The official Disharmony mod supplies the runtime libraries for RimWorld mods that depend on it. Players should follow [installation and load-order instructions](obj/guides/rimworld-players.md); mod authors should follow [project setup and deployment](obj/guides/rimworld.md).
+The official Disharmony mod supports RimWorld 1.6 and 1.7 unstable. It supplies the runtime libraries for mods that depend on it:
+
+| RimWorld version | Mod target framework | Bundled Harmony |
+| --- | --- | --- |
+| 1.6 | `net472` | 2.4.1 |
+| 1.7 unstable | `net10.0` | 3.0.0-rc.2 |
+
+Players should follow [installation and load-order instructions](obj/guides/rimworld-players.md); mod authors should follow [project setup and deployment](obj/guides/rimworld.md).
 
 ## Existing Harmony mods
 
@@ -28,4 +35,4 @@ You can keep Harmony patches and add Disharmony patches in the same mod. [From H
 
 ## Experimental options
 
-The IL optimizer is experimental and has no public enablement API in the initial beta. Review [PatchOptions](xref:Disharmony.PatchOptions) for the behavior and constraints of optional patch flags.
+The IL optimizer is experimental and has no public enablement API during the beta. Review [PatchOptions](xref:Disharmony.PatchOptions) for the behavior and constraints of optional patch flags.

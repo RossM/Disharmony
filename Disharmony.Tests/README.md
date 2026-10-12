@@ -43,7 +43,7 @@ Build outputs are separated by configuration and framework under `bin`. The .NET
 `net472`. Project references select the matching target automatically.
 Visual Studio Test Explorer and `dotnet test` run the tests for each target through the NUnit test adapter.
 These commands use the referenced Harmony 2.4.2 package. Use the compatibility runner below to test the same
-Disharmony binaries across runtimes, or to exercise the Harmony 3 preview adapter. Harmony 3 runs are development experiments; see [compatibility](../docs/compatibility.md) for the supported release scope.
+Disharmony binaries across runtimes, or to exercise the Harmony 3 adapter. See [compatibility](../docs/compatibility.md) for the supported release scope.
 
 ## Build the NuGet package
 
@@ -55,7 +55,7 @@ dotnet pack .\Disharmony\Disharmony.csproj --configuration Release --output .\ar
 
 The output contains the NuGet package and its `.snupkg` symbol package. The NuGet package includes the `net472` and `net10.0` library builds, XML API documentation, and the analyzer. The RimWorld integration is distributed separately; see [Build the RimWorld integration](#build-the-rimworld-integration).
 
-The default version is `1.0.0-beta.1`, shared by the library, analyzer, and RimWorld integration through `Directory.Build.props`. To build a different version, add `-p:Version=VERSION` to the pack command, replacing `VERSION` with the desired version number.
+The default version is `1.0.0-beta.2`, shared by the library, analyzer, and RimWorld integration through `Directory.Build.props`. To build a different version, add `-p:Version=VERSION` to the pack command, replacing `VERSION` with the desired version number.
 
 ## Work on the analyzer
 
