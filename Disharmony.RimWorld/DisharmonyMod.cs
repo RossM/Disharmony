@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using Verse;
 
 namespace Disharmony.RimWorld;
@@ -6,6 +7,7 @@ namespace Disharmony.RimWorld;
 /// <summary>
 ///     RimWorld's entry point for the Disharmony library mod.
 /// </summary>
+[UsedImplicitly]
 public sealed class DisharmonyMod : Mod
 {
     /// <summary>
