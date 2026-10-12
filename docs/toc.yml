@@ -38,5 +38,7 @@
   items:
   - name: Development and testing
     href: obj/guides/testing.md
+  - name: Writing tests
+    href: test-writing.md
   - name: Architecture
     href: architecture.md
