@@ -35,4 +35,8 @@
 - name: API reference
   href: api/toc.yml
 - name: Contributing
-  href: obj/guides/testing.md
+  items:
+  - name: Development and testing
+    href: obj/guides/testing.md
+  - name: Architecture
+    href: architecture.md

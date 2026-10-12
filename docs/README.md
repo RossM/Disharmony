@@ -58,6 +58,7 @@ See [GitHub's custom Pages workflow documentation](https://docs.github.com/en/pa
 | Analyzer setup and configuration | `Disharmony.Analyzers/README.md` |
 | Diagnostic explanations and corrections | `docs/analyzer-diagnostics.md` |
 | Development and testing guide | `Disharmony.Tests/README.md` |
+| Contributor architecture overview | `docs/architecture.md` |
 | API descriptions | C# XML documentation comments |
 | HTML home page and audience routes | `docs/index.md` |
 | Supported runtimes and Harmony versions | `docs/compatibility.md` |

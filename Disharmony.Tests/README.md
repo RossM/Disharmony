@@ -2,6 +2,8 @@
 
 Use this guide to work on Disharmony itself. To build a mod that uses the library, follow [Getting started](../Disharmony/README.md#write-your-first-patch) or [the RimWorld author guide](../Disharmony.RimWorld/README.md).
 
+For the patching flow, subsystem boundaries, and source locations, read the [architecture overview](../docs/architecture.md).
+
 The library, test project, and test-target fixtures multi-target .NET Framework 4.7.2 (`net472`) and .NET 10
 (`net10.0`). Use the SDK selected by the repository's `global.json` (10.0.400 or a later patch in the same feature band); the source uses C# 14. Running `net472` tests through `dotnet test` requires Windows and
 .NET Framework 4.7.2 or later; the NUnitLite runner also supports Mono.
