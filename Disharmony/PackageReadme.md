@@ -14,7 +14,7 @@ dotnet add package Disharmony --prerelease
 
 The package includes `net472` and `net10.0` builds. Use `net472` for Mono or Microsoft .NET Framework, and `net10.0` for Microsoft .NET 10. NuGet selects the build for your project's target framework.
 
-The `net472` build requires Harmony 2.4.1+; the `net10.0` build requires Harmony 2.4.2+. NuGet restores the appropriate dependency from the 2.x series. Harmony 3 support is incomplete and subject to change. See [Compatibility](https://rossm.github.io/Disharmony/compatibility.html) for supported runtimes and Harmony versions.
+The `net472` build requires Harmony 2.4.1+; the `net10.0` build requires Harmony 2.4.2+. Harmony 3 support is incomplete and subject to change. See [Compatibility](https://rossm.github.io/Disharmony/compatibility.html) for supported runtimes and Harmony versions.
 
 Start with [Write your first patch](https://rossm.github.io/Disharmony/guides/getting-started.html#write-your-first-patch), then explore [Usage examples](https://rossm.github.io/Disharmony/usage-examples.html) or look up the [API reference](https://rossm.github.io/Disharmony/api/Disharmony.html).
 

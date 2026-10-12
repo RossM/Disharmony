@@ -14,9 +14,7 @@ Choose the build for the runtime that will load your code. For example, a mod lo
 
 ## Harmony version
 
-The `net472` build requires **Harmony 2.4.1 or later in the 2.x series**. The `net10.0` build requires
-**Harmony 2.4.2 or later in the 2.x series**; Harmony 2.4.1 does not support the .NET 10 runtime.
-The NuGet package restores the appropriate Harmony dependency for your project's target framework.
+The supported Harmony 2 versions are **2.4.1 or later** for `net472` and **2.4.2 or later** for `net10.0`. Harmony 2.4.1 does not support the .NET 10 runtime.
 
 Harmony 3 support is incomplete and subject to change.
 

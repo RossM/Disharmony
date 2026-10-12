@@ -1044,6 +1044,11 @@ public sealed class ExceptionAttribute() : ParameterBindingAttribute(Scope.Any);
 ///         This enables a single patch applied to multiple targets with <see cref="TargetsAttribute" /> to
 ///         determine which specific method is being patched.
 ///     </para>
+///     <para>
+///         Pass the parameter by value. Its type must accept the supplied <see cref="MethodInfo" />,
+///         <see cref="ConstructorInfo" />, or <see cref="FieldInfo" />. Use <see cref="MemberInfo" /> when
+///         the patch handles several kinds of member.
+///     </para>
 /// </remarks>
 [PublicAPI]
 [AttributeUsage(AttributeTargets.Parameter)]
