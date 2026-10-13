@@ -72,4 +72,6 @@ A: Yes and no. From Harmony's point of view, Disharmony is just a particularly c
 
 ### Q: That can't possibly be faster than Harmony.
 
-A: Disharmony uses a trick for that. When you initially register a patch, Disharmony does only a portion of the work needed to install the patch, and patches the original method with a small stub called a trampoline. The majority of patching work is done in the background after the game has finished loading and is waiting for user input. If the game tries to call a patched method before it's ready, the trampoline lets Disharmony detect that and do the deferred work for that method immediately, then redirect that call to the patched version. tl;dr: It's magic.
+A: Disharmony uses a trick for that. When you initially register a patch, Disharmony does only a portion of the work needed to install the patch, and patches the original method with a small stub called a trampoline. The majority of patching work is done in the background after the game has finished loading and is waiting for user input. If the game tries to call a patched method before it's ready, the trampoline lets Disharmony detect that and do the deferred work for that method immediately, then redirect that call to the patched version. 
+
+**tl;dr:** It's magic.
