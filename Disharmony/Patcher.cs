@@ -272,6 +272,11 @@ public static class Patcher
         Registry.Unpatch(handle);
     }
 
+    public static IEnumerable<PatchConfig> PatchesFromMethod(MethodInfo method)
+    {
+        return PatchRegistry.Instance.GetPatchConfigs(method);
+    }
+
     /// <summary>
     ///     Applies all deferred patches immediately, generating the patched method bodies before their first call.
     /// </summary>

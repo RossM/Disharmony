@@ -112,60 +112,66 @@ internal class PatchRegistry
             ProcessMethod(method, unpatchKey, extraStateKey);
     }
 
+    internal IEnumerable<PatchConfig> GetPatchConfigs(MethodInfo method)
+    {
+        List<Attribute> attributes = GetAttributes(method);
+
+        var defaultTargetType =
+            attributes.OfType<PatchAttribute>().Select(p => p.Type).FirstOrDefault(t => t is not null) ??
+            attributes.OfType<HarmonyPatch>().Select(p => p.info.declaringType).FirstOrDefault(t => t is not null);
+        var patchTypeAttribute = attributes.OfType<PatchTypeAttribute>().SingleOrDefault();
+        var innerAttribute = attributes.OfType<InnerAttributeBase>().SingleOrDefault();
+        var targetAttributes = attributes.OfType<TargetAttribute>().ToList();
+        var priority = attributes.OfType<PriorityAttribute>().FirstOrDefault()?.Priority ?? PatchPriority.Default;
+        var options = attributes.OfType<PatchOptionsAttribute>().FirstOrDefault()?.Options ?? PatchOptions.Default;
+
+        if (patchTypeAttribute == null)
+            yield break;
+
+        PatchKind patchKind = patchTypeAttribute.PatchKind;
+
+        Invocation inner = GetInnerInvocation(innerAttribute);
+
+        foreach (var targetAttribute in targetAttributes)
+        {
+            var patchedType = targetAttribute.Type ?? defaultTargetType;
+
+            var candidates = ReflectionTools.GetMembers(patchedType, targetAttribute.MethodName,
+                targetAttribute.MemberType, targetAttribute.ParameterTypes, null);
+
+            var nameForErrors = targetAttribute.MemberType == MemberType.Constructor ? ".ctor" : targetAttribute.MethodName;
+
+            switch (candidates.Count)
+            {
+                case > 1 when targetAttribute is not TargetsAttribute:
+                    throw new AmbiguousMatchException($"{nameForErrors}: Ambiguous match");
+                case 0: throw new ReflectionException($"{nameForErrors}: Member not found");
+            }
+
+            foreach (var result in candidates)
+            {
+                MethodBase target = result as MethodBase ??
+                                    throw new ReflectionException($"{nameForErrors}: Couldn't locate method");
+                var patch = new PatchConfig()
+                {
+                    PatchMethod = method,
+                    Kind = patchKind,
+                    Target = GetOuterInvocation(target),
+                    InnerTarget = inner,
+                    Options = options,
+                    Priority = priority
+                };
+                yield return patch;
+            }
+        }
+    }
+
     private void ProcessMethod(MethodInfo method, int unpatchKey, string extraStateKey = "")
     {
         try
         {
-            List<Attribute> attributes = GetAttributes(method);
-
-            var defaultTargetType =
-                attributes.OfType<PatchAttribute>().Select(p => p.Type).FirstOrDefault(t => t is not null) ??
-                attributes.OfType<HarmonyPatch>().Select(p => p.info.declaringType).FirstOrDefault(t => t is not null);
-            var patchTypeAttribute = attributes.OfType<PatchTypeAttribute>().SingleOrDefault();
-            var innerAttribute = attributes.OfType<InnerAttributeBase>().SingleOrDefault();
-            var targetAttributes = attributes.OfType<TargetAttribute>().ToList();
-            var priority = attributes.OfType<PriorityAttribute>().FirstOrDefault()?.Priority ?? PatchPriority.Default;
-            var options = attributes.OfType<PatchOptionsAttribute>().FirstOrDefault()?.Options ?? PatchOptions.Default;
-
-            if (patchTypeAttribute == null)
-                return;
-
-            PatchKind patchKind = patchTypeAttribute.PatchKind;
-
-            Invocation inner = GetInnerInvocation(innerAttribute);
-
-            foreach (var targetAttribute in targetAttributes)
-            {
-                var patchedType = targetAttribute.Type ?? defaultTargetType;
-
-                var candidates = ReflectionTools.GetMembers(patchedType, targetAttribute.MethodName,
-                    targetAttribute.MemberType, targetAttribute.ParameterTypes, null);
-
-                var nameForErrors = targetAttribute.MemberType == MemberType.Constructor ? ".ctor" : targetAttribute.MethodName;
-
-                switch (candidates.Count)
-                {
-                    case > 1 when targetAttribute is not TargetsAttribute:
-                        throw new AmbiguousMatchException($"{nameForErrors}: Ambiguous match");
-                    case 0: throw new ReflectionException($"{nameForErrors}: Member not found");
-                }
-
-                foreach (var result in candidates)
-                {
-                    MethodBase target = result as MethodBase ??
-                                        throw new ReflectionException($"{nameForErrors}: Couldn't locate method");
-                    var patch = new PatchConfig()
-                    {
-                        PatchMethod = method,
-                        Kind = patchKind,
-                        Target = GetOuterInvocation(target),
-                        InnerTarget = inner,
-                        Options = options,
-                        Priority = priority
-                    };
-                    ProcessPatch(patch, unpatchKey, extraStateKey);
-                }
-            }
+            foreach (var patch in GetPatchConfigs(method))
+                ProcessPatch(patch, unpatchKey, extraStateKey);
         }
         catch (Exception e)
         {
