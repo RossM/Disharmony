@@ -232,7 +232,7 @@ Start with one change that benefits from inner patching or Disharmony's bindings
 
 ### Add the package and arrange deployment
 
-Add `Disharmony` version `1.0.0-beta.2` to the project that contains the new patch. If it already references `Lib.Harmony`, check that its version meets [Disharmony's requirements](compatibility.md#harmony-version). The package includes the analyzer; you do not add Roslyn as a runtime dependency.
+Add `Disharmony` version `1.0.0-beta.3` to the project that contains the new patch. If it already references `Lib.Harmony`, check that its version meets [Disharmony's requirements](compatibility.md#harmony-version). The package includes the analyzer; you do not add Roslyn as a runtime dependency.
 
 For a RimWorld mod, follow [project references](obj/guides/rimworld.md#create-the-project) and [the Disharmony mod dependency](obj/guides/rimworld.md#depend-on-disharmony): the official Disharmony mod supplies the runtime assemblies. Your mod's metadata should require Disharmony and load after it; a separate Harmony mod dependency is unnecessary. For other games, ensure that Disharmony and the required Harmony version are available when your mod loads.
 
@@ -303,7 +303,7 @@ Use the .NET 10 SDK, version 10.0.400 or newer. Create a console project and add
 ```shell
 dotnet new console --name HarmonyComparison --framework net10.0
 cd HarmonyComparison
-dotnet add package Disharmony --version 1.0.0-beta.2
+dotnet add package Disharmony --version 1.0.0-beta.3
 ```
 
 Add [the game classes](#the-game-code) and both patch classes from [the comparison](#worked-comparison-change-a-call-inside-a-method) to your project, including their `using` directives.

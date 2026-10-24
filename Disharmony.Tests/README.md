@@ -55,7 +55,7 @@ dotnet pack .\Disharmony\Disharmony.csproj --configuration Release --output .\ar
 
 The output contains the NuGet package and its `.snupkg` symbol package. The NuGet package includes the `net472` and `net10.0` library builds, XML API documentation, and the analyzer. The RimWorld integration is distributed separately; see [Build the RimWorld integration](#build-the-rimworld-integration).
 
-The default version is `1.0.0-beta.2`, shared by the library, analyzer, and RimWorld integration through `Directory.Build.props`. To build a different version, add `-p:Version=VERSION` to the pack command, replacing `VERSION` with the desired version number.
+The default version is `1.0.0-beta.3`, shared by the library, analyzer, and RimWorld integration through `Directory.Build.props`. To build a different version, add `-p:Version=VERSION` to the pack command, replacing `VERSION` with the desired version number.
 
 ## Work on the analyzer
 

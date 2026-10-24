@@ -7,7 +7,7 @@ The [release checklist](../release-checklist.md) uses these checked-in fixtures 
 Run from the repository root in PowerShell 7.4 or later, with the repository's .NET SDK and Mono installed:
 
 ```powershell
-./scripts/Test-NuGetPackage.ps1 -Version 1.0.0-beta.2 -PackageDirectory ./artifacts/nuget -OutputDirectory ./artifacts/package-validation
+./scripts/Test-NuGetPackage.ps1 -Version 1.0.0-beta.3 -PackageDirectory ./artifacts/nuget -OutputDirectory ./artifacts/package-validation
 ```
 
 The runner uses a new output directory and package cache. It restores, builds, and runs four consumers: CLR/net472 with Harmony 2, Mono/net472 with Harmony 2, and CLR/net10.0 with each Harmony major. The Harmony 3 version comes from `Directory.Build.props`. Specify `-MonoExecutable PATH` if Mono is not on PATH or installed under `Program Files/Mono`.

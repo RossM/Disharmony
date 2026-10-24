@@ -25,7 +25,7 @@ The official Disharmony mod supports RimWorld 1.6 and 1.7 unstable. It supplies 
 | RimWorld version | Mod target framework | Bundled Harmony |
 | --- | --- | --- |
 | 1.6 | `net472` | 2.4.1 |
-| 1.7 unstable | `net10.0` | 3.0.0-rc.2 |
+| 1.7 unstable | `net10.0` | 3.0.0-rc.3 |
 
 Players should follow [installation and load-order instructions](obj/guides/rimworld-players.md); mod authors should follow [project setup and deployment](obj/guides/rimworld.md).
 

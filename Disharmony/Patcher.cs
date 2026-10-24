@@ -1,4 +1,4 @@
-﻿using JetBrains.Annotations;
+using JetBrains.Annotations;
 
 namespace Disharmony;
 
@@ -272,6 +272,11 @@ public static class Patcher
         Registry.Unpatch(handle);
     }
 
+    /// <summary>
+    ///     Retrieves patch configurations from the Disharmony attributes on a patch method without registering the patches.
+    /// </summary>
+    /// <param name="method">The method containing the patch implementation.</param>
+    /// <returns>The resolved patch configurations, evaluated as the sequence is enumerated.</returns>
     public static IEnumerable<PatchConfig> PatchesFromMethod(MethodInfo method)
     {
         return PatchRegistry.Instance.GetPatchConfigs(method);
