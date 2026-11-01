@@ -3,6 +3,7 @@
   <packageId>Xylthixlm.Disharmony</packageId>
   <name>Disharmony</name>
   <author>Xylthixlm</author>
+  <url>https://github.com/RossM/Disharmony/</url>
   <description>Disharmony lets other mods change how RimWorld works. It does not change gameplay on its own.
 
 Enable it when another mod requires Disharmony. Load it before the mods that require it.
