@@ -205,14 +205,6 @@ The member's item price becomes 18, then the unchanged fee of 2 produces a total
 
 Check [runtime and dependency compatibility](compatibility.md) for the supported builds and required versions before adding the package to your mod.
 
-### Harmony 3 and inner patching
-
-[Harmony 3 also offers operation patches](https://harmony.pardeike.net/v3/articles/patching-infix.html). Disharmony supports Harmony 3 on Microsoft .NET 10; see [compatibility](compatibility.md) for runtime and version requirements.
-
-Disharmony implemented inner patching before Harmony 3 introduced its infix-patching support; see [its implementation history in RimworldMods](https://github.com/RossM/RimworldMods/commit/46b8564870c7956e7f0341cde2a660a6f8136916).
-
-Harmony 2.4.2 exposes inner-patch APIs, but [their insertion implementation is a stub](https://github.com/pardeike/Harmony/blob/v2.4.2.0/Harmony/Internal/Infix.cs).
-
 ### Before converting an existing patch
 
 Mixing frameworks is supported, but conversion involves more than changing attribute names:
