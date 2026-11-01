@@ -50,7 +50,7 @@ public enum PatchOptions
     ///     Requests Disharmony's optional, experimental IL optimization pass.
     /// </summary>
     /// <remarks>
-    ///     The optimization pass is disabled by default and has no public enablement API in the initial beta.
+    ///     The optimization pass is disabled by default and has no public enablement API.
     ///     Setting this flag alone does not run the optimizer.
     /// </remarks>
     [Experimental("DISHARMONY0033")] Optimize = 0x2,

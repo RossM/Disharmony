@@ -207,7 +207,7 @@ Check [runtime and dependency compatibility](compatibility.md) for the supported
 
 ### Harmony 3 and inner patching
 
-[Harmony 3 also offers operation patches](https://harmony.pardeike.net/v3/articles/patching-infix.html). **Harmony 3 support is incomplete and subject to change.**
+[Harmony 3 also offers operation patches](https://harmony.pardeike.net/v3/articles/patching-infix.html). Disharmony supports Harmony 3 on Microsoft .NET 10; see [compatibility](compatibility.md) for runtime and version requirements.
 
 Disharmony implemented inner patching before Harmony 3 introduced its infix-patching support; see [its implementation history in RimworldMods](https://github.com/RossM/RimworldMods/commit/46b8564870c7956e7f0341cde2a660a6f8136916).
 
@@ -222,7 +222,7 @@ Mixing frameworks is supported, but conversion involves more than changing attri
 - **State:** review the [sharing boundaries](xref:Disharmony.StateAttribute) when splitting or regrouping patches. Separate registration calls do not share Disharmony state.
 - **Ordering:** Disharmony uses its own `[Priority]`: higher values run earlier for prefixes and later for postfixes. Harmony's `[HarmonyPriority]`, `[HarmonyBefore]`, and `[HarmonyAfter]` do not set Disharmony ordering. There is no Disharmony equivalent of ordering by another mod's Harmony ID. Check interactions when both frameworks patch the same method.
 - **Skipping and exceptions:** a Disharmony prefix returning `false` skips the operation and remaining ordinary prefixes; postfixes still run. Use `AlwaysRun` for required observation or cleanup, respecting its [execution rules](xref:Disharmony.PatchOptions). Do not assume Harmony's observation-only prefix or finalizer behavior transfers unchanged.
-- **Target restrictions:** the beta rejects generic outer methods and members declared on generic types, as well as abstract and P/Invoke targets. Check [Patcher](xref:Disharmony.Patcher) and the [selector reference](xref:Disharmony.TargetAttribute) for contracts before replacing a working Harmony patch.
+- **Target restrictions:** Disharmony rejects generic outer methods and members declared on generic types, as well as abstract and P/Invoke targets. Check [Patcher](xref:Disharmony.Patcher) and the [selector reference](xref:Disharmony.TargetAttribute) for contracts before replacing a working Harmony patch.
 
 Disharmony and Harmony patches can still disagree about game behavior. Inner patches reduce how much code a patch changes; they do not guarantee compatibility with every other mod or every game update. Test the converted behavior, unaffected callers, and the mod combinations you intend to support.
 
@@ -232,7 +232,7 @@ Start with one change that benefits from inner patching or Disharmony's bindings
 
 ### Add the package and arrange deployment
 
-Add `Disharmony` version `1.0.0-beta.3` to the project that contains the new patch. If it already references `Lib.Harmony`, check that its version meets [Disharmony's requirements](compatibility.md#harmony-version). The package includes the analyzer; you do not add Roslyn as a runtime dependency.
+Add `Disharmony` version `1.0.0` to the project that contains the new patch. If it already references `Lib.Harmony`, check that its version meets [Disharmony's requirements](compatibility.md#harmony-version). The package includes the analyzer; you do not add Roslyn as a runtime dependency.
 
 For a RimWorld mod, follow [project references](obj/guides/rimworld.md#create-the-project) and [the Disharmony mod dependency](obj/guides/rimworld.md#depend-on-disharmony): the official Disharmony mod supplies the runtime assemblies. Your mod's metadata should require Disharmony and load after it; a separate Harmony mod dependency is unnecessary. For other games, ensure that Disharmony and the required Harmony version are available when your mod loads.
 
@@ -303,7 +303,7 @@ Use the .NET 10 SDK, version 10.0.400 or newer. Create a console project and add
 ```shell
 dotnet new console --name HarmonyComparison --framework net10.0
 cd HarmonyComparison
-dotnet add package Disharmony --version 1.0.0-beta.3
+dotnet add package Disharmony --version 1.0.0
 ```
 
 Add [the game classes](#the-game-code) and both patch classes from [the comparison](#worked-comparison-change-a-call-inside-a-method) to your project, including their `using` directives.
@@ -400,7 +400,7 @@ Use this table when converting a Harmony 2 patch or looking for a familiar featu
 | [Selecting targets in code: `TargetMethod()` and `TargetMethods()`](https://harmony.pardeike.net/v2/articles/patching-auxiliary.html#targetmethod) | Pass `MethodBase` targets to [`Patcher.Patch`](xref:Disharmony.Patcher). There are no automatically called target-selection methods; see [selecting targets in registration code](usage-examples.md#select-patch-targets-in-registration-code). |
 | [Applying one patch to several methods](https://harmony.pardeike.net/v2/articles/annotations.html#patching-multiple-methods) | Repeat `[Target]` for individual members, use [`[Targets]`](xref:Disharmony.TargetsAttribute) for every match, or supply multiple targets to `Patcher.Patch`. |
 | [Iterator body: `MethodType.Enumerator`](https://harmony.pardeike.net/v2/api/HarmonyLib.MethodType.html) | Inner patches automatically search the generated `MoveNext` body when their outer target is an iterator or async method. For a whole-method patch on that body, select `MoveNext` explicitly with [`GetStateMachineImplementation()`](xref:Disharmony.ReflectionExtensions). |
-| [Generic methods and methods on generic types](https://harmony.pardeike.net/v2/articles/patching-edgecases.html#generics) | **No equivalent** for whole-method targets in the beta: Disharmony rejects both generic methods and members declared on generic types. This restriction does not prevent selecting an inner call to a constructed generic method with [`[Inner]`](xref:Disharmony.InnerAttribute). |
+| [Generic methods and methods on generic types](https://harmony.pardeike.net/v2/articles/patching-edgecases.html#generics) | **No equivalent** for whole-method targets: Disharmony rejects both generic methods and members declared on generic types. This restriction does not prevent selecting an inner call to a constructed generic method with [`[Inner]`](xref:Disharmony.InnerAttribute). |
 | [Prefix / `[HarmonyPrefix]`](https://harmony.pardeike.net/v2/articles/patching-prefix.html) | [`[Prefix]`](xref:Disharmony.PrefixAttribute). Return `void` to continue, or `bool` to decide whether to run the operation. |
 | [Skipping the original with `false`](https://harmony.pardeike.net/v2/articles/patching-prefix.html#changing-the-result-and-skipping-the-original) | Return `false` from a prefix. This skips the operation and remaining ordinary Disharmony prefixes; postfixes still run. For an inner patch, only the selected operation is skipped. |
 | [Prefixes that are not skipped because they have no side effects](https://harmony.pardeike.net/v2/articles/patching-prefix.html) | Opt in with [`PatchOptions.AlwaysRun`](xref:Disharmony.PatchOptions). These prefixes run **before** ordinary prefixes, must return `void`, and cannot bind the result. Disharmony does not infer this behavior from the signature. |

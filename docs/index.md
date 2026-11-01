@@ -6,7 +6,7 @@ Disharmony is a C# modding framework built on Harmony. It supports whole-method 
 
 Its bundled analyzer catches patch mistakes as you edit and compile, and its runtime checks explain problems when patches are applied. Keep your existing Harmony patches and try Disharmony on one change. [See a Disharmony patch alongside the equivalent transpiler](harmony-comparison.md#worked-comparison-change-a-call-inside-a-method).
 
-Disharmony is in beta. See [compatibility](compatibility.md) for supported runtimes and Harmony versions.
+Disharmony 1.0 supports Harmony 2 and Harmony 3. See [compatibility](compatibility.md) for supported runtimes and Harmony versions.
 
 **Quick lookup:** [API reference](xref:Disharmony) · [Usage examples](usage-examples.md) · [Diagnostic reference](analyzer-diagnostics.md).
 

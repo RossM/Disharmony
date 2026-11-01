@@ -2,8 +2,6 @@
 
 Disharmony lets other mods change how RimWorld works. Install it when a mod lists Disharmony as a requirement. It does not change gameplay on its own.
 
-This is a beta release.
-
 ## Load order
 
 Place Disharmony before the mods that require it.

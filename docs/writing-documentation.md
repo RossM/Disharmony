@@ -45,7 +45,7 @@ If content does not answer one of those questions, place it in the relevant sub-
 
 A detail may be promoted from a sub-page when omitting it would cause a likely installation mistake or materially mislead a reader's initial decision. State the effect on the reader, then link to the detail. Do not promote implementation mechanics merely because they are technically important.
 
-Public product status belongs here only when it affects use: for example, that the published package is a beta and APIs may change. Work status belongs in the local checklist: which tests just passed, which warning was fixed, what was investigated, or what remains on an agent's worklist.
+Public product status belongs here only when it affects use: for example, which release and runtimes are supported. Work status belongs in the local checklist: which tests just passed, which warning was fixed, what was investigated, or what remains on an agent's worklist.
 
 ### Root README.md: allowed content and shape
 
@@ -55,7 +55,7 @@ Include, in this order unless presentation warrants a small adjustment:
 
 1. A short explanation of the framework and its distinguishing capability: patching operations inside methods as well as whole methods.
 2. A compact explanation of why an author might use it, with a link to the concrete Harmony comparison. Do not reproduce the full comparison.
-3. A brief published-beta/support statement and a link to compatibility. Summarize supported library runtimes; keep the full matrix and dependency version rules on the compatibility page.
+3. A brief release/support statement and a link to compatibility. Summarize supported library runtimes; keep the full matrix and dependency version rules on the compatibility page.
 4. Descriptive entry links for programming beginners, C# readers new to patching, the first Disharmony patch, Harmony users, and existing users seeking examples/API/diagnostics.
 5. A short player route to the Workshop item or installation help.
 6. A contribution link, an appropriate support/reporting link, and a license link.
@@ -79,7 +79,7 @@ The `<description>` in `Disharmony.RimWorld/About/About.xml` is separate: player
 Include:
 
 1. A brief explanation that it supplies a framework used by other mods, and how a player knows they need it.
-2. Beta status when it affects a player's expectations.
+2. Release status when it affects a player's expectations.
 3. Disharmony-specific load order and Harmony coexistence advice.
 4. A support/reporting route where appropriate.
 5. A "For mod authors" section with a clearly labelled link to the GitHub project, where authors can find documentation, examples, and source code. Avoid duplicating the project landing page with deep links to individual author guides.
@@ -122,7 +122,7 @@ Keep one authoritative home for detailed facts. Repeat only the short facts requ
 
 ### Concrete placement examples
 
-- "Disharmony is available as a beta" can belong on the root README because it affects adoption. "We have finished NuGet packaging" belongs in the local release checklist.
+- "Disharmony 1.0 supports Harmony 3 on Microsoft .NET 10" can belong on the root README because it affects adoption. "We have finished NuGet packaging" belongs in the local release checklist.
 - "Install and enable Disharmony before the mod that requires it" belongs in player installation instructions. `About.xml` dependency entries belong in the author deployment guide.
 - "Use the net472 library for Mono" belongs in compatibility guidance and may appear as a short author-facing summary. The reason reference projects use a particular SDK or framework belongs in contributor setup when relevant to building them.
 - "An error handler must not add or remove patches" is a user-visible API restriction and belongs in the relevant API/usage documentation. The thread-local flag implementing the restriction belongs in code or contributor design material.

@@ -10,9 +10,9 @@ Its bundled analyzer catches patch mistakes as you edit and compile, and its run
 
 **Installing a RimWorld mod that requires Disharmony?** Install [Disharmony from Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3818084845), then follow the [installation and load-order instructions](https://rossm.github.io/Disharmony/guides/rimworld-players.html). Disharmony does not change gameplay on its own.
 
-## Beta and compatibility
+## Compatibility
 
-The [beta NuGet package](https://www.nuget.org/packages/Disharmony) supports **Mono/net472**, **Microsoft CLR/net472**, and **Microsoft CLR/net10.0** with Harmony 2. Harmony 3 is also supported on CLR/net10.0; support is incomplete and subject to change. APIs may change during the beta. See [compatibility](https://rossm.github.io/Disharmony/compatibility.html) to choose the library build and Harmony version for your game.
+The [Disharmony 1.0 NuGet package](https://www.nuget.org/packages/Disharmony) supports **Mono/net472**, **Microsoft CLR/net472**, and **Microsoft CLR/net10.0** with Harmony 2. Harmony 3 is also supported on CLR/net10.0. See [compatibility](https://rossm.github.io/Disharmony/compatibility.html) to choose the library build and Harmony version for your game.
 
 ## Start writing mods
 

@@ -16,7 +16,7 @@ Choose the build for the runtime that will load your code. For example, a mod lo
 
 The supported Harmony 2 versions are **2.4.1 or later** for `net472` and **2.4.2 or later** for `net10.0`. Harmony 2.4.1 does not support the .NET 10 runtime.
 
-Harmony 3 support is incomplete and subject to change.
+Harmony 3 is supported on Microsoft .NET 10 CLR with the `net10.0` build.
 
 ## RimWorld
 
@@ -35,4 +35,4 @@ You can keep Harmony patches and add Disharmony patches in the same mod. [From H
 
 ## Experimental options
 
-The IL optimizer is experimental and has no public enablement API during the beta. Review [PatchOptions](xref:Disharmony.PatchOptions) for the behavior and constraints of optional patch flags.
+The IL optimizer is experimental and has no public enablement API. Review [PatchOptions](xref:Disharmony.PatchOptions) for the behavior and constraints of optional patch flags.
