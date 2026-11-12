@@ -7,7 +7,7 @@ Disharmony is a C# modding framework built on Harmony. You can use prefixes and 
 Add Disharmony to the project containing your patches:
 
 ```shell
-dotnet add package Disharmony --version 1.0.0
+dotnet add package Disharmony --version 1.0.1
 ```
 
 The package includes `net472` and `net10.0` builds. Use `net472` for Mono or Microsoft .NET Framework, and `net10.0` for Microsoft .NET 10. NuGet selects the build for your project's target framework.
