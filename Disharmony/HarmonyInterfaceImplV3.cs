@@ -11,7 +11,7 @@ internal sealed class HarmonyInterfaceImplV3 : HarmonyInterface
         public readonly Func<MethodBase, HarmonyPatchInfo?> GetPatchInfo =
             Bind<Func<MethodBase, HarmonyPatchInfo?>>("HarmonyLib.HarmonySharedState", "GetPatchInfo");
         public readonly Action<MethodBase, MethodBase> DetourMethod =
-            Bind<Action<MethodBase, MethodBase>>("HarmonyLib.PatchTools", "DetourMethod");
+            Bind<Action<MethodBase, MethodBase>>("HarmonyLib.PatchTools", "DetourMethod", "DetourMethodDefault");
         public readonly Action<MethodBase, MethodInfo, byte[]> UpdatePatchInfo =
             Bind<Action<MethodBase, MethodInfo, byte[]>>("HarmonyLib.HarmonySharedState", "UpdatePatchInfo");
         public readonly Func<MethodBase, HarmonyPatchInfo, MethodInfo> UpdateWrapper =

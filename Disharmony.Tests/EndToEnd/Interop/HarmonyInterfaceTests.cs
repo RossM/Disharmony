@@ -209,8 +209,11 @@ public sealed class HarmonyInterfaceTests : PatchTestBase
         Assert.That(harmonyInterface.GetType(), Is.EqualTo(major == 2
             ? typeof(HarmonyInterfaceImplV2)
             : typeof(HarmonyInterfaceImplV3)));
-        Assert.That(locker, Is.SameAs(typeof(PatchProcessor)
-            .GetField("locker", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)));
+        const BindingFlags harmonyFlags = BindingFlags.NonPublic | BindingFlags.Static;
+        object? harmonyLocker = typeof(PatchProcessor).GetField("locker", harmonyFlags)?.GetValue(null)
+            ?? typeof(PatchProcessor).GetProperty("locker", harmonyFlags)?.GetValue(null);
+        Assert.That(harmonyLocker, Is.Not.Null, "Harmony must expose its shared patch lock.");
+        Assert.That(locker, Is.SameAs(harmonyLocker));
     }
 
     [TestCase(false)]

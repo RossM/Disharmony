@@ -239,31 +239,42 @@ internal abstract class HarmonyInterface
 
     public abstract void Unpatch(MethodBase methodBase);
 
-    protected static TDelegate Bind<TDelegate>(string typeName, string methodName)
+    protected static TDelegate Bind<TDelegate>(string typeName, params string[] methodNames)
         where TDelegate : Delegate
     {
+        const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly | BindingFlags.ExactBinding;
         Type type = GetHarmonyType(typeName);
         MethodInfo invoke = typeof(TDelegate).GetMethod("Invoke")!;
-        MethodInfo? method = 
-            type.GetMethod(methodName,
-                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly | BindingFlags.ExactBinding | BindingFlags.Static,
-                null,
-                [.. invoke.GetParameters().Select(p => p.ParameterType)],
-                null) ??
-            type.GetMethod(methodName,
-                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly | BindingFlags.ExactBinding | BindingFlags.Instance,
-                null,
-                [.. invoke.GetParameters().Skip(1).Select(p => p.ParameterType)],
-                null);
+        Type[] parameterTypes = [.. invoke.GetParameters().Select(p => p.ParameterType)];
+
+        MethodInfo? FindMethod(string name) =>
+            type.GetMethod(name, flags | BindingFlags.Static, null, parameterTypes, null) ??
+            type.GetMethod(name, flags | BindingFlags.Instance, null, [.. parameterTypes.Skip(1)], null);
+
+        MethodInfo? method = null;
+        foreach (string methodName in methodNames)
+        {
+            method = FindMethod(methodName);
+            if (method is not null)
+                break;
+        }
+
         if (method is null || method.ReturnType != invoke.ReturnType)
-            throw Unsupported($"{typeName}.{methodName}");
+            throw Unsupported($"{typeName}.{methodNames[0]}");
 
         return AccessTools.MethodDelegate<TDelegate>(method);
     }
 
-    protected static object GetLocker() => GetHarmonyType("HarmonyLib.PatchProcessor")
-                                               .GetField("locker", BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null)
-                                           ?? throw Unsupported("HarmonyLib.PatchProcessor.locker");
+    protected static object GetLocker()
+    {
+        const BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Static;
+        Type patchProcessor = GetHarmonyType("HarmonyLib.PatchProcessor");
+        FieldInfo? field = patchProcessor.GetField("locker", flags);
+        object? locker = field is not null
+            ? field.GetValue(null)
+            : patchProcessor.GetProperty("locker", flags)?.GetValue(null);
+        return locker ?? throw Unsupported("HarmonyLib.PatchProcessor.locker");
+    }
 
     protected static MethodInfo GetGetter(string typeName, string propertyName) =>
         GetHarmonyType(typeName).GetProperty(propertyName)?.GetGetMethod()
