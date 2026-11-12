@@ -63,6 +63,9 @@ internal struct PatchInfo
 
 internal class PatchRegistry
 {
+    // Match HarmonyRimWorld's CoreLib probe. A native trampoline can hang when WaylithCLR owns the method body.
+    private static readonly bool useTrampolines = typeof(object).Assembly.GetType("WaylithClr.MethodBodyTransformer") is null;
+
     internal static HarmonyInterface Harmony => HarmonyInterface.Instance;
 
     public static readonly PatchRegistry Instance = new();
@@ -415,7 +418,7 @@ internal class PatchRegistry
                     bool debug = patches.Any(p => p.Debug);
                     bool optimize = patches.Any(p => p.Optimize);
 
-                    Harmony.ApplyPatch(patchedMethod, ruleset, true, debug, optimize);
+                    Harmony.ApplyPatch(patchedMethod, ruleset, useTrampolines, debug, optimize);
                 }
             }
             catch (Exception e)
