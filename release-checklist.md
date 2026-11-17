@@ -71,11 +71,15 @@ gh run watch BUILD_RUN_ID --exit-status
 gh run download BUILD_RUN_ID --name nuget-release --dir ./artifacts/release-VERSION/build-only
 ```
 
-- [ ] Create a clean worktree at the tag, then build the mod release from it. The script builds both frameworks, checks the folder layout and bundled Harmony majors, generates the Workshop description, and creates and verifies the mod archive and extracted upload files.
+- [ ] Create a clean worktree at the tag for the NuGet validation scripts and release notes. Close RimWorld, then make a **clean Release build of `Disharmony.RimWorld` in the main checkout at the tagged commit**. Use the exact output of that build for packaging, in-game validation, and publication. The packaging script reads the existing output, checks both Disharmony assemblies against the local Release binaries, and verifies the extracted archive.
+
+  Builds that bundle Disharmony from this checkout, such as XylXenos, copy the DLLs returned by `GetRimWorldModAssemblies` from `Disharmony.RimWorld/bin/Release/<target-framework>`. A release built in another worktree can pass validation while those local DLLs are still stale. The clean build refreshes the files downstream projects bundle, and the hash checks verify that the Workshop candidate contains those same files.
 
 ```powershell
 git worktree add --detach ./artifacts/release-VERSION/source vVERSION
-& ./artifacts/release-VERSION/source/scripts/Build-RimWorldRelease.ps1 -Version VERSION -OutputDirectory ./artifacts/release-VERSION/mod
+dotnet clean ./Disharmony.RimWorld/Disharmony.RimWorld.csproj --configuration Release
+dotnet build ./Disharmony.RimWorld/Disharmony.RimWorld.csproj --configuration Release
+./scripts/Build-RimWorldRelease.ps1 -Version VERSION -OutputDirectory ./artifacts/release-VERSION/mod
 ```
 
 - [ ] Run the checked-in consumer against the workflow package. Expect four passing runtime/Harmony combinations and a matching package payload; the runner retains its log and builds.
@@ -94,17 +98,15 @@ Copy-Item ./artifacts/release-VERSION/mod/Disharmony.RimWorld.VERSION.zip ./arti
 
 ## 4. Test the Workshop candidate
 
-- [ ] Close RimWorld. Resolve the game's upload symlink; it must point to this checkout's `Disharmony.RimWorld/bin/Release/Mod` before copying.
+- [ ] Close RimWorld and verify the upload symlink points to this checkout's `Disharmony.RimWorld/bin/Release/Mod`.
 
 ```powershell
 (Get-Item 'RIMWORLD/Mods/Disharmony').ResolveLinkTarget($true).FullName
 ```
 
-- [ ] Mirror the extracted archive into the upload directory and compare the files. Robocopy replaces the directory's contents, removing obsolete files; exit codes 0–7 are successful, while 8 or higher means stop. The file comparison must pass.
+- [ ] Compare the clean build's mod directory served by the upload symlink with the extracted archive. Keep this output fixed through in-game validation and Workshop publication.
 
 ```powershell
-robocopy ./artifacts/release-VERSION/mod/mod-upload ./Disharmony.RimWorld/bin/Release/Mod /MIR /R:1 /W:1
-Write-Output $LASTEXITCODE
 & ./artifacts/release-VERSION/source/scripts/Test-ReleaseFiles.ps1 -ExpectedDirectory ./artifacts/release-VERSION/mod/mod-upload -ActualDirectory ./Disharmony.RimWorld/bin/Release/Mod
 ```
 
