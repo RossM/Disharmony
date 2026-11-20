@@ -17,6 +17,9 @@ public sealed class HarmonyInterfaceTests : PatchTestBase
     [TestCase(true)]
     public void DeferredPatch_ReusingTrampoline_PublishesUpdatedPatchInfo(bool forceApply)
     {
+        if (TestRunSetup.IsWaylithClr)
+            Assert.Ignore("Disharmony applies patches eagerly on WaylithCLR.");
+
         HarmonyInterface harmonyInterface = HarmonyInterface.Instance;
         const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
         Type implementation = harmonyInterface.GetType();
@@ -133,6 +136,9 @@ public sealed class HarmonyInterfaceTests : PatchTestBase
     [TestCase(true)]
     public void ForceApply_CompilationFailure_ReportsUnlessHarmonyRecoveryFails(bool failRecovery)
     {
+        if (TestRunSetup.IsWaylithClr)
+            Assert.Ignore("Disharmony applies patches eagerly on WaylithCLR.");
+
         HarmonyInterface harmonyInterface = HarmonyInterface.Instance;
         const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
         object internals = harmonyInterface.GetType().GetProperty("HarmonyInternals", flags)!.GetValue(harmonyInterface)!;

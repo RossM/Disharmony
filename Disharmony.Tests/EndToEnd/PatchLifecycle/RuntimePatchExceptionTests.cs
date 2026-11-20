@@ -33,7 +33,7 @@ public class RuntimePatchExceptionPatches
 
     public static BindingStruct Infix_InnerPrefixReturningStruct_IsRejectedBeforeUpdateMethod() => default;
 
-    public static void ForceApply_ApplicationFailure_ReportsAndPreservesOriginalBehavior() { }
+    public static void ApplicationFailure_ReportsAndPreservesOriginalBehavior() { }
 
     public static void ApplyThenForceApply_ApplicationFailure_ReportsAndPreservesOriginalBehavior() { }
 
@@ -328,10 +328,10 @@ public sealed class RuntimePatchExceptionTests : PatchTestBase
     }
 
     [Test]
-    public void ForceApply_ApplicationFailure_ReportsAndPreservesOriginalBehavior()
+    public void ApplicationFailure_ReportsAndPreservesOriginalBehavior()
     {
         MethodInfo patch = typeof(RuntimePatchExceptionPatches)
-            .GetMethod(nameof(RuntimePatchExceptionPatches.ForceApply_ApplicationFailure_ReportsAndPreservesOriginalBehavior))!;
+            .GetMethod(nameof(RuntimePatchExceptionPatches.ApplicationFailure_ReportsAndPreservesOriginalBehavior))!;
         MethodInfo innerTarget = typeof(InnerStaticMethodTargets)
             .GetMethod(nameof(InnerStaticMethodTargets.IntResult))!;
         MethodInfo outerTarget = typeof(StaticMethodTargets)
@@ -345,6 +345,8 @@ public sealed class RuntimePatchExceptionTests : PatchTestBase
         try
         {
             Patcher.Patch(Patch.With(patch).Prefix.Inner(innerTarget).Of(outerTarget));
+            if (TestRunSetup.IsWaylithClr)
+                Assert.That(reportedExceptions, Has.Count.EqualTo(1), "Eager patching reports the failure during Patch.");
 
             Assert.That(() => Patcher.ForceApply(), Throws.Nothing);
             Assert.That(reportedExceptions, Has.Count.EqualTo(1));
@@ -361,6 +363,9 @@ public sealed class RuntimePatchExceptionTests : PatchTestBase
     [Test]
     public void ApplyThenForceApply_ApplicationFailure_ReportsAndPreservesOriginalBehavior()
     {
+        if (TestRunSetup.IsWaylithClr)
+            Assert.Ignore("Disharmony applies patches eagerly on WaylithCLR.");
+
         MethodInfo patch = typeof(RuntimePatchExceptionPatches)
             .GetMethod(nameof(RuntimePatchExceptionPatches.ApplyThenForceApply_ApplicationFailure_ReportsAndPreservesOriginalBehavior))!;
         MethodInfo innerTarget = typeof(InnerStaticMethodTargets)
@@ -393,6 +398,9 @@ public sealed class RuntimePatchExceptionTests : PatchTestBase
     [Test]
     public void TrampolineResolution_ApplicationFailure_ReportsAndRestoresOriginalMethod()
     {
+        if (TestRunSetup.IsWaylithClr)
+            Assert.Ignore("Disharmony applies patches eagerly on WaylithCLR.");
+
         MethodInfo patch = typeof(RuntimePatchExceptionPatches)
             .GetMethod(nameof(RuntimePatchExceptionPatches.TrampolineResolution_ApplicationFailure_ReportsAndRestoresOriginalMethod))!;
         MethodInfo innerTarget = typeof(InnerStaticMethodTargets)
@@ -407,6 +415,7 @@ public sealed class RuntimePatchExceptionTests : PatchTestBase
         try
         {
             Patcher.Patch(Patch.Prefix.Inner(innerTarget).With(patch).Of(outerTarget));
+            Assert.That(reportedExceptions, Is.Empty, "The failure should be reported on the first call.");
 
             Assert.That(StaticMethodTargets.IntResult(), Is.EqualTo(1));
             Assert.That(reportedExceptions, Has.Count.EqualTo(1));

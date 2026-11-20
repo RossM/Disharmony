@@ -6,6 +6,9 @@ namespace Disharmony.Tests;
 [SetUpFixture]
 public sealed class TestRunSetup
 {
+    internal static bool IsWaylithClr { get; } =
+        typeof(object).Assembly.GetType("WaylithClr.MethodBodyTransformer") is not null;
+
     private StreamWriter? harmonyLogWriter;
 
     [OneTimeSetUp]

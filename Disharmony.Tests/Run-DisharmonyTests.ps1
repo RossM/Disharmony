@@ -1,12 +1,14 @@
 [CmdletBinding(PositionalBinding = $false)]
 param(
-    [ValidateSet('Clr', 'Mono', 'Dotnet')]
+    [ValidateSet('Clr', 'Mono', 'Dotnet', 'WaylithCLR')]
     [string] $Runtime = 'Mono',
 
     [ValidateSet('Debug', 'Release')]
     [string] $Configuration = 'Debug',
 
     [string] $MonoExecutable,
+
+    [string] $WaylithClrDirectory,
 
     [ValidateSet('2', '3')]
     [string[]] $HarmonyVersion,
@@ -67,6 +69,42 @@ function Resolve-MonoExecutable([string] $RequestedExecutable)
     throw 'Mono was not found. Install Mono or specify -MonoExecutable or MONO_EXE.'
 }
 
+function Initialize-WaylithClrRun([string] $RuntimeDirectory, [string] $RunDirectory)
+{
+    $runtimeManifestPath = Join-Path $RuntimeDirectory 'RimWorld.deps.json'
+    if (-not (Test-Path -LiteralPath $runtimeManifestPath -PathType Leaf))
+    {
+        throw "RimWorld.deps.json was not found in $RuntimeDirectory. Use a RimWorld 1.7 installation or a copy of its WaylithCLR runtime files and dependency manifest."
+    }
+
+    # Use only the framework pack from RimWorld's self-contained deployment.
+    $runtimeManifest = Get-Content -LiteralPath $runtimeManifestPath -Raw | ConvertFrom-Json
+    $runtimeTarget = $runtimeManifest.targets.PSObject.Properties[$runtimeManifest.runtimeTarget.name].Value
+    $runtimePack = $runtimeTarget.PSObject.Properties | Where-Object Name -like 'runtimepack.Microsoft.NETCore.App.Runtime.*/10.*'
+    if (@($runtimePack).Count -ne 1)
+    {
+        throw "Expected one .NET 10 runtime pack in $runtimeManifestPath."
+    }
+
+    $assetNames = @($runtimePack.Value.runtime.PSObject.Properties.Name) + @($runtimePack.Value.native.PSObject.Properties.Name)
+    $assetPaths = $assetNames | ForEach-Object { Join-Path $RuntimeDirectory $_ }
+    Copy-Item -LiteralPath $assetPaths -Destination $RunDirectory -Force
+
+    # Make the staged test app self-contained, preserving its own runtime options and dependencies.
+    $testManifestPath = Join-Path $RunDirectory 'Disharmony.Tests.deps.json'
+    $testManifest = Get-Content -LiteralPath $testManifestPath -Raw | ConvertFrom-Json
+    $testTarget = $testManifest.targets.PSObject.Properties[$testManifest.runtimeTarget.name].Value
+    $packLibrary = $runtimeManifest.libraries.PSObject.Properties[$runtimePack.Name].Value
+    $testTarget | Add-Member -NotePropertyName $runtimePack.Name -NotePropertyValue $runtimePack.Value
+    $testManifest.libraries | Add-Member -NotePropertyName $runtimePack.Name -NotePropertyValue $packLibrary
+    [IO.File]::WriteAllText($testManifestPath, ($testManifest | ConvertTo-Json -Depth 20))
+
+    $testConfigPath = Join-Path $RunDirectory 'Disharmony.Tests.runtimeconfig.json'
+    $testConfig = Get-Content -LiteralPath $testConfigPath -Raw | ConvertFrom-Json
+    $testConfig.runtimeOptions.PSObject.Properties.Remove('framework')
+    [IO.File]::WriteAllText($testConfigPath, ($testConfig | ConvertTo-Json -Depth 20))
+}
+
 if (($Profile -or $MonoProfile) -and $Runtime -ne 'Mono')
 {
     throw 'Mono profiling options can only be used with -Runtime Mono.'
@@ -77,10 +115,23 @@ if ($Profile -and $MonoProfile)
     throw 'Use either -Profile or -MonoProfile, not both.'
 }
 
+if ($Runtime -eq 'WaylithCLR')
+{
+    if (-not $WaylithClrDirectory -or -not (Test-Path -LiteralPath $WaylithClrDirectory -PathType Container))
+    {
+        throw 'Specify an existing -WaylithClrDirectory containing the RimWorld 1.7 CLR files.'
+    }
+    $WaylithClrDirectory = (Resolve-Path -LiteralPath $WaylithClrDirectory).ProviderPath
+}
+
 if (-not $HarmonyVersion)
 {
-    # The default v3 assembly targets .NET 10; CLR and Mono retain their v2 default.
-    $HarmonyVersion = if ($Runtime -eq 'Dotnet') { @('2', '3') } else { @('2') }
+    $HarmonyVersion = switch ($Runtime)
+    {
+        'Dotnet' { @('2', '3') }
+        'WaylithCLR' { '3' }
+        default { '2' }
+    }
 }
 $HarmonyVersion = @($HarmonyVersion | Select-Object -Unique)
 
@@ -101,9 +152,18 @@ if ($HarmonyVersion.Count -gt 1 -and $MonoProfile -match '(^|,)output=')
 $testProjectRoot = $PSScriptRoot
 $repositoryRoot = Split-Path -Parent $testProjectRoot
 $testProject = Join-Path $testProjectRoot 'Disharmony.Tests.csproj'
-$targetFramework = if ($Runtime -eq 'Dotnet') { 'net10.0' } else { 'net472' }
+$targetFramework = if ($Runtime -in 'Dotnet', 'WaylithCLR') { 'net10.0' } else { 'net472' }
 $testFileName = if ($Runtime -eq 'Dotnet') { 'Disharmony.Tests.dll' } else { 'Disharmony.Tests.exe' }
+if ($Runtime -eq 'WaylithCLR' -and [Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT)
+{
+    $testFileName = 'Disharmony.Tests'
+}
 $buildDirectory = Join-Path $testProjectRoot "bin\$Configuration\$targetFramework"
+$runRoot = Join-Path $testProjectRoot "bin\HarmonyCompatibility\$Configuration\$targetFramework"
+if ($Runtime -eq 'WaylithCLR')
+{
+    $runRoot = Join-Path $runRoot 'WaylithCLR'
+}
 $dotnet = Get-Command dotnet -CommandType Application -ErrorAction Stop
 $runnerExitCode = 0
 $resultDirectory = Join-Path $repositoryRoot 'TestResults\Disharmony'
@@ -149,12 +209,17 @@ try
     {
         # Stage the same v2-compiled binaries for each run, replacing only the runtime Harmony DLL.
         # Keeping these directories outside the build output also keeps logs and dependencies separate.
-        $runDirectory = Join-Path $testProjectRoot "bin\HarmonyCompatibility\$Configuration\$targetFramework\v$version"
+        $runDirectory = Join-Path $runRoot "v$version"
         New-Item -ItemType Directory -Path $runDirectory -Force | Out-Null
         Get-ChildItem -LiteralPath $buildDirectory | Copy-Item -Destination $runDirectory -Recurse -Force
         if ($version -eq '3')
         {
             Copy-Item -LiteralPath $HarmonyV3Path -Destination (Join-Path $runDirectory '0Harmony.dll') -Force
+        }
+
+        if ($Runtime -eq 'WaylithCLR')
+        {
+            Initialize-WaylithClrRun $WaylithClrDirectory $runDirectory
         }
 
         $testExecutable = Join-Path $runDirectory $testFileName
@@ -176,6 +241,11 @@ try
         if ($Runtime -eq 'Dotnet')
         {
             & $dotnet.Source $testExecutable @effectiveNUnitArguments
+            $versionExitCode = $LASTEXITCODE
+        }
+        elseif ($Runtime -eq 'WaylithCLR')
+        {
+            & $testExecutable --require-waylith-clr @effectiveNUnitArguments
             $versionExitCode = $LASTEXITCODE
         }
         elseif ($Runtime -eq 'Clr')

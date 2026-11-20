@@ -259,6 +259,9 @@ internal class UnpatchTests
     [Test]
     public void ForceApply_AfterPartialResolution_ResolvesRemainingGroup()
     {
+        if (TestRunSetup.IsWaylithClr)
+            Assert.Ignore("Disharmony applies patches eagerly on WaylithCLR.");
+
         MethodInfo firstPatch = typeof(UnpatchPatches)
             .GetMethod(nameof(UnpatchPatches
                 .ForceApply_AfterPartialResolution_ResolvesRemainingGroup_FirstPostfix))!;

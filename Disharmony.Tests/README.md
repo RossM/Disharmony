@@ -133,6 +133,7 @@ fresh process:
 * `Disharmony.Tests\Run-DisharmonyTests.ps1 -Runtime Clr` runs `net472` with Harmony v2 on the Microsoft .NET Framework CLR.
 * `Disharmony.Tests\Run-DisharmonyTests.ps1 -Runtime Mono` runs `net472` with Harmony v2 on Mono (the default).
 * `Disharmony.Tests\Run-DisharmonyTests.ps1 -Runtime Dotnet` runs `net10.0` with both Harmony v2 and v3 on .NET 10.
+* `Disharmony.Tests\Run-DisharmonyTests.ps1 -Runtime WaylithCLR -WaylithClrDirectory <directory>` runs `net10.0` on RimWorld 1.7's CLR and defaults to Harmony v3.
 
 Both Harmony versions are restored from NuGet. Harmony 3 uses the `HarmonyV3Version` pinned in
 `Directory.Build.props`; use `-HarmonyV3Path` to test a local build instead. Harmony 3 is currently tested only
@@ -160,6 +161,23 @@ script arguments, or explicitly through `-NUnitArguments`.
 .\Disharmony.Tests\Run-DisharmonyTests.ps1 -Runtime Mono
 .\Disharmony.Tests\Run-DisharmonyTests.ps1 -Runtime Mono --where 'test =~ Optimizer'
 ```
+
+### WaylithCLR
+
+Point `-WaylithClrDirectory` at your RimWorld 1.7 installation or a separate directory containing its
+`RimWorld.deps.json` and the managed and native files listed in its .NET runtime pack entry. Use runtime files
+that match the platform and architecture of the .NET SDK running the build.
+
+```powershell
+.\Disharmony.Tests\Run-DisharmonyTests.ps1 -Runtime WaylithCLR -WaylithClrDirectory 'C:\Program Files (x86)\Steam\steamapps\common\RimWorld'
+```
+
+The runner copies the CLR into `Disharmony.Tests\bin\HarmonyCompatibility\<configuration>\net10.0\WaylithCLR\v<version>`
+and verifies the loaded CoreLib before starting NUnitLite. It runs with the test app's runtime settings and uses
+only the CLR files and dependency metadata from RimWorld. Harmony v2 patching requires
+`System.Runtime.Serialization.Formatters`, which RimWorld ships outside its CLR runtime pack.
+
+### Mono profiling
 
 Pass `-Profile` to request a sampling profile under `TestResults\Disharmony`. `-MonoProfile` accepts another Mono
 profiler specification and adds an output path under that directory when the specification does not provide one. The
