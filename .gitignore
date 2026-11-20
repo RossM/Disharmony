@@ -11,3 +11,4 @@ temp/
 tmp/
 /docs/api/
 /docs/_site/
+Directory.Build.local.props

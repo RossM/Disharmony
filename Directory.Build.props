@@ -1,4 +1,7 @@
 <Project>
+  <Import Project="$(MSBuildThisFileDirectory)Directory.Build.local.props"
+          Condition="'$(ImportLocalBuildProps)' != 'false' and Exists('$(MSBuildThisFileDirectory)Directory.Build.local.props')" />
+
   <PropertyGroup>
     <Version Condition="'$(Version)' == ''">1.0.1</Version>
     <HarmonyV3Version Condition="'$(HarmonyV3Version)' == ''">3.0.0-rc.7</HarmonyV3Version>
