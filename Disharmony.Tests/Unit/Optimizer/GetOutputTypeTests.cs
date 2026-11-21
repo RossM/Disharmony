@@ -558,13 +558,15 @@ internal sealed class GetOutputTypeTests
         Assert.That(OpcodeUtilities.GetOutputType(instruction, testCase.InputTypes), Is.EqualTo(testCase.Expected));
     }
 
-    private static object CreateInlineSignature(Type returnType)
+    private class FakeInlineSignature(Type returnType) : IInlineSignature
     {
-        Type signatureType = typeof(CodeInstruction).Assembly.GetType("HarmonyLib.InlineSignature")!;
-        object signature = Activator.CreateInstance(signatureType)!;
-        signatureType.GetProperty("CallingConvention")!.SetValue(signature, CallingConvention.Cdecl);
-        signatureType.GetProperty("Parameters")!.SetValue(signature, new List<object>());
-        signatureType.GetProperty("ReturnType")!.SetValue(signature, returnType);
-        return signature;
+        public Type ReturnType => returnType;
+        public int ParameterCount => 0;
+        public bool HasThis => false;
+    }
+
+    private static IInlineSignature CreateInlineSignature(Type returnType)
+    {
+        return new FakeInlineSignature(returnType);
     }
 }

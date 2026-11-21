@@ -403,16 +403,17 @@ public sealed class CreateControlFlowGraphTests
         Assert.That(voidGenerator.BlockStacks[voidEntry.Label].OutgoingStack, Is.Empty);
     }
 
+    private class FakeInlineSignature(Type returnType, params List<Type> parameterTypes) : IInlineSignature
+    {
+        public Type ReturnType => returnType;
+        public int ParameterCount => parameterTypes.Count;
+        public bool HasThis => false;
+    }
+
     [Test]
     public void StackBehaviour_VarpopAndVarpush_CalliUsesInlineSignature()
     {
-        // Harmony decodes InlineSig operands to InlineSignature rather than SignatureHelper. Keep calli coverage separate
-        // from ordinary MethodInfo-based calls because both its argument count and return behavior come from this object.
-        Type signatureType = typeof(CodeInstruction).Assembly.GetType("HarmonyLib.InlineSignature")!;
-        object signature = Activator.CreateInstance(signatureType)!;
-        signatureType.GetProperty("CallingConvention")!.SetValue(signature, CallingConvention.Cdecl);
-        signatureType.GetProperty("Parameters")!.SetValue(signature, new List<object> { typeof(int) });
-        signatureType.GetProperty("ReturnType")!.SetValue(signature, typeof(int));
+        IInlineSignature signature = new FakeInlineSignature(typeof(int), typeof(int));
         var generator = CreateGenerator(
             VoidMethod, PatchProcessor.CreateILGenerator(), [
                 new CodeInstruction(OpCodes.Ldc_I4_1),
@@ -430,11 +431,7 @@ public sealed class CreateControlFlowGraphTests
     [Test]
     public void StackBehaviour_VarpopAndVarpush_VoidCalliUsesInlineSignature()
     {
-        Type signatureType = typeof(CodeInstruction).Assembly.GetType("HarmonyLib.InlineSignature")!;
-        object signature = Activator.CreateInstance(signatureType)!;
-        signatureType.GetProperty("CallingConvention")!.SetValue(signature, CallingConvention.Cdecl);
-        signatureType.GetProperty("Parameters")!.SetValue(signature, new List<object> { typeof(int) });
-        signatureType.GetProperty("ReturnType")!.SetValue(signature, typeof(void));
+        IInlineSignature signature = new FakeInlineSignature(typeof(void), typeof(int));
         var generator = CreateGenerator(
             VoidMethod, PatchProcessor.CreateILGenerator(), [
                 new CodeInstruction(OpCodes.Ldc_I4_1),

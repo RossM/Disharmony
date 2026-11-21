@@ -3,6 +3,13 @@ using HarmonyPatchInfo = HarmonyLib.PatchInfo;
 
 namespace Disharmony;
 
+internal interface IInlineSignature
+{
+    int ParameterCount { get; }
+    bool HasThis { get; }
+    Type ReturnType { get; }
+}
+
 internal abstract class HarmonyInterface
 {
     protected struct MethodPatch
@@ -12,7 +19,13 @@ internal abstract class HarmonyInterface
         public bool debug;
     }
 
-    public static Type InlineSignature => Instance.InlineSignatureType;
+    protected class WrappedInlineSignature(object inlineSignature) : IInlineSignature
+    {
+        public object InlineSignature => inlineSignature;
+        public int ParameterCount => Instance.InlineSignatureParameters(inlineSignature).Count;
+        public bool HasThis => Instance.InlineSignatureHasThis(inlineSignature);
+        public Type ReturnType => (Type)Instance.InlineSignatureReturnType(inlineSignature);
+    }
 
     protected const string HarmonyID = "Xylthixlm.Disharmony.Autopatcher";
 
@@ -41,15 +54,6 @@ internal abstract class HarmonyInterface
     protected abstract List<object> InlineSignatureParameters(object signature);
     protected abstract object InlineSignatureReturnType(object signature);
     protected abstract bool InlineSignatureHasThis(object signature);
-
-    public static List<object> InlineSignature_Parameters(object inlineSignature) =>
-        Instance.InlineSignatureParameters(inlineSignature);
-
-    public static object InlineSignature_ReturnType(object inlineSignature) =>
-        Instance.InlineSignatureReturnType(inlineSignature);
-
-    public static bool InlineSignature_HasThis(object inlineSignature) =>
-        Instance.InlineSignatureHasThis(inlineSignature);
 
     private static HarmonyInterface Create()
     {
@@ -143,6 +147,12 @@ internal abstract class HarmonyInterface
         var instructionsList = instructions.ToList();
         var patch = Instance.methodPatches[method];
 
+        foreach (var instruction in instructionsList)
+        {
+            if (instruction.operand?.GetType() == Instance.InlineSignatureType)
+                instruction.operand = new WrappedInlineSignature(instruction.operand);
+        }
+
         try
         {
             patch.ruleset.MatchAndReplace(method, ref instructionsList, generator);
@@ -155,19 +165,26 @@ internal abstract class HarmonyInterface
             return instructionsList;
         }
 
-        if (!Instance.optimizerEnabled || !patch.optimize)
-            return instructionsList;
+        if (Instance.optimizerEnabled && patch.optimize)
+        {
+            try
+            {
+                var optimizer = new Optimizer.Optimizer(method, instructionsList, generator, debug: patch.debug);
+                instructionsList = optimizer.Optimize();
+            }
+            catch (Exception e)
+            {
+                Patcher.ReportException(e);
+            }
+        }
 
-        try
+        foreach (var instruction in instructionsList)
         {
-            var optimizer = new Optimizer.Optimizer(method, instructionsList, generator, debug: patch.debug);
-            return optimizer.Optimize();
+            if (instruction.operand is WrappedInlineSignature wrappedInlineSignature)
+                instruction.operand = wrappedInlineSignature.InlineSignature;
         }
-        catch (Exception e)
-        {
-            Patcher.ReportException(e);
-            return instructionsList;
-        }
+
+        return instructionsList;
     }
 
     protected MethodInfo MakeTrampoline(MethodBaseInvocation target)

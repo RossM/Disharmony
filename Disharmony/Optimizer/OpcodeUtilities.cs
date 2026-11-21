@@ -119,7 +119,7 @@ internal static class OpcodeUtilities
         {
             OpCodeValues.Call or OpCodeValues.Callvirt when operand is MethodInfo method => method.ReturnType,
             OpCodeValues.Call when operand is ConstructorInfo => typeof(void),
-            OpCodeValues.Calli => (Type)HarmonyInterface.InlineSignature_ReturnType(operand!),
+            OpCodeValues.Calli when operand is IInlineSignature signature => signature.ReturnType,
             OpCodeValues.Ldelem_Ref when inputTypes[0].IsArray => inputTypes[0].GetElementType()!,
             OpCodeValues.Ldelem_Ref when inputTypes[0] == TypeLattice.Unknown || inputTypes[0] == TypeLattice.Null => TypeLattice.Unknown,
             OpCodeValues.Ldelem_Ref => typeof(object),
