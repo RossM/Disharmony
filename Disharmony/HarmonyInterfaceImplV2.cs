@@ -9,7 +9,7 @@ internal sealed class HarmonyInterfaceImplV2 : HarmonyInterface
         // ReSharper disable InconsistentNaming
         public readonly object locker = GetLocker();
 
-        public readonly Func<MethodBase, HarmonyPatchInfo> GetPatchInfo
+        public readonly Func<MethodBase, HarmonyPatchInfo?> GetPatchInfo
             = Bind<Func<MethodBase, HarmonyPatchInfo>>("HarmonyLib.HarmonySharedState", "GetPatchInfo");
 
         public readonly Action<MethodBase, MethodBase> DetourMethod

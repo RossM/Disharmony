@@ -36,6 +36,18 @@
       <HintPath>$(WaylithCLRDirectory)/System.Runtime.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="System.Collections">
+      <HintPath>$(WaylithCLRDirectory)/System.Collections.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="System.Linq">
+      <HintPath>$(WaylithCLRDirectory)/System.Linq.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="System.Reflection.Emit.ILGeneration">
+      <HintPath>$(WaylithCLRDirectory)/System.Reflection.Emit.ILGeneration.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
