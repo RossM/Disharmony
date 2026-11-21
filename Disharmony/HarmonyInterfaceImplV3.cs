@@ -60,7 +60,7 @@ internal sealed class HarmonyInterfaceImplV3 : HarmonyInterface
         (bool)HarmonyInternals.InlineSignature_HasThis_Getter.Invoke(signature, null)!;
 
 #if DEBUG
-    internal override event Action? ApplyPatchHookForTesting = null;
+    public override event Action? ApplyPatchHookForTesting = null;
 #endif
 
     /// <summary>

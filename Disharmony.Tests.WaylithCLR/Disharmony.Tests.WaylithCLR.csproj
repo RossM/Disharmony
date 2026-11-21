@@ -17,6 +17,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(_WaylithCLRTestsAvailable)' == 'true'">
+    <ProjectReference Include="..\Disharmony.WaylithCLR\Disharmony.WaylithCLR.csproj" />
     <Compile Include="..\Disharmony.Tests\**\*.cs"
              Exclude="..\Disharmony.Tests\bin\**;..\Disharmony.Tests\obj\**" />
   </ItemGroup>

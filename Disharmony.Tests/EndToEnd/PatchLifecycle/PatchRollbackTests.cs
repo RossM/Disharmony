@@ -133,7 +133,7 @@ public sealed class PatchRollbackTests : PatchTestBase
         Action<Exception> handler = reportedExceptions.Add;
         Patcher.RuntimeExceptionHandler -= ThrowRuntimeException;
         Patcher.RuntimeExceptionHandler += handler;
-        HarmonyInterface.Instance.ApplyPatchHookForTesting += hook;
+        Backend.Instance.ApplyPatchHookForTesting += hook;
 
         try
         {
@@ -151,7 +151,7 @@ public sealed class PatchRollbackTests : PatchTestBase
         }
         finally
         {
-            HarmonyInterface.Instance.ApplyPatchHookForTesting -= hook;
+            Backend.Instance.ApplyPatchHookForTesting -= hook;
             Patcher.RuntimeExceptionHandler -= handler;
             Patcher.RuntimeExceptionHandler += ThrowRuntimeException;
         }
@@ -179,7 +179,7 @@ public sealed class PatchRollbackTests : PatchTestBase
             .GetMethod(nameof(StaticMethodTargets.RegistrationResultB))!;
         var injectedFailure = new InvalidOperationException("Injected application failure");
         Action hook = () => throw injectedFailure;
-        HarmonyInterface.Instance.ApplyPatchHookForTesting += hook;
+        Backend.Instance.ApplyPatchHookForTesting += hook;
 
         try
         {
@@ -189,7 +189,7 @@ public sealed class PatchRollbackTests : PatchTestBase
         }
         finally
         {
-            HarmonyInterface.Instance.ApplyPatchHookForTesting -= hook;
+            Backend.Instance.ApplyPatchHookForTesting -= hook;
         }
 
         PatchHandle handle = Patcher.Patch(Patch.Postfix.With(subsequentPatch).Of(subsequentTarget));
@@ -234,7 +234,7 @@ public sealed class PatchRollbackTests : PatchTestBase
         Action<Exception> handler = reportedExceptions.Add;
         Patcher.RuntimeExceptionHandler -= ThrowRuntimeException;
         Patcher.RuntimeExceptionHandler += handler;
-        HarmonyInterface.Instance.ApplyPatchHookForTesting += hook;
+        Backend.Instance.ApplyPatchHookForTesting += hook;
 
         try
         {
@@ -249,7 +249,7 @@ public sealed class PatchRollbackTests : PatchTestBase
         }
         finally
         {
-            HarmonyInterface.Instance.ApplyPatchHookForTesting -= hook;
+            Backend.Instance.ApplyPatchHookForTesting -= hook;
             Patcher.RuntimeExceptionHandler -= handler;
             Patcher.RuntimeExceptionHandler += ThrowRuntimeException;
         }
@@ -283,7 +283,7 @@ public sealed class PatchRollbackTests : PatchTestBase
 
         int applicationAttempts = 0;
         Action hook = () => applicationAttempts++;
-        HarmonyInterface.Instance.ApplyPatchHookForTesting += hook;
+        Backend.Instance.ApplyPatchHookForTesting += hook;
         PatchHandle handle;
 
         try
@@ -292,7 +292,7 @@ public sealed class PatchRollbackTests : PatchTestBase
         }
         finally
         {
-            HarmonyInterface.Instance.ApplyPatchHookForTesting -= hook;
+            Backend.Instance.ApplyPatchHookForTesting -= hook;
         }
 
         Assert.Multiple(() =>

@@ -14,4 +14,8 @@ internal interface IBackend
 
     void ApplyPatch(MethodBaseInvocation original, Ruleset ruleset, bool useTrampolines, bool debug, bool optimize);
     void Unpatch(MethodBase methodBase);
+
+#if DEBUG
+    event Action? ApplyPatchHookForTesting;
+#endif
 }

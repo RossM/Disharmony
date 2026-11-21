@@ -1,4 +1,4 @@
-using JetBrains.Annotations;
+using System.IO;
 
 namespace Disharmony;
 
@@ -10,6 +10,24 @@ internal static class Backend
 
     private static IBackend Create()
     {
+        if (typeof(object).Assembly.GetType("WaylithClr.MethodBodyTransformer") is not null)
+        {
+            try
+            {
+                const string assemblyName = "Disharmony.WaylithCLR";
+                Assembly assembly = AppDomain.CurrentDomain.GetAssemblies()
+                    .FirstOrDefault(a => a.GetName().Name == assemblyName)
+                    ?? Assembly.LoadFrom(Path.Combine(Path.GetDirectoryName(typeof(Backend).Assembly.Location)!, assemblyName + ".dll"));
+                Type backendType = assembly.GetType("Disharmony.WaylithCLR.WaylithBackend", throwOnError: true)!;
+                return (IBackend)Activator.CreateInstance(backendType, nonPublic: true)!;
+            }
+            catch (Exception)
+            {
+                // The optional backend may be missing or incompatible with the installed runtime.
+                // Continue with Harmony if loading or constructing it fails.
+            }
+        }
+
         Type sharedState = HarmonyInterface.GetHarmonyType("HarmonyLib.HarmonySharedState");
 
         MethodInfo? FindUpdate(Type payloadType) => sharedState.GetMethod("UpdatePatchInfo",

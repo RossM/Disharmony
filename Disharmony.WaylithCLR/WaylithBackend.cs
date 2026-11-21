@@ -19,4 +19,8 @@ internal class WaylithBackend : IBackend
     {
         throw new NotImplementedException();
     }
+
+#if DEBUG
+    public event Action? ApplyPatchHookForTesting;
+#endif
 }
