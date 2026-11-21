@@ -89,7 +89,9 @@ internal class Transformer() : MethodBodyTransformer(100)
             methodPatches[methodHandle] = new MethodPatch { ruleset = ruleset, debug = debug, optimize = optimize };
         }
 
-        Rebuild(methodHandle);
+        Exception? e = Rebuild(methodHandle);
+        if (e is not null)
+            Patcher.ReportException(e);
     }
 
     public void RemovePatch(RuntimeMethodHandle methodHandle)
@@ -99,6 +101,8 @@ internal class Transformer() : MethodBodyTransformer(100)
             methodPatches.Remove(methodHandle);
         }
 
-        Rebuild(methodHandle);
+        Exception? e = Rebuild(methodHandle);
+        if (e is not null)
+            Patcher.ReportException(e);
     }
 }
