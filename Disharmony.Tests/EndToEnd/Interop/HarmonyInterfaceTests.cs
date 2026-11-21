@@ -13,6 +13,13 @@ public static class HarmonyInterfacePatches
 [TestFixture]
 public sealed class HarmonyInterfaceTests : PatchTestBase
 {
+    [OneTimeSetUp]
+    public void RequireHarmonyBackend()
+    {
+        if (Backend.Instance is not HarmonyInterface)
+            Assert.Ignore("These tests exercise Disharmony's Harmony backend implementation.");
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public void DeferredPatch_ReusingTrampoline_PublishesUpdatedPatchInfo(bool forceApply)

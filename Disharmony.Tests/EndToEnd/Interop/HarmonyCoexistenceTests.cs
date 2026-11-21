@@ -5,28 +5,28 @@ public static class HarmonyCoexistencePatches
     public static int ObservedResult;
     public static int ObservedArgument;
 
-    public static void HarmonyFirst_PrefixPostfix_NestAroundDisharmony_HarmonyPrefix() =>
+    public static void HarmonyFirst_PrefixPostfix_UseBackendNestingOrder_HarmonyPrefix() =>
         HarmonyCoexistenceTargets.Events.Add("harmony-prefix");
 
-    public static void HarmonyFirst_PrefixPostfix_NestAroundDisharmony_HarmonyPostfix() =>
+    public static void HarmonyFirst_PrefixPostfix_UseBackendNestingOrder_HarmonyPostfix() =>
         HarmonyCoexistenceTargets.Events.Add("harmony-postfix");
 
-    public static void HarmonyFirst_PrefixPostfix_NestAroundDisharmony_DisharmonyPrefix() =>
+    public static void HarmonyFirst_PrefixPostfix_UseBackendNestingOrder_DisharmonyPrefix() =>
         HarmonyCoexistenceTargets.Events.Add("disharmony-prefix");
 
-    public static void HarmonyFirst_PrefixPostfix_NestAroundDisharmony_DisharmonyPostfix() =>
+    public static void HarmonyFirst_PrefixPostfix_UseBackendNestingOrder_DisharmonyPostfix() =>
         HarmonyCoexistenceTargets.Events.Add("disharmony-postfix");
 
-    public static void DisharmonyFirst_PrefixPostfix_NestInsideHarmony_HarmonyPrefix() =>
+    public static void DisharmonyFirst_PrefixPostfix_UseBackendNestingOrder_HarmonyPrefix() =>
         HarmonyCoexistenceTargets.Events.Add("harmony-prefix");
 
-    public static void DisharmonyFirst_PrefixPostfix_NestInsideHarmony_HarmonyPostfix() =>
+    public static void DisharmonyFirst_PrefixPostfix_UseBackendNestingOrder_HarmonyPostfix() =>
         HarmonyCoexistenceTargets.Events.Add("harmony-postfix");
 
-    public static void DisharmonyFirst_PrefixPostfix_NestInsideHarmony_DisharmonyPrefix() =>
+    public static void DisharmonyFirst_PrefixPostfix_UseBackendNestingOrder_DisharmonyPrefix() =>
         HarmonyCoexistenceTargets.Events.Add("disharmony-prefix");
 
-    public static void DisharmonyFirst_PrefixPostfix_NestInsideHarmony_DisharmonyPostfix() =>
+    public static void DisharmonyFirst_PrefixPostfix_UseBackendNestingOrder_DisharmonyPostfix() =>
         HarmonyCoexistenceTargets.Events.Add("disharmony-postfix");
 
     public static void UnpatchDisharmony_PreservesHarmonyPatch_HarmonyPrefix() =>
@@ -122,18 +122,18 @@ public sealed class HarmonyCoexistenceTests : PatchTestBase
     }
 
     [Test]
-    public void HarmonyFirst_PrefixPostfix_NestAroundDisharmony()
+    public void HarmonyFirst_PrefixPostfix_UseBackendNestingOrder()
     {
         MethodInfo target = typeof(HarmonyCoexistenceTargets)
             .GetMethod(nameof(HarmonyCoexistenceTargets.OrderedTarget))!;
         MethodInfo harmonyPrefix = typeof(HarmonyCoexistencePatches)
-            .GetMethod(nameof(HarmonyCoexistencePatches.HarmonyFirst_PrefixPostfix_NestAroundDisharmony_HarmonyPrefix))!;
+            .GetMethod(nameof(HarmonyCoexistencePatches.HarmonyFirst_PrefixPostfix_UseBackendNestingOrder_HarmonyPrefix))!;
         MethodInfo harmonyPostfix = typeof(HarmonyCoexistencePatches)
-            .GetMethod(nameof(HarmonyCoexistencePatches.HarmonyFirst_PrefixPostfix_NestAroundDisharmony_HarmonyPostfix))!;
+            .GetMethod(nameof(HarmonyCoexistencePatches.HarmonyFirst_PrefixPostfix_UseBackendNestingOrder_HarmonyPostfix))!;
         MethodInfo disharmonyPrefix = typeof(HarmonyCoexistencePatches)
-            .GetMethod(nameof(HarmonyCoexistencePatches.HarmonyFirst_PrefixPostfix_NestAroundDisharmony_DisharmonyPrefix))!;
+            .GetMethod(nameof(HarmonyCoexistencePatches.HarmonyFirst_PrefixPostfix_UseBackendNestingOrder_DisharmonyPrefix))!;
         MethodInfo disharmonyPostfix = typeof(HarmonyCoexistencePatches)
-            .GetMethod(nameof(HarmonyCoexistencePatches.HarmonyFirst_PrefixPostfix_NestAroundDisharmony_DisharmonyPostfix))!;
+            .GetMethod(nameof(HarmonyCoexistencePatches.HarmonyFirst_PrefixPostfix_UseBackendNestingOrder_DisharmonyPostfix))!;
         harmony.Patch(target, prefix: new HarmonyMethod(harmonyPrefix), postfix: new HarmonyMethod(harmonyPostfix));
         Patcher.Patch(
             Patch.Prefix.With(disharmonyPrefix).Of(target),
@@ -142,29 +142,41 @@ public sealed class HarmonyCoexistenceTests : PatchTestBase
         int result = HarmonyCoexistenceTargets.OrderedTarget();
 
         Assert.That(result, Is.EqualTo(10));
-        Assert.That(HarmonyCoexistenceTargets.Events, Is.EqualTo(new[]
-        {
-            "harmony-prefix",
-            "disharmony-prefix",
-            "target",
-            "disharmony-postfix",
-            "harmony-postfix",
-        }));
+        // The Harmony backend puts Disharmony inside Harmony's wrapper. On Waylith,
+        // Disharmony's transformer (priority 100) runs after Harmony's (priority 0), so
+        // Disharmony wraps Harmony's output. This keeps Harmony's input unchanged when
+        // Disharmony rebuilds; otherwise Harmony's adapter detaches until explicitly rebuilt.
+        string[] expectedEvents = Backend.Instance is HarmonyInterface
+            ? [
+                "harmony-prefix",
+                "disharmony-prefix",
+                "target",
+                "disharmony-postfix",
+                "harmony-postfix",
+            ]
+            : [
+                "disharmony-prefix",
+                "harmony-prefix",
+                "target",
+                "harmony-postfix",
+                "disharmony-postfix",
+            ];
+        Assert.That(HarmonyCoexistenceTargets.Events, Is.EqualTo(expectedEvents));
     }
 
     [Test]
-    public void DisharmonyFirst_PrefixPostfix_NestInsideHarmony()
+    public void DisharmonyFirst_PrefixPostfix_UseBackendNestingOrder()
     {
         MethodInfo target = typeof(HarmonyCoexistenceTargets)
             .GetMethod(nameof(HarmonyCoexistenceTargets.OrderedTarget))!;
         MethodInfo harmonyPrefix = typeof(HarmonyCoexistencePatches)
-            .GetMethod(nameof(HarmonyCoexistencePatches.DisharmonyFirst_PrefixPostfix_NestInsideHarmony_HarmonyPrefix))!;
+            .GetMethod(nameof(HarmonyCoexistencePatches.DisharmonyFirst_PrefixPostfix_UseBackendNestingOrder_HarmonyPrefix))!;
         MethodInfo harmonyPostfix = typeof(HarmonyCoexistencePatches)
-            .GetMethod(nameof(HarmonyCoexistencePatches.DisharmonyFirst_PrefixPostfix_NestInsideHarmony_HarmonyPostfix))!;
+            .GetMethod(nameof(HarmonyCoexistencePatches.DisharmonyFirst_PrefixPostfix_UseBackendNestingOrder_HarmonyPostfix))!;
         MethodInfo disharmonyPrefix = typeof(HarmonyCoexistencePatches)
-            .GetMethod(nameof(HarmonyCoexistencePatches.DisharmonyFirst_PrefixPostfix_NestInsideHarmony_DisharmonyPrefix))!;
+            .GetMethod(nameof(HarmonyCoexistencePatches.DisharmonyFirst_PrefixPostfix_UseBackendNestingOrder_DisharmonyPrefix))!;
         MethodInfo disharmonyPostfix = typeof(HarmonyCoexistencePatches)
-            .GetMethod(nameof(HarmonyCoexistencePatches.DisharmonyFirst_PrefixPostfix_NestInsideHarmony_DisharmonyPostfix))!;
+            .GetMethod(nameof(HarmonyCoexistencePatches.DisharmonyFirst_PrefixPostfix_UseBackendNestingOrder_DisharmonyPostfix))!;
         Patcher.Patch(
             Patch.Prefix.With(disharmonyPrefix).Of(target),
             Patch.Postfix.With(disharmonyPostfix).Of(target));
@@ -173,14 +185,26 @@ public sealed class HarmonyCoexistenceTests : PatchTestBase
         int result = HarmonyCoexistenceTargets.OrderedTarget();
 
         Assert.That(result, Is.EqualTo(10));
-        Assert.That(HarmonyCoexistenceTargets.Events, Is.EqualTo(new[]
-        {
-            "harmony-prefix",
-            "disharmony-prefix",
-            "target",
-            "disharmony-postfix",
-            "harmony-postfix",
-        }));
+        // The Harmony backend puts Disharmony inside Harmony's wrapper. On Waylith,
+        // Disharmony's transformer (priority 100) runs after Harmony's (priority 0), so
+        // Disharmony wraps Harmony's output. This keeps Harmony's input unchanged when
+        // Disharmony rebuilds; otherwise Harmony's adapter detaches until explicitly rebuilt.
+        string[] expectedEvents = Backend.Instance is HarmonyInterface
+            ? [
+                "harmony-prefix",
+                "disharmony-prefix",
+                "target",
+                "disharmony-postfix",
+                "harmony-postfix",
+            ]
+            : [
+                "disharmony-prefix",
+                "harmony-prefix",
+                "target",
+                "harmony-postfix",
+                "disharmony-postfix",
+            ];
+        Assert.That(HarmonyCoexistenceTargets.Events, Is.EqualTo(expectedEvents));
     }
 
     [Test]
@@ -266,13 +290,23 @@ public sealed class HarmonyCoexistenceTests : PatchTestBase
         int result = HarmonyCoexistenceTargets.OrderedTarget();
 
         Assert.That(result, Is.EqualTo(10));
-        Assert.That(HarmonyCoexistenceTargets.Events, Is.EqualTo(new[]
-        {
-            "harmony-prefix",
-            "second-disharmony-prefix",
-            "target",
-            "harmony-postfix",
-        }));
+        // The Harmony backend keeps Disharmony inside Harmony's wrapper. Waylith runs
+        // Disharmony after Harmony, keeping Harmony's input unchanged across this reapply.
+        // Reversing the transformers would make Harmony's adapter detach and require a rebuild.
+        string[] expectedEvents = Backend.Instance is HarmonyInterface
+            ? [
+                "harmony-prefix",
+                "second-disharmony-prefix",
+                "target",
+                "harmony-postfix",
+            ]
+            : [
+                "second-disharmony-prefix",
+                "harmony-prefix",
+                "target",
+                "harmony-postfix",
+            ];
+        Assert.That(HarmonyCoexistenceTargets.Events, Is.EqualTo(expectedEvents));
     }
 
     [Test]

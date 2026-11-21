@@ -31,6 +31,15 @@
           Condition="'$(_WaylithCLRTestsAvailable)' == 'true' and '$(DesignTimeBuild)' != 'true'">
     <Copy SourceFiles="$(NuGetPackageRoot)lib.harmony\$(HarmonyV3Version)\lib\net10.0\0Harmony.dll"
           DestinationFolder="$(TargetDir)" />
+    <!-- Harmony's Waylith provider also depends on the game's Waylith.Injection assembly. -->
+    <Copy SourceFiles="$(HarmonyRuntimeILDirectory)/HarmonyMod.RuntimeIL.dll"
+          DestinationFolder="$(TargetDir)"
+          Condition="'$(HarmonyRuntimeILDirectory)' != '' and Exists('$(HarmonyRuntimeILDirectory)/HarmonyMod.RuntimeIL.dll')" />
+    <Copy SourceFiles="$(_WaylithCLRRuntimeDirectory)Waylith.Injection.dll"
+          DestinationFolder="$(TargetDir)" />
+    <Message Importance="high"
+             Text="WaylithCLR tests require HarmonyRuntimeILDirectory in Directory.Build.local.props to point to the Harmony mod's Assemblies directory."
+             Condition="'$(HarmonyRuntimeILDirectory)' == '' or !Exists('$(HarmonyRuntimeILDirectory)/HarmonyMod.RuntimeIL.dll')" />
     <Exec Command="powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\..\Disharmony.Tests\Initialize-WaylithClrRun.ps1&quot; -RuntimeDirectory &quot;$(_WaylithCLRRuntimeDirectory).&quot; -RunDirectory &quot;$(TargetDir).&quot; -AssemblyName &quot;$(AssemblyName)&quot;" />
   </Target>
 
