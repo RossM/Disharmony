@@ -58,7 +58,7 @@ namespace Disharmony;
 public static class Patcher
 {
     private static PatchRegistry Registry => PatchRegistry.Instance;
-    private static HarmonyInterface Harmony => HarmonyInterface.Instance;
+    private static IBackend Backend => Disharmony.Backend.Instance;
 
     [ThreadStatic]
     private static bool isHandlingRuntimeException;
@@ -291,6 +291,6 @@ public static class Patcher
     /// </remarks>
     public static void ForceApply()
     {
-        Harmony.ResolveAllTrampolines();
+        Backend.ResolveAllTrampolines();
     }
 }

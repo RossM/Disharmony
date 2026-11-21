@@ -1,5 +1,4 @@
 using JetBrains.Annotations;
-using HarmonyPatchInfo = HarmonyLib.PatchInfo;
 
 namespace Disharmony;
 
@@ -10,7 +9,7 @@ internal interface IInlineSignature
     Type ReturnType { get; }
 }
 
-internal abstract class HarmonyInterface
+internal abstract class HarmonyInterface : IBackend
 {
     protected struct MethodPatch
     {
@@ -19,27 +18,23 @@ internal abstract class HarmonyInterface
         public bool debug;
     }
 
-    protected class WrappedInlineSignature(object inlineSignature) : IInlineSignature
+    protected class WrappedInlineSignature(object inlineSignature, HarmonyInterface harmonyInterface) : IInlineSignature
     {
         public object InlineSignature => inlineSignature;
-        public int ParameterCount => Instance.InlineSignatureParameters(inlineSignature).Count;
-        public bool HasThis => Instance.InlineSignatureHasThis(inlineSignature);
-        public Type ReturnType => (Type)Instance.InlineSignatureReturnType(inlineSignature);
+        public int ParameterCount => harmonyInterface.InlineSignatureParameters(inlineSignature).Count;
+        public bool HasThis => harmonyInterface.InlineSignatureHasThis(inlineSignature);
+        public Type ReturnType => (Type)harmonyInterface.InlineSignatureReturnType(inlineSignature);
     }
 
     protected const string HarmonyID = "Xylthixlm.Disharmony.Autopatcher";
 
     private static readonly ModuleBuilder module;
 
-    public static readonly HarmonyInterface Instance = Create();
-
     // These variables must only be accessed while Locker is held
     protected readonly Dictionary<MethodBase, MethodInfo> trampolines = [];
     private int trampolineCount;
 
     protected readonly Dictionary<MethodBase, MethodPatch> methodPatches = [];
-
-    public bool optimizerEnabled = false;
 
     static HarmonyInterface()
     {
@@ -55,28 +50,9 @@ internal abstract class HarmonyInterface
     protected abstract object InlineSignatureReturnType(object signature);
     protected abstract bool InlineSignatureHasThis(object signature);
 
-    private static HarmonyInterface Create()
-    {
-        Type sharedState = GetHarmonyType("HarmonyLib.HarmonySharedState");
-
-        MethodInfo? FindUpdate(Type payloadType) => sharedState.GetMethod("UpdatePatchInfo",
-            BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly | BindingFlags.ExactBinding, null,
-            [typeof(MethodBase), typeof(MethodInfo), payloadType], null);
-
-        if (FindUpdate(typeof(byte[]))?.ReturnType == typeof(void))
-            return new HarmonyInterfaceImplV3();
-        if (FindUpdate(typeof(HarmonyPatchInfo))?.ReturnType == typeof(void))
-            return new HarmonyInterfaceImplV2();
-
-        throw Unsupported("HarmonyLib.HarmonySharedState.UpdatePatchInfo");
-    }
-
     // Detect the backend in the assembly Disharmony binds to, even if other Harmony copies are loaded.
-    protected static Type GetHarmonyType(string name) =>
-        typeof(Harmony).Assembly.GetType(name) ?? throw Unsupported(name);
-
-    protected static NotSupportedException Unsupported(string member) =>
-        new($"Unsupported Harmony internals: {member} in {typeof(Harmony).Assembly.FullName}.");
+    internal static Type GetHarmonyType(string name) =>
+        typeof(Harmony).Assembly.GetType(name) ?? throw new NotSupportedException($"Unsupported Harmony internals: {name} in {typeof(Harmony).Assembly.FullName}.");
 
 #if DEBUG
     internal abstract event Action? ApplyPatchHookForTesting;
@@ -99,12 +75,6 @@ internal abstract class HarmonyInterface
 
         if (e != null)
             Patcher.ReportException(e);
-    }
-
-    [UsedImplicitly]
-    public static void ResolveTrampoline(MethodBase method)
-    {
-        Instance.ResolveTrampolineImpl(method);
     }
 
     /// <summary>
@@ -144,13 +114,15 @@ internal abstract class HarmonyInterface
         IEnumerable<CodeInstruction> instructions,
         ILGenerator generator)
     {
+        HarmonyInterface harmonyInterface = (HarmonyInterface)Backend.Instance;
+
         var instructionsList = instructions.ToList();
-        var patch = Instance.methodPatches[method];
+        var patch = harmonyInterface.methodPatches[method];
 
         foreach (var instruction in instructionsList)
         {
-            if (instruction.operand?.GetType() == Instance.InlineSignatureType)
-                instruction.operand = new WrappedInlineSignature(instruction.operand);
+            if (instruction.operand?.GetType() == harmonyInterface.InlineSignatureType)
+                instruction.operand = new WrappedInlineSignature(instruction.operand, harmonyInterface);
         }
 
         try
@@ -165,8 +137,7 @@ internal abstract class HarmonyInterface
             return instructionsList;
         }
 
-        if (Instance.optimizerEnabled && patch.optimize)
-        {
+        if (Backend.optimizerEnabled && patch.optimize)
             try
             {
                 var optimizer = new Optimizer.Optimizer(method, instructionsList, generator, debug: patch.debug);
@@ -176,7 +147,6 @@ internal abstract class HarmonyInterface
             {
                 Patcher.ReportException(e);
             }
-        }
 
         foreach (var instruction in instructionsList)
         {
@@ -277,7 +247,7 @@ internal abstract class HarmonyInterface
         }
 
         if (method is null || method.ReturnType != invoke.ReturnType)
-            throw Unsupported($"{typeName}.{methodNames[0]}");
+            throw new NotSupportedException($"Unsupported Harmony internals: {typeName}.{methodNames[0]} in {typeof(Harmony).Assembly.FullName}.");
 
         return AccessTools.MethodDelegate<TDelegate>(method);
     }
@@ -290,10 +260,16 @@ internal abstract class HarmonyInterface
         object? locker = field is not null
             ? field.GetValue(null)
             : patchProcessor.GetProperty("locker", flags)?.GetValue(null);
-        return locker ?? throw Unsupported("HarmonyLib.PatchProcessor.locker");
+        return locker ?? throw new NotSupportedException($"Unsupported Harmony internals: HarmonyLib.PatchProcessor.locker in {typeof(Harmony).Assembly.FullName}.");
     }
 
     protected static MethodInfo GetGetter(string typeName, string propertyName) =>
         GetHarmonyType(typeName).GetProperty(propertyName)?.GetGetMethod()
-        ?? throw Unsupported($"{typeName}.{propertyName}");
+        ?? throw new NotSupportedException($"Unsupported Harmony internals: {typeName}.{propertyName} in {typeof(Harmony).Assembly.FullName}.");
+
+    [UsedImplicitly]
+    public static void ResolveTrampoline(MethodBase method)
+    {
+        ((HarmonyInterface)Backend.Instance).ResolveTrampolineImpl(method);
+    }
 }

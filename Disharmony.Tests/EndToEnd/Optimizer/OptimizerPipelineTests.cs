@@ -250,7 +250,7 @@ public sealed class OptimizerPipelineTests : PatchTestBase
     [SetUp]
     public void EnableOptimizer()
     {
-        HarmonyInterface.Instance.optimizerEnabled = true;
+        Backend.optimizerEnabled = true;
         OptimizerPipelinePatches.patchCalls = 0;
         OptimizerControlFlowTargets.RightOperandCalls = 0;
         OptimizerExceptionTargets.FinallyExecutions = 0;
@@ -260,7 +260,7 @@ public sealed class OptimizerPipelineTests : PatchTestBase
     [TearDown]
     public void DisableOptimizer()
     {
-        HarmonyInterface.Instance.optimizerEnabled = false;
+        Backend.optimizerEnabled = false;
         PatchRegistry.Instance.UnpatchAll();
     }
 

@@ -8,11 +8,11 @@ public sealed class InlineControlFlowTests : PatchTestBase
 {
     [SetUp]
     public void EnableOptimizer() =>
-        HarmonyInterface.Instance.optimizerEnabled = true;
+        Backend.optimizerEnabled = true;
 
     [TearDown]
     public void DisableOptimizer() =>
-        HarmonyInterface.Instance.optimizerEnabled = false;
+        Backend.optimizerEnabled = false;
 
     private static void ApplyInlinePatch(string patchMethodName, PatchConfig patchConfig,
         MethodBase target)

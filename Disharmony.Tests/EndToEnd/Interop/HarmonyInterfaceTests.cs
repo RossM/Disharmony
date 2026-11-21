@@ -20,7 +20,7 @@ public sealed class HarmonyInterfaceTests : PatchTestBase
         if (TestRunSetup.IsWaylithClr)
             Assert.Ignore("Disharmony applies patches eagerly on WaylithCLR.");
 
-        HarmonyInterface harmonyInterface = HarmonyInterface.Instance;
+        IBackend harmonyInterface = Backend.Instance;
         const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
         Type implementation = harmonyInterface.GetType();
         object locker = implementation.GetProperty("Locker", flags)!.GetValue(harmonyInterface)!;
@@ -67,7 +67,7 @@ public sealed class HarmonyInterfaceTests : PatchTestBase
     public void ApplyPatch_PreservesTrampolineWhileTranspilerIsAddedRemovedAndAddedAgain()
     {
         const string owner = "Disharmony.Tests.HarmonyInterface.Republish";
-        HarmonyInterface harmonyInterface = HarmonyInterface.Instance;
+        HarmonyInterface harmonyInterface = (HarmonyInterface)Backend.Instance;
         const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
         Type implementation = harmonyInterface.GetType();
         object locker = implementation.GetProperty("Locker", flags)!.GetValue(harmonyInterface)!;
@@ -139,7 +139,7 @@ public sealed class HarmonyInterfaceTests : PatchTestBase
         if (TestRunSetup.IsWaylithClr)
             Assert.Ignore("Disharmony applies patches eagerly on WaylithCLR.");
 
-        HarmonyInterface harmonyInterface = HarmonyInterface.Instance;
+        IBackend harmonyInterface = Backend.Instance;
         const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
         object internals = harmonyInterface.GetType().GetProperty("HarmonyInternals", flags)!.GetValue(harmonyInterface)!;
         FieldInfo updateWrapperField = internals.GetType().GetField("UpdateWrapper")!;
@@ -205,7 +205,7 @@ public sealed class HarmonyInterfaceTests : PatchTestBase
     [Test]
     public void Instance_SelectsImplementationForLoadedHarmony()
     {
-        HarmonyInterface harmonyInterface = HarmonyInterface.Instance;
+        IBackend harmonyInterface = Backend.Instance;
         const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
         Type implementation = harmonyInterface.GetType();
         object locker = implementation.GetProperty("Locker", flags)!.GetValue(harmonyInterface)!;
@@ -227,7 +227,7 @@ public sealed class HarmonyInterfaceTests : PatchTestBase
     public void ApplyPatch_PublishesEachReplacementOnce(bool installTrampoline)
     {
         const string owner = "Disharmony.Tests.HarmonyInterface";
-        HarmonyInterface harmonyInterface = HarmonyInterface.Instance;
+        HarmonyInterface harmonyInterface = (HarmonyInterface)Backend.Instance;
         const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
         Type implementation = harmonyInterface.GetType();
         object locker = implementation.GetProperty("Locker", flags)!.GetValue(harmonyInterface)!;

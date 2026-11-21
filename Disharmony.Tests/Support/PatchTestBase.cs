@@ -10,7 +10,7 @@ public abstract class PatchTestBase
     {
         Patcher.RuntimeExceptionHandler -= ThrowRuntimeException;
         Patcher.RuntimeExceptionHandler += ThrowRuntimeException;
-        HarmonyInterface.Instance.optimizerEnabled = false;
+        Backend.optimizerEnabled = false;
         PatchRegistry.Instance.UnpatchAll();
     }
 

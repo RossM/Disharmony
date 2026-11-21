@@ -9,13 +9,13 @@ public sealed class InlineParameterBindingTests : PatchTestBase
     [SetUp]
     public void EnableOptimizer()
     {
-        HarmonyInterface.Instance.optimizerEnabled = true;
+        Backend.optimizerEnabled = true;
         InlineParameterBindingTargets.TargetCalls = 0;
     }
 
     [TearDown]
     public void DisableOptimizer() =>
-        HarmonyInterface.Instance.optimizerEnabled = false;
+        Backend.optimizerEnabled = false;
 
     private static void ApplyInlinePatch(string patchMethodName, PatchKind patchKind,
         string targetMethodName, string? innerMethodName = null)

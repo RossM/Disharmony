@@ -78,7 +78,7 @@ internal class UnpatchTests
         PatchRegistry.Instance.UnpatchAll();
         Patcher.RuntimeExceptionHandler -= ThrowRuntimeException;
         Patcher.RuntimeExceptionHandler += ThrowRuntimeException;
-        HarmonyInterface.Instance.optimizerEnabled = false;
+        Backend.optimizerEnabled = false;
         UnpatchPatches.observedPatch = 0;
         UnpatchPatches.firstPatchCalls = 0;
         UnpatchPatches.secondPatchCalls = 0;
