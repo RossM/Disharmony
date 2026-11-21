@@ -16,7 +16,14 @@ public sealed class TestRunSetup
     {
         Assembly harmonyAssembly = typeof(Harmony).Assembly;
         TestContext.Progress.WriteLine($"Harmony: {harmonyAssembly.FullName} ({harmonyAssembly.Location})");
+#if WAYLITHCLR_TESTS
+        Assembly coreLib = typeof(object).Assembly;
+        Assert.That(IsWaylithClr, Is.True, $"Expected WaylithCLR. Loaded CoreLib from {coreLib.Location}.");
+        TestContext.Progress.WriteLine($"WaylithCLR: {coreLib.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion} ({coreLib.Location})");
+        const string expectedMajor = "3";
+#else
         string? expectedMajor = Environment.GetEnvironmentVariable("DISHARMONY_TEST_HARMONY_MAJOR");
+#endif
         if (!string.IsNullOrEmpty(expectedMajor))
             Assert.That(harmonyAssembly.GetName().Version!.Major.ToString(), Is.EqualTo(expectedMajor),
                 "The test process did not load the requested Harmony version.");

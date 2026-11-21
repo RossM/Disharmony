@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>false</IsTestProject>
+    <_WaylithCLRRuntimeDirectory Condition="'$(WaylithCLRDirectory)' != ''">$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(WaylithCLRDirectory)'))</_WaylithCLRRuntimeDirectory>
+    <_WaylithCLRTestsAvailable Condition="'$(OS)' == 'Windows_NT' and '$(_WaylithCLRRuntimeDirectory)' != '' and Exists('$(_WaylithCLRRuntimeDirectory)RimWorld.deps.json')">true</_WaylithCLRTestsAvailable>
+  </PropertyGroup>
+
+  <Import Project="..\Disharmony.Tests\Disharmony.Tests.props" Condition="'$(_WaylithCLRTestsAvailable)' == 'true'" />
+
+  <PropertyGroup Condition="'$(_WaylithCLRTestsAvailable)' == 'true'">
+    <PlatformTarget>x64</PlatformTarget>
+    <DefineConstants>$(DefineConstants);WAYLITHCLR_TESTS</DefineConstants>
+    <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(_WaylithCLRTestsAvailable)' == 'true'">
+    <Compile Include="..\Disharmony.Tests\**\*.cs"
+             Exclude="..\Disharmony.Tests\bin\**;..\Disharmony.Tests\obj\**" />
+  </ItemGroup>
+
+  <Target Name="ReportSkippedWaylithCLRTests" BeforeTargets="Build;VSTest"
+          Condition="'$(_WaylithCLRTestsAvailable)' != 'true'">
+    <Message Importance="high" Text="Skipping Disharmony.Tests.WaylithCLR. On Windows x64, set WaylithCLRDirectory in Directory.Build.local.props to a WaylithCLR install containing RimWorld.deps.json." />
+  </Target>
+
+  <Target Name="StageWaylithCLRTests" AfterTargets="Build"
+          Condition="'$(_WaylithCLRTestsAvailable)' == 'true' and '$(DesignTimeBuild)' != 'true'">
+    <Copy SourceFiles="$(NuGetPackageRoot)lib.harmony\$(HarmonyV3Version)\lib\net10.0\0Harmony.dll"
+          DestinationFolder="$(TargetDir)" />
+    <Exec Command="powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\..\Disharmony.Tests\Initialize-WaylithClrRun.ps1&quot; -RuntimeDirectory &quot;$(_WaylithCLRRuntimeDirectory).&quot; -RunDirectory &quot;$(TargetDir).&quot; -AssemblyName &quot;$(AssemblyName)&quot;" />
+  </Target>
+
+</Project>

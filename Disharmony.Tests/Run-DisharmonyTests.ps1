@@ -69,42 +69,6 @@ function Resolve-MonoExecutable([string] $RequestedExecutable)
     throw 'Mono was not found. Install Mono or specify -MonoExecutable or MONO_EXE.'
 }
 
-function Initialize-WaylithClrRun([string] $RuntimeDirectory, [string] $RunDirectory)
-{
-    $runtimeManifestPath = Join-Path $RuntimeDirectory 'RimWorld.deps.json'
-    if (-not (Test-Path -LiteralPath $runtimeManifestPath -PathType Leaf))
-    {
-        throw "RimWorld.deps.json was not found in $RuntimeDirectory. Use a RimWorld 1.7 installation or a copy of its WaylithCLR runtime files and dependency manifest."
-    }
-
-    # Use only the framework pack from RimWorld's self-contained deployment.
-    $runtimeManifest = Get-Content -LiteralPath $runtimeManifestPath -Raw | ConvertFrom-Json
-    $runtimeTarget = $runtimeManifest.targets.PSObject.Properties[$runtimeManifest.runtimeTarget.name].Value
-    $runtimePack = $runtimeTarget.PSObject.Properties | Where-Object Name -like 'runtimepack.Microsoft.NETCore.App.Runtime.*/10.*'
-    if (@($runtimePack).Count -ne 1)
-    {
-        throw "Expected one .NET 10 runtime pack in $runtimeManifestPath."
-    }
-
-    $assetNames = @($runtimePack.Value.runtime.PSObject.Properties.Name) + @($runtimePack.Value.native.PSObject.Properties.Name)
-    $assetPaths = $assetNames | ForEach-Object { Join-Path $RuntimeDirectory $_ }
-    Copy-Item -LiteralPath $assetPaths -Destination $RunDirectory -Force
-
-    # Make the staged test app self-contained, preserving its own runtime options and dependencies.
-    $testManifestPath = Join-Path $RunDirectory 'Disharmony.Tests.deps.json'
-    $testManifest = Get-Content -LiteralPath $testManifestPath -Raw | ConvertFrom-Json
-    $testTarget = $testManifest.targets.PSObject.Properties[$testManifest.runtimeTarget.name].Value
-    $packLibrary = $runtimeManifest.libraries.PSObject.Properties[$runtimePack.Name].Value
-    $testTarget | Add-Member -NotePropertyName $runtimePack.Name -NotePropertyValue $runtimePack.Value
-    $testManifest.libraries | Add-Member -NotePropertyName $runtimePack.Name -NotePropertyValue $packLibrary
-    [IO.File]::WriteAllText($testManifestPath, ($testManifest | ConvertTo-Json -Depth 20))
-
-    $testConfigPath = Join-Path $RunDirectory 'Disharmony.Tests.runtimeconfig.json'
-    $testConfig = Get-Content -LiteralPath $testConfigPath -Raw | ConvertFrom-Json
-    $testConfig.runtimeOptions.PSObject.Properties.Remove('framework')
-    [IO.File]::WriteAllText($testConfigPath, ($testConfig | ConvertTo-Json -Depth 20))
-}
-
 if (($Profile -or $MonoProfile) -and $Runtime -ne 'Mono')
 {
     throw 'Mono profiling options can only be used with -Runtime Mono.'
@@ -219,7 +183,7 @@ try
 
         if ($Runtime -eq 'WaylithCLR')
         {
-            Initialize-WaylithClrRun $WaylithClrDirectory $runDirectory
+            & (Join-Path $PSScriptRoot 'Initialize-WaylithClrRun.ps1') -RuntimeDirectory $WaylithClrDirectory -RunDirectory $runDirectory
         }
 
         $testExecutable = Join-Path $runDirectory $testFileName

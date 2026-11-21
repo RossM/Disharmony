@@ -45,6 +45,22 @@ Visual Studio Test Explorer and `dotnet test` run the tests for each target thro
 These commands use the referenced Harmony 2.4.2 package. Use the compatibility runner below to test the same
 Disharmony binaries across runtimes, or to exercise the Harmony 3 adapter. See [compatibility](../docs/compatibility.md) for the supported release scope.
 
+### Test Explorer on WaylithCLR
+
+On Windows x64, copy `Directory.Build.local.example.props` to
+`Directory.Build.local.props` if you do not have one. Set `WaylithCLRDirectory` to a RimWorld 1.7 installation
+or to a folder containing its x64 CLR files and `RimWorld.deps.json`.
+
+Build the solution in **Debug** or **Release**. In Test Explorer, **Disharmony.Tests.WaylithCLR** appears alongside
+the `net472` and stock `net10.0` groups. It runs the same .NET 10 test sources on WaylithCLR with the pinned Harmony 3
+build. The WaylithCLR group is available when the runtime is configured.
+
+To run this group from the command line:
+
+```powershell
+dotnet test .\Disharmony.Tests.WaylithCLR\Disharmony.Tests.WaylithCLR.csproj --configuration Debug
+```
+
 ## Build the NuGet package
 
 From the repository root, build the library package in Release configuration:
