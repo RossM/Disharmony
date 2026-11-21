@@ -92,6 +92,10 @@ public static class Patcher
             {
                 handler(exception);
             }
+            catch (Exception e)
+            {
+                FileLog.Log($"!!! Exception in RuntimeExceptionHandler: {e}");
+            }
             finally
             {
                 isHandlingRuntimeException = wasHandlingRuntimeException;
