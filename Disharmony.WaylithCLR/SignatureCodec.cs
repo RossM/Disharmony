@@ -16,7 +16,7 @@ internal sealed class SignatureCodec(Func<int, int>? importType = null) : ISigna
     {
         public Type Resolve(MethodBase method)
         {
-            if (Bytes.Length == 1 && Bytes[0] == (byte)SignatureTypeCode.Void)
+            if (Bytes is [(byte)SignatureTypeCode.Void])
                 return typeof(void);
             int token = MethodBodyUpdater.GetTokenForTypeSpec(method.Module, Bytes);
             return (Type)MethodBodyUpdater.ResolveToken(method, token)!;
@@ -30,7 +30,7 @@ internal sealed class SignatureCodec(Func<int, int>? importType = null) : ISigna
         }
     }
 
-    public static unsafe TypeSignature[] ReadLocals(byte[] bytes, Func<int, int>? importType = null)
+    public unsafe TypeSignature[] ReadLocals(byte[] bytes)
     {
         if (bytes.Length == 0)
             return [];
@@ -42,7 +42,7 @@ internal sealed class SignatureCodec(Func<int, int>? importType = null) : ISigna
             int count = reader.ReadCompressedInteger();
             if (count < 0 || count > reader.RemainingBytes)
                 throw new BadImageFormatException("Invalid local variable count.");
-            var decoder = new SignatureDecoder<TypeSignature, object?>(new SignatureCodec(importType), null!, null);
+            var decoder = new SignatureDecoder<TypeSignature, object?>(this, null!, null);
             var locals = new TypeSignature[count];
             for (int i = 0; i < count; i++)
                 locals[i] = decoder.DecodeType(ref reader);
@@ -52,12 +52,12 @@ internal sealed class SignatureCodec(Func<int, int>? importType = null) : ISigna
         }
     }
 
-    public static unsafe MethodSignature<TypeSignature> ReadMethod(byte[] bytes, Func<int, int>? importType = null)
+    public unsafe MethodSignature<TypeSignature> ReadMethod(byte[] bytes)
     {
         fixed (byte* start = bytes)
         {
             var reader = new BlobReader(start, bytes.Length);
-            var decoder = new SignatureDecoder<TypeSignature, object?>(new SignatureCodec(importType), null!, null);
+            var decoder = new SignatureDecoder<TypeSignature, object?>(this, null!, null);
             var signature = decoder.DecodeMethodSignature(ref reader);
             if (reader.RemainingBytes != 0)
                 throw new BadImageFormatException("Trailing data in call-site signature.");
@@ -92,15 +92,21 @@ internal sealed class SignatureCodec(Func<int, int>? importType = null) : ISigna
 
     private TypeSignature NamedType(EntityHandle handle, byte kind)
     {
-        int token = MetadataTokens.GetToken(handle);
-        if (importType is not null)
-            token = importType(token);
+        int token = HandleToToken(handle);
         var blob = new BlobBuilder();
         // SignatureDecoder passes kind == 0 for custom-modifier type handles. The class tag
         // is a placeholder that GetModifiedType discards when it writes the modifier's token.
         blob.WriteByte(kind == 0 ? (byte)SignatureTypeKind.Class : kind);
         blob.WriteCompressedInteger(CodedIndex.TypeDefOrRefOrSpec(MetadataTokens.EntityHandle(token)));
         return new TypeSignature(blob.ToArray());
+    }
+
+    private int HandleToToken(EntityHandle handle)
+    {
+        int token = MetadataTokens.GetToken(handle);
+        if (importType is not null)
+            token = importType(token);
+        return token;
     }
 
     public TypeSignature GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind) =>

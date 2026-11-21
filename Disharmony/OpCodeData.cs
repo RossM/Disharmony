@@ -186,7 +186,7 @@ internal struct OpCodeData
     public static int GetIntOperand(CodeInstruction inst) => GetIntOperand(inst.opcode, inst.operand);
     public static int GetIntOperand(ILInstruction inst) => GetIntOperand(inst.OpCode, inst.Operand);
 
-    private static int GetIntOperand(OpCode opcode, object? operand)
+    public static int GetIntOperand(OpCode opcode, object? operand)
     {
         var opcodeData = Get(opcode);
         return (opcodeData.flags & OpCodeFlags.FixedOperand) != 0 ? opcodeData.operand : Convert.ToInt32(operand);

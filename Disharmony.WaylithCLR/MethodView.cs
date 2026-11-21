@@ -21,8 +21,11 @@ internal class MethodView
     private readonly MethodBuilder methodBuilder;
     private readonly byte[] localSignature;
     private readonly LocalBuilder[] originalLocals;
+
+    // A mapping from the byte position of a Calli argument to the relevant InlineSignature
     private readonly Dictionary<int, InlineSignature> callSites = [];
 
+    // Mapping from numerical opcode values to OpCodes
     private static readonly Dictionary<ushort, OpCode> opCodes = typeof(OpCodes)
         .GetFields(BindingFlags.Public | BindingFlags.Static)
         .Select(field => (OpCode)field.GetValue(null)!)
@@ -30,9 +33,8 @@ internal class MethodView
 
     private MethodView(MethodBase method, in MethodBodyView body)
     {
-        // ILGenerator needs a method to hold its output. Baking this temporary method exposes
-        // its bytecode, maxstack, and exception table through MethodBody. Emit copies that
-        // body into Waylith's builder and remaps its metadata tokens.
+        // In order to use System.Reflection.Emit to handle the work of mapping IL to bytes, we need a MethodBuilder. Define it
+        // inside a DynamicAssembly so it can be garbage collected after we're done.
         var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Disharmony.MethodView"), AssemblyBuilderAccess.RunAndCollect);
         typeBuilder = assembly.DefineDynamicModule("Methods").DefineType("Replacement");
         Type[] parameters = method.GetParameters().Select(parameter => parameter.ParameterType).ToArray();
@@ -40,59 +42,77 @@ internal class MethodView
             parameters = [method.DeclaringType!.CallableType, .. parameters];
         methodBuilder = typeBuilder.DefineMethod("Invoke", MethodAttributes.Public | MethodAttributes.Static,
             method is MethodInfo info ? info.ReturnType : typeof(void), parameters);
+
+        // Only have the CLR initialize the locals in the copied method if the original method did. This is a change from Harmony,
+        // which always generated methods with InitLocals = true.
         methodBuilder.InitLocals = body.InitLocals;
+
+        // Use the ILGenerator from our method body for declaring locals and labels
         Generator = methodBuilder.GetILGenerator();
 
-        localSignature = body.LocalSignature.ToArray();
-        originalLocals = SignatureCodec.ReadLocals(localSignature)
-            .Select(signature => Generator.DeclareLocal(signature.Resolve(method), signature.Pinned)).ToArray();
+        // Save the original local signature. The parsed LocalBuilders lose information from the original signature, so we
+        // reuse the original signature verbatim for locals that come from the original method, and append the new locals.
+        localSignature = [.. body.LocalSignature];
+
+        // Parse the local signature to recover the types of all locals and declare them a LocalBuilders. This allows the
+        // main Disharmony code to know the types of all locals (except totally unused locals, which don't matter).
+        var signatureCodec = new SignatureCodec();
+        originalLocals =
+        [
+            .. signatureCodec.ReadLocals(localSignature).Select(signature => Generator.DeclareLocal(signature.Resolve(method), signature.Pinned)),
+        ];
     }
 
     public static unsafe MethodView Create(MethodBase method, in MethodBodyView body, ReadOnlySpan<MethodBodyClause> clauses)
     {
         var view = new MethodView(method, body);
-        var offsets = new Dictionary<int, CodeInstruction>();
-        var ends = new Dictionary<int, CodeInstruction>();
+
+        // Mapping from the byte start position of each instruction to the resulting CodeInstruction
+        var instructionStartingAt = new Dictionary<int, CodeInstruction>();
+
+        // Mapping from the byte end position of each instruction to the resulting CodeInstruction, used for
+        // recording exception block ends.
+        var instructionEndingAt = new Dictionary<int, CodeInstruction>();
+
+        // Mapping from byte start position to label, used in GetLabel()
+        var labelAt = new Dictionary<int, Label>();
+
+        // We use a BlobReader to read the IL bytes. This isn't strictly necessary, but a BlobReader is necessary
+        // for the SignatureDecoder API used in SignatureCodec, so we might as well use it here too.
         fixed (byte* bytes = body.IL)
         {
             var reader = new BlobReader(bytes, body.IL.Length);
             while (reader.RemainingBytes > 0)
             {
+                // Save starting byte offset
                 int offset = reader.Offset;
+
+                // Read opcode and operand
                 OpCode opCode = ReadOpCode(ref reader);
                 object? operand = ReadOperand(ref reader, opCode, method);
+
+                // Normalize accesses to locals to the forms that take a LocalBuilder operand, so that types
+                // are preserved. This means replacing macros such as ldloc.0 with non-macro forms.
                 ushort canonical = OpCodeData.GetCanonicalOpcode(opCode);
                 if (canonical is OpCodeValues.Ldloc or OpCodeValues.Ldloca or OpCodeValues.Stloc)
                 {
-                    int index = OpCodeData.GetIntOperand(new CodeInstruction(opCode, operand));
+                    int index = OpCodeData.GetIntOperand(opCode, operand);
                     if ((uint)index >= (uint)view.originalLocals.Length)
                         throw new BadImageFormatException($"Invalid local #{index} at IL_{offset:X4}.");
-                    // ldloc.0 and other compact forms omit the local's type. A LocalBuilder operand
-                    // lets the rule engine and stack analysis recover the type from any local access.
                     operand = view.originalLocals[index];
                     opCode = opCodes[canonical];
                 }
+
+                // Create the instruction and add it to the mappings for label and exception block parsing later
                 var instruction = new CodeInstruction(opCode, operand);
-                offsets.Add(offset, instruction);
-                ends.Add(reader.Offset, instruction);
+                instructionStartingAt.Add(offset, instruction);
+                instructionEndingAt.Add(reader.Offset, instruction);
                 view.CodeInstructions.Add(instruction);
             }
         }
 
-        var labels = new Dictionary<int, Label>();
-        Label GetLabel(int offset)
-        {
-            if (!offsets.TryGetValue(offset, out var instruction))
-                throw new BadImageFormatException($"Invalid branch target IL_{offset:X4}.");
-            if (!labels.TryGetValue(offset, out Label label))
-            {
-                label = view.Generator.DefineLabel();
-                labels.Add(offset, label);
-                instruction.labels.Add(label);
-            }
-            return label;
-        }
-
+        // Convert branch instructions from byte positions to labels. This could be done during the initial
+        // pass but would require passing 'labels' to ReadOperand.
         foreach (var instruction in view.CodeInstructions)
         {
             switch (instruction.opcode.OperandType)
@@ -105,18 +125,25 @@ internal class MethodView
                     break;
             }
         }
-
-        // The exception table has one entry per handler. Handlers with the same try range
-        // must be emitted inside a single ILGenerator exception block.
+        
+        // Construct the exception blocks. The incoming exception information has one entry per handler, with 'try' blocks that
+        // have multiple 'catch' and/or 'finally' blocks appearing multiple times. ILGenerator expects only a single exception
+        // block with multiple handlers, so we have to consolidate the 'try's. The CLR guarantees that the exception blocks
+        // nest properly, so the sort here puts them in proper nesting order.
         foreach (var group in clauses.ToArray().GroupBy(clause => (clause.TryOffset, clause.TryLength))
                      .OrderBy(group => group.Key.TryOffset).ThenByDescending(group => group.Key.TryLength))
         {
-            offsets[group.Key.TryOffset].blocks.Add(new ExceptionBlock(ExceptionBlockType.BeginExceptionBlock));
+            // Record the beginning of the 'try' block
+            instructionStartingAt[group.Key.TryOffset].blocks.Add(new ExceptionBlock(ExceptionBlockType.BeginExceptionBlock));
+
+            // Record the end of the entire exception clause sequence
             int end = group.Max(clause => checked(clause.HandlerOffset + clause.HandlerLength));
-            ends[end].blocks.Add(new ExceptionBlock(ExceptionBlockType.EndExceptionBlock));
+            instructionEndingAt[end].blocks.Add(new ExceptionBlock(ExceptionBlockType.EndExceptionBlock));
+
+            // Record each handler block
             foreach (var clause in group.OrderBy(clause => clause.HandlerOffset))
             {
-                var blocks = offsets[clause.HandlerOffset].blocks;
+                var blocks = instructionStartingAt[clause.HandlerOffset].blocks;
                 switch (clause.Flags)
                 {
                     case ExceptionHandlingClauseOptions.Clause:
@@ -124,8 +151,8 @@ internal class MethodView
                             (Type)MethodBodyUpdater.ResolveToken(method, clause.ClassTokenOrFilterOffset)!));
                         break;
                     case ExceptionHandlingClauseOptions.Filter:
-                        offsets[clause.ClassTokenOrFilterOffset].blocks.Add(new ExceptionBlock(ExceptionBlockType.BeginExceptFilterBlock));
-                        blocks.Add(new ExceptionBlock(ExceptionBlockType.BeginCatchBlock, null));
+                        instructionStartingAt[clause.ClassTokenOrFilterOffset].blocks.Add(new ExceptionBlock(ExceptionBlockType.BeginExceptFilterBlock));
+                        blocks.Add(new ExceptionBlock(ExceptionBlockType.BeginCatchBlock));
                         break;
                     case ExceptionHandlingClauseOptions.Finally:
                         blocks.Add(new ExceptionBlock(ExceptionBlockType.BeginFinallyBlock));
@@ -139,8 +166,24 @@ internal class MethodView
             }
         }
         return view;
+
+        // Get the label for an offset, or create one if it doesn't exist
+        Label GetLabel(int offset)
+        {
+            if (!instructionStartingAt.TryGetValue(offset, out var instruction))
+                throw new BadImageFormatException($"Invalid branch target IL_{offset:X4}.");
+            if (labelAt.TryGetValue(offset, out Label label))
+                return label;
+            label = view.Generator.DefineLabel();
+            labelAt.Add(offset, label);
+            instruction.labels.Add(label);
+            return label;
+        }
     }
 
+    /// <summary>
+    /// Reads the byte(s) of an opcode from the reader and returns the corresponding OpCode
+    /// </summary>
     private static OpCode ReadOpCode(ref BlobReader reader)
     {
         ushort value = reader.ReadByte();
@@ -151,12 +194,15 @@ internal class MethodView
         return opCode;
     }
 
+    /// <summary>
+    /// Reads the byte(s) of an operand from the reader and returns the corresponding operand object
+    /// </summary>
     private static object? ReadOperand(ref BlobReader reader, OpCode opCode, MethodBase method)
     {
         switch (opCode.OperandType)
         {
             case OperandType.InlineNone: return null;
-            case OperandType.ShortInlineI: return opCode == OpCodes.Ldc_I4_S ? (object)reader.ReadSByte() : reader.ReadByte();
+            case OperandType.ShortInlineI: return opCode == OpCodes.Ldc_I4_S ? reader.ReadSByte() : reader.ReadByte();
             case OperandType.ShortInlineVar: return (int)reader.ReadByte();
             case OperandType.InlineVar: return (int)reader.ReadUInt16();
             case OperandType.InlineI: return reader.ReadInt32();
@@ -195,31 +241,16 @@ internal class MethodView
 
     public unsafe void Emit(MethodBodyBuilder builder)
     {
-        foreach (var instruction in CodeInstructions)
-        {
-            foreach (Label label in instruction.labels)
-                Generator.MarkLabel(label);
-            foreach (var block in instruction.blocks)
-            {
-                switch (block.blockType)
-                {
-                    case ExceptionBlockType.BeginExceptionBlock: Generator.BeginExceptionBlock(); break;
-                    case ExceptionBlockType.BeginCatchBlock: Generator.BeginCatchBlock(block.catchType); break;
-                    case ExceptionBlockType.BeginExceptFilterBlock: Generator.BeginExceptFilterBlock(); break;
-                    case ExceptionBlockType.BeginFinallyBlock: Generator.BeginFinallyBlock(); break;
-                    case ExceptionBlockType.BeginFaultBlock: Generator.BeginFaultBlock(); break;
-                }
-            }
-            EmitInstruction(instruction);
-            foreach (var block in instruction.blocks)
-                if (block.blockType == ExceptionBlockType.EndExceptionBlock)
-                    Generator.EndExceptionBlock();
-        }
+        EmitInstructions();
 
+        // Get the emitted IL bytes
         MethodInfo emittedMethod = typeBuilder.CreateType()!.GetMethod(methodBuilder.Name)!;
         MethodBody body = emittedMethod.GetMethodBody()!;
         byte[] il = body.GetILAsByteArray()!;
+
         int ImportType(int token) => builder.GetTokenFor(emittedMethod.Module.ResolveType(token));
+        
+        // Remap the emitted tokens to those expected by MethodBodyBuilder.
         fixed (byte* bytes = il)
         {
             var reader = new BlobReader(bytes, il.Length);
@@ -249,11 +280,15 @@ internal class MethodView
             }
         }
 
-        var locals = new BlobBuilder();
+        // We don't track the emitted locals explicitly so we have to parse the locals of the emitted method
         var emittedLocals = body.LocalSignatureMetadataToken == 0 ? [] :
-            SignatureCodec.ReadLocals(emittedMethod.Module.ResolveSignature(body.LocalSignatureMetadataToken), ImportType);
+            new SignatureCodec(ImportType).ReadLocals(emittedMethod.Module.ResolveSignature(body.LocalSignatureMetadataToken));
+
+        // Magic number ???
+        var locals = new BlobBuilder();
         locals.WriteByte(0x07);
         locals.WriteCompressedInteger(emittedLocals.Length);
+
         // DeclareLocal retains the Type and pinned flag, but its signature omits custom
         // modifiers and explicit array bounds. Copy the incoming local entries verbatim
         // and append the signatures of locals added during rewriting.
@@ -270,6 +305,7 @@ internal class MethodView
         foreach (var local in emittedLocals.Skip(originalLocals.Length))
             local.WriteTo(locals);
 
+        // Actually emit
         var output = new BlobBuilder();
         var encoder = new MethodBodyStreamEncoder(output);
         var encodedBody = encoder.AddMethodBody(il.Length, body.MaxStackSize, body.ExceptionHandlingClauses.Count,
@@ -283,6 +319,32 @@ internal class MethodView
                 clause.Flags == ExceptionHandlingClauseOptions.Clause ? MetadataTokens.EntityHandle(builder.GetTokenFor(clause.CatchType!)) : default,
                 clause.Flags == ExceptionHandlingClauseOptions.Filter ? clause.FilterOffset : 0);
         builder.Write(output.ToArray());
+    }
+
+    private void EmitInstructions()
+    {
+        foreach (var instruction in CodeInstructions)
+        {
+            foreach (Label label in instruction.labels)
+                Generator.MarkLabel(label);
+            foreach (var block in instruction.blocks)
+            {
+                switch (block.blockType)
+                {
+                    case ExceptionBlockType.BeginExceptionBlock: Generator.BeginExceptionBlock(); break;
+                    case ExceptionBlockType.BeginCatchBlock: Generator.BeginCatchBlock(block.catchType); break;
+                    case ExceptionBlockType.BeginExceptFilterBlock: Generator.BeginExceptFilterBlock(); break;
+                    case ExceptionBlockType.BeginFinallyBlock: Generator.BeginFinallyBlock(); break;
+                    case ExceptionBlockType.BeginFaultBlock: Generator.BeginFaultBlock(); break;
+                }
+            }
+            EmitInstruction(instruction);
+
+            // I do not know why Harmony chose to do this this way but this is how Harmony does it
+            foreach (var block in instruction.blocks)
+                if (block.blockType == ExceptionBlockType.EndExceptionBlock)
+                    Generator.EndExceptionBlock();
+        }
     }
 
     private void EmitInstruction(CodeInstruction instruction)
@@ -332,25 +394,19 @@ internal class MethodView
         }
     }
 
-    private sealed class InlineSignature : IInlineSignature
+    private sealed class InlineSignature(MethodBase method, byte[] bytes) : IInlineSignature
     {
-        private readonly MethodBase method;
-        private readonly byte[] bytes;
-        private readonly MethodSignature<SignatureCodec.TypeSignature> signature;
+        private readonly MethodSignature<SignatureCodec.TypeSignature> signature = new SignatureCodec().ReadMethod(bytes);
 
         public int ParameterCount => signature.ParameterTypes.Length;
         public bool HasThis => signature.Header.IsInstance;
         public Type ReturnType => signature.ReturnType.Resolve(method);
 
-        public InlineSignature(MethodBase method, byte[] bytes)
+        public byte[] Import(MethodBodyBuilder builder)
         {
-            this.method = method;
-            this.bytes = bytes;
-            signature = SignatureCodec.ReadMethod(bytes);
+            int ImportType(int token) => builder.GetTokenFor((Type)MethodBodyUpdater.ResolveToken(method, token)!);
+            return SignatureCodec.WriteMethod(new SignatureCodec(ImportType).ReadMethod(bytes));
         }
-
-        public byte[] Import(MethodBodyBuilder builder) => SignatureCodec.WriteMethod(SignatureCodec.ReadMethod(bytes,
-            token => builder.GetTokenFor((Type)MethodBodyUpdater.ResolveToken(method, token)!)));
 
         public void Emit(ILGenerator generator)
         {
