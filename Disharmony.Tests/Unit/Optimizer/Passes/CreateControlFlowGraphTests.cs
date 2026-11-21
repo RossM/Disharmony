@@ -1333,9 +1333,6 @@ public sealed class CreateControlFlowGraphTests
     }
 
     [Test]
-    // Harmony currently corrupts exception-filter metadata before it reaches Disharmony, so filter behavior cannot be
-    // tested end-to-end. Preserve the intended unit fixture, but keep it ignored until Harmony can supply usable input.
-    [Ignore("Exception filters are unsupported due to a Harmony bug")]
     public void ExceptionRegions_Filter_ThrowsNotSupportedException()
     {
         ILGenerator ilGenerator = PatchProcessor.CreateILGenerator();

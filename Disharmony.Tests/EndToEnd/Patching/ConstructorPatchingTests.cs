@@ -160,9 +160,13 @@ public sealed class ConstructorPatchingTests : PatchTestBase
     }
 
     [Test]
-    [Ignore("Harmony/MonoMod initializes the type while compiling its static constructor for patching")]
     public void Prefix_StaticConstructor_ReferenceType_Parameterless_Executes()
     {
+        // Waylith replaces the method body without Harmony/MonoMod compiling a wrapper,
+        // so installing the patch does not run the target's type initializer.
+        if (Backend.Instance is HarmonyInterface)
+            Assert.Ignore("Harmony/MonoMod initializes the type while compiling its static constructor for patching");
+
         ConstructorPatchingPatches.executionCount = 0;
         StaticConstructorObservation.ConstructorExecuted = false;
         ConstructorInfo target = typeof(StaticConstructorTargets).TypeInitializer!;

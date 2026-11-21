@@ -233,8 +233,9 @@ broken global patch state instead of rolling back, contaminating later tests.
 Several boundary expectations reflect limitations below Disharmony rather than intended CLR restrictions. Constructed
 generic methods are rejected because MonoMod 1.2.3 reaches an unimplemented `MethodTable.GetMethodDescForSlot` path on
 the .NET Framework runtime. Varargs methods are rejected because Harmony generates invalid IL while resolving their
-trampolines. The static-constructor test remains ignored because Harmony/MonoMod prepares the target in a way that runs
-the type initializer before its patch can be installed.
+trampolines. The static-constructor test is skipped with the Harmony backend because Harmony/MonoMod prepares the target
+in a way that runs the type initializer before its patch can be installed. It runs with the WaylithCLR backend, which
+replaces the method body without compiling a Harmony wrapper.
 
 Tests that inject failures through `HarmonyInterface.ApplyPatchHookForTesting` are compiled only in Debug builds,
 matching the lifetime of that test hook. The normal Debug `dotnet test` run includes them; a Release test build does not.

@@ -431,7 +431,7 @@ public sealed class OptimizerPipelineTests : PatchTestBase
     }
 
     [Test]
-    [Ignore("Exception filters are unsupported due to a Harmony bug")]
+    [Ignore("Disharmony's optimizer does not support exception filters")]
     public void ExceptionFilter_PreservesFilterAndFallbackHandlers()
     {
         Assert.That(OptimizerExceptionTargets.ExceptionFilter(true), Is.EqualTo(1));
