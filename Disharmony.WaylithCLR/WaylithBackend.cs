@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
+using WaylithClr;
 
 namespace Disharmony.WaylithCLR;
 
@@ -27,13 +28,15 @@ internal class WaylithBackend : IBackend
         ApplyPatchHookForTesting?.Invoke();
 #endif
 
+        // The pipeline passes definition handles to CanTransform. Reflection can return
+        // a different handle for a struct override, so registration must use that same identity.
         MethodBase methodBase = original.MethodBase;
-        transformer.ApplyPatch(methodBase.MethodHandle, ruleset, useTrampolines, debug, optimize);
+        transformer.ApplyPatch(MethodBodyUpdater.GetDefinitionHandle(methodBase), ruleset, useTrampolines, debug, optimize);
     }
 
     public void Unpatch(MethodBase methodBase)
     {
-        transformer.RemovePatch(methodBase.MethodHandle);
+        transformer.RemovePatch(MethodBodyUpdater.GetDefinitionHandle(methodBase));
     }
 
 #if DEBUG
