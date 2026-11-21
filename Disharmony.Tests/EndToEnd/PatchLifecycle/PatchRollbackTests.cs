@@ -131,7 +131,7 @@ public sealed class PatchRollbackTests : PatchTestBase
         };
         List<Exception> reportedExceptions = [];
         Action<Exception> handler = reportedExceptions.Add;
-        Patcher.RuntimeExceptionHandler -= ThrowRuntimeException;
+        Patcher.RuntimeExceptionHandler -= RecordRuntimeException;
         Patcher.RuntimeExceptionHandler += handler;
         Backend.Instance.ApplyPatchHookForTesting += hook;
 
@@ -153,7 +153,7 @@ public sealed class PatchRollbackTests : PatchTestBase
         {
             Backend.Instance.ApplyPatchHookForTesting -= hook;
             Patcher.RuntimeExceptionHandler -= handler;
-            Patcher.RuntimeExceptionHandler += ThrowRuntimeException;
+            Patcher.RuntimeExceptionHandler += RecordRuntimeException;
         }
 
         Assert.Multiple(() =>
@@ -179,17 +179,28 @@ public sealed class PatchRollbackTests : PatchTestBase
             .GetMethod(nameof(StaticMethodTargets.RegistrationResultB))!;
         var injectedFailure = new InvalidOperationException("Injected application failure");
         Action hook = () => throw injectedFailure;
+        List<Exception> reportedExceptions = [];
+        Action<Exception> handler = exception =>
+        {
+            reportedExceptions.Add(exception);
+            throw new InvalidOperationException("Handler failed.");
+        };
+        Patcher.RuntimeExceptionHandler -= RecordRuntimeException;
+        Patcher.RuntimeExceptionHandler += handler;
         Backend.Instance.ApplyPatchHookForTesting += hook;
 
         try
         {
-            InvalidOperationException? exception = Assert.Throws<InvalidOperationException>(() =>
+            RuntimePatchException? exception = Assert.Throws<RuntimePatchException>(() =>
                 Patcher.Patch(Patch.Postfix.With(failedPatch).Of(failedTarget)));
+            Assert.That(reportedExceptions, Is.EqualTo(new[] { injectedFailure }));
             Assert.That(exception!.InnerException, Is.SameAs(injectedFailure));
         }
         finally
         {
             Backend.Instance.ApplyPatchHookForTesting -= hook;
+            Patcher.RuntimeExceptionHandler -= handler;
+            Patcher.RuntimeExceptionHandler += RecordRuntimeException;
         }
 
         PatchHandle handle = Patcher.Patch(Patch.Postfix.With(subsequentPatch).Of(subsequentTarget));
@@ -232,7 +243,7 @@ public sealed class PatchRollbackTests : PatchTestBase
         };
         List<Exception> reportedExceptions = [];
         Action<Exception> handler = reportedExceptions.Add;
-        Patcher.RuntimeExceptionHandler -= ThrowRuntimeException;
+        Patcher.RuntimeExceptionHandler -= RecordRuntimeException;
         Patcher.RuntimeExceptionHandler += handler;
         Backend.Instance.ApplyPatchHookForTesting += hook;
 
@@ -251,7 +262,7 @@ public sealed class PatchRollbackTests : PatchTestBase
         {
             Backend.Instance.ApplyPatchHookForTesting -= hook;
             Patcher.RuntimeExceptionHandler -= handler;
-            Patcher.RuntimeExceptionHandler += ThrowRuntimeException;
+            Patcher.RuntimeExceptionHandler += RecordRuntimeException;
         }
 
         Assert.That(StaticMethodTargets.RegistrationResultA(), Is.EqualTo(40));

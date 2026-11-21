@@ -431,17 +431,35 @@ public sealed class OptimizerPipelineTests : PatchTestBase
     }
 
     [Test]
-    [Ignore("Disharmony's optimizer does not support exception filters")]
     public void ExceptionFilter_PreservesFilterAndFallbackHandlers()
     {
-        Assert.That(OptimizerExceptionTargets.ExceptionFilter(true), Is.EqualTo(1));
-        Assert.That(OptimizerExceptionTargets.ExceptionFilter(false), Is.EqualTo(2));
+        if (Backend.Instance is HarmonyInterface)
+            Assert.Ignore("Exception filters are unsupported due to a Harmony bug");
 
-        ApplyPatch(typeof(OptimizerPipelinePatches), nameof(OptimizerPipelinePatches.ExceptionFilter_PreservesFilterAndFallbackHandlers));
+        // The optimizer rejects filter regions. Waylith can still emit the patched IL,
+        // so require the reported optimization error and verify the unoptimized fallback.
+        List<Exception> reportedExceptions = [];
+        Action<Exception> handler = reportedExceptions.Add;
+        Patcher.RuntimeExceptionHandler -= RecordRuntimeException;
+        Patcher.RuntimeExceptionHandler += handler;
+        try
+        {
+            Assert.That(OptimizerExceptionTargets.ExceptionFilter(true), Is.EqualTo(1));
+            Assert.That(OptimizerExceptionTargets.ExceptionFilter(false), Is.EqualTo(2));
 
-        Assert.That(OptimizerExceptionTargets.ExceptionFilter(true), Is.EqualTo(1));
-        Assert.That(OptimizerExceptionTargets.ExceptionFilter(false), Is.EqualTo(2));
-        Assert.That(OptimizerPipelinePatches.patchCalls, Is.EqualTo(2));
+            ApplyPatch(typeof(OptimizerPipelinePatches), nameof(OptimizerPipelinePatches.ExceptionFilter_PreservesFilterAndFallbackHandlers));
+
+            Assert.That(reportedExceptions, Has.Count.EqualTo(1));
+            Assert.That(reportedExceptions[0], Is.TypeOf<NotSupportedException>());
+            Assert.That(OptimizerExceptionTargets.ExceptionFilter(true), Is.EqualTo(1));
+            Assert.That(OptimizerExceptionTargets.ExceptionFilter(false), Is.EqualTo(2));
+            Assert.That(OptimizerPipelinePatches.patchCalls, Is.EqualTo(2));
+        }
+        finally
+        {
+            Patcher.RuntimeExceptionHandler -= handler;
+            Patcher.RuntimeExceptionHandler += RecordRuntimeException;
+        }
     }
 
     [Test]

@@ -1,22 +1,29 @@
+using System.Collections.Concurrent;
+
 namespace Disharmony.Tests.Support;
 
 public abstract class PatchTestBase
 {
-    protected static void ThrowRuntimeException(Exception exception) =>
-        throw new InvalidOperationException("Runtime exception", exception);
+    private ConcurrentQueue<Exception> runtimeExceptions = new();
+
+    protected void RecordRuntimeException(Exception exception) => runtimeExceptions.Enqueue(exception);
 
     [SetUp]
     public void UnpatchBeforeTest()
     {
-        Patcher.RuntimeExceptionHandler -= ThrowRuntimeException;
-        Patcher.RuntimeExceptionHandler += ThrowRuntimeException;
+        runtimeExceptions = new();
+        Patcher.RuntimeExceptionHandler -= RecordRuntimeException;
+        Patcher.RuntimeExceptionHandler += RecordRuntimeException;
         Backend.optimizerEnabled = false;
         PatchRegistry.Instance.UnpatchAll();
     }
 
     [TearDown]
-    public void RemoveRuntimeExceptionHandler() =>
-        Patcher.RuntimeExceptionHandler -= ThrowRuntimeException;
+    public void CheckRuntimeExceptions()
+    {
+        Patcher.RuntimeExceptionHandler -= RecordRuntimeException;
+        Assert.That(runtimeExceptions, Is.Empty, "Unexpected errors were reported while applying or removing patches.");
+    }
 
     protected static void ApplyPatch(Type patchMethodsType, string patchMethodName) =>
         Patcher.Patch(patchMethodsType.GetMethod(patchMethodName)!);

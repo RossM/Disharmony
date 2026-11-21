@@ -1,3 +1,5 @@
+using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Disharmony.Tests.Unit;
@@ -33,19 +35,31 @@ public sealed class RuntimeExceptionHandlerTests : PatchTestBase
             "Unpatch" => () => Patcher.Unpatch(handle),
             _ => throw new ArgumentOutOfRangeException(nameof(operation)),
         };
-        Action<Exception> handler = _ => Assert.That(changePatches, Throws.TypeOf<InvalidOperationException>());
-        Patcher.RuntimeExceptionHandler -= ThrowRuntimeException;
+        Exception? rejection = null;
+        Action<Exception> handler = _ =>
+        {
+            try
+            {
+                changePatches();
+            }
+            catch (Exception exception)
+            {
+                rejection = exception;
+            }
+        };
+        Patcher.RuntimeExceptionHandler -= RecordRuntimeException;
         Patcher.RuntimeExceptionHandler += handler;
         try
         {
             Patcher.ReportException(new InvalidOperationException("Patching failed."));
+            Assert.That(rejection, Is.TypeOf<InvalidOperationException>());
             Assert.That(() => Patcher.Patch(Array.Empty<PatchConfig>()), Throws.Nothing);
             Assert.That(() => Patcher.Unpatch(handle), Throws.Nothing);
         }
         finally
         {
             Patcher.RuntimeExceptionHandler -= handler;
-            Patcher.RuntimeExceptionHandler += ThrowRuntimeException;
+            Patcher.RuntimeExceptionHandler += RecordRuntimeException;
         }
     }
 
@@ -54,37 +68,61 @@ public sealed class RuntimeExceptionHandlerTests : PatchTestBase
     {
         var outer = new InvalidOperationException("Outer failure");
         var inner = new InvalidOperationException("Inner failure");
+        List<Exception> reports = [];
+        List<Exception?> rejections = [];
         Action<Exception> handler = exception =>
         {
+            reports.Add(exception);
             if (exception == outer)
                 Patcher.ReportException(inner);
-            Assert.That(() => Patcher.Patch(Array.Empty<PatchConfig>()), Throws.TypeOf<InvalidOperationException>());
+            try
+            {
+                Patcher.Patch(Array.Empty<PatchConfig>());
+                rejections.Add(null);
+            }
+            catch (Exception rejection)
+            {
+                rejections.Add(rejection);
+            }
         };
-        Patcher.RuntimeExceptionHandler -= ThrowRuntimeException;
+        Patcher.RuntimeExceptionHandler -= RecordRuntimeException;
         Patcher.RuntimeExceptionHandler += handler;
         try
         {
             Patcher.ReportException(outer);
+            Assert.That(reports, Is.EqualTo(new[] { outer, inner }));
+            Assert.That(rejections, Has.Count.EqualTo(2));
+            Assert.That(rejections, Has.All.TypeOf<InvalidOperationException>());
             Assert.That(() => Patcher.Patch(Array.Empty<PatchConfig>()), Throws.Nothing);
         }
         finally
         {
             Patcher.RuntimeExceptionHandler -= handler;
-            Patcher.RuntimeExceptionHandler += ThrowRuntimeException;
+            Patcher.RuntimeExceptionHandler += RecordRuntimeException;
         }
     }
 
     [Test]
-    public void Handler_Throws_RestoresPermissionToChangePatches()
+    public void Handler_Throws_LogsFailureAndRestoresPermissionToChangePatches()
     {
         var failure = new InvalidOperationException("Handler failed.");
-        Action<Exception> handler = _ => throw failure;
-        Patcher.RuntimeExceptionHandler -= ThrowRuntimeException;
+        int handlerCalls = 0;
+        Action<Exception> handler = _ =>
+        {
+            handlerCalls++;
+            throw failure;
+        };
+        using var logStream = new MemoryStream();
+        using var logWriter = new StreamWriter(logStream) { AutoFlush = true };
+        var previousLogWriter = FileLog.LogWriter;
+        FileLog.LogWriter = logWriter;
+        Patcher.RuntimeExceptionHandler -= RecordRuntimeException;
         Patcher.RuntimeExceptionHandler += handler;
         try
         {
-            var reported = Assert.Throws<InvalidOperationException>(() => Patcher.ReportException(new Exception("Patching failed.")));
-            Assert.That(reported, Is.SameAs(failure));
+            Assert.DoesNotThrow(() => Patcher.ReportException(new Exception("Patching failed.")));
+            Assert.That(handlerCalls, Is.EqualTo(1));
+            Assert.That(Encoding.UTF8.GetString(logStream.ToArray()), Does.Contain(failure.ToString()));
             PatchHandle? handle = null;
             Assert.That(() => handle = Patcher.Patch(Array.Empty<PatchConfig>()), Throws.Nothing);
             Assert.That(() => Patcher.Unpatch(handle!), Throws.Nothing);
@@ -92,7 +130,8 @@ public sealed class RuntimeExceptionHandlerTests : PatchTestBase
         finally
         {
             Patcher.RuntimeExceptionHandler -= handler;
-            Patcher.RuntimeExceptionHandler += ThrowRuntimeException;
+            Patcher.RuntimeExceptionHandler += RecordRuntimeException;
+            FileLog.LogWriter = previousLogWriter;
         }
     }
 
@@ -101,26 +140,39 @@ public sealed class RuntimeExceptionHandlerTests : PatchTestBase
     {
         // Report directly so the callback holds neither registration nor Harmony's lock.
         // Waiting for a patching worker from a real patching-error callback is prohibited.
+        Task? worker = null;
+        bool workerCompleted = false;
+        Exception? rejection = null;
         Action<Exception> handler = _ =>
         {
-            Task worker = Task.Run(() =>
+            worker = Task.Run(() =>
             {
                 PatchHandle handle = Patcher.Patch(Array.Empty<PatchConfig>());
                 Patcher.Unpatch(handle);
             });
-            Assert.That(worker.Wait(TimeSpan.FromSeconds(10)), Is.True, "The independent worker did not finish.");
-            Assert.That(() => Patcher.Patch(Array.Empty<PatchConfig>()), Throws.TypeOf<InvalidOperationException>());
+            workerCompleted = worker.Wait(TimeSpan.FromSeconds(10));
+            try
+            {
+                Patcher.Patch(Array.Empty<PatchConfig>());
+            }
+            catch (Exception exception)
+            {
+                rejection = exception;
+            }
         };
-        Patcher.RuntimeExceptionHandler -= ThrowRuntimeException;
+        Patcher.RuntimeExceptionHandler -= RecordRuntimeException;
         Patcher.RuntimeExceptionHandler += handler;
         try
         {
             Patcher.ReportException(new InvalidOperationException("Patching failed."));
+            Assert.That(workerCompleted, Is.True, "The independent worker did not finish successfully.");
+            Assert.That(worker!.Status, Is.EqualTo(TaskStatus.RanToCompletion));
+            Assert.That(rejection, Is.TypeOf<InvalidOperationException>());
         }
         finally
         {
             Patcher.RuntimeExceptionHandler -= handler;
-            Patcher.RuntimeExceptionHandler += ThrowRuntimeException;
+            Patcher.RuntimeExceptionHandler += RecordRuntimeException;
         }
     }
 }

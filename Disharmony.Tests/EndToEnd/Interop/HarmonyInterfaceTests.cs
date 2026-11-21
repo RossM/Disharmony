@@ -159,7 +159,7 @@ public sealed class HarmonyInterfaceTests : PatchTestBase
         int failedAttempts = 0;
         List<Exception> reportedExceptions = [];
         Action<Exception> handler = reportedExceptions.Add;
-        Patcher.RuntimeExceptionHandler -= ThrowRuntimeException;
+        Patcher.RuntimeExceptionHandler -= RecordRuntimeException;
         Patcher.RuntimeExceptionHandler += handler;
         PatchHandle? handle = null;
         try
@@ -203,7 +203,7 @@ public sealed class HarmonyInterfaceTests : PatchTestBase
         {
             updateWrapperField.SetValue(internals, updateWrapper);
             Patcher.RuntimeExceptionHandler -= handler;
-            Patcher.RuntimeExceptionHandler += ThrowRuntimeException;
+            Patcher.RuntimeExceptionHandler += RecordRuntimeException;
             if (handle != null)
                 Patcher.Unpatch(handle);
         }

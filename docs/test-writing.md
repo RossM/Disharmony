@@ -121,11 +121,11 @@ The matching parameter name is intentional. The patch does only the write under 
 
 Runtime detours are process-wide. A new object, a new fixture, or a different namespace does not isolate a patched method. Do not opt patching fixtures into parallel execution on the assumption that their instance fields are independent.
 
-Ordinary end-to-end fixtures should derive from `PatchTestBase`. Its per-test setup clears Disharmony patches, disables the optimizer, and subscribes a throwing handler to `Patcher.RuntimeExceptionHandler`; teardown removes that subscription. Reset any additional observation fields or target state used by the fixture. The internal reset API is test infrastructure, not the public patching API being demonstrated.
+Ordinary end-to-end fixtures should derive from `PatchTestBase`. Its per-test setup clears Disharmony patches, disables the optimizer, and collects errors from `Patcher.RuntimeExceptionHandler`; teardown removes that subscription and fails the test if any unexpected errors were reported. Reset any additional observation fields or target state used by the fixture. The internal reset API is test infrastructure, not the public patching API being demonstrated.
 
 Use public `Patcher.Patch`/`PatchAll` calls for normal activation, including fluent `PatchConfig` when attributes are not the subject of the test. Internal registration or application calls are appropriate only when they are essential to the behavior under examination. Test selective removal through the returned `PatchHandle` and public unpatch API.
 
-Tests deliberately examining runtime error reporting may replace the default throwing handler, but must restore subscriptions reliably and assert the reported exception. Never allow logging or fallback to make a broken patch appear to pass because the unpatched target still returns the expected value.
+Tests deliberately examining runtime error reporting may replace the default collecting handler, but must restore subscriptions reliably and assert the reported exception. Never allow logging or fallback to make a broken patch appear to pass because the unpatched target still returns the expected value.
 
 Assembly-scanning tests need a separate, controlled assembly, often generated with Reflection.Emit. Do not call `PatchAll` on the main test assembly: it contains unrelated patches, including intentionally invalid ones. Keep category and class-grouping metadata explicit in the generated assembly.
 

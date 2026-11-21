@@ -67,18 +67,11 @@ public static class UnpatchPatchAllPatches
     public static void PatchAllHandle_UnpatchesOnlyPatchesOwnedByThatHandle(ref int __result) => __result = 42;
 }
 
-internal class UnpatchTests
+internal class UnpatchTests : PatchTestBase
 {
-    private static void ThrowRuntimeException(Exception exception) =>
-        throw new InvalidOperationException("Runtime exception", exception);
-
     [SetUp]
     public void SetUp()
     {
-        PatchRegistry.Instance.UnpatchAll();
-        Patcher.RuntimeExceptionHandler -= ThrowRuntimeException;
-        Patcher.RuntimeExceptionHandler += ThrowRuntimeException;
-        Backend.optimizerEnabled = false;
         UnpatchPatches.observedPatch = 0;
         UnpatchPatches.firstPatchCalls = 0;
         UnpatchPatches.secondPatchCalls = 0;
@@ -87,7 +80,6 @@ internal class UnpatchTests
     [TearDown]
     public void TearDown()
     {
-        Patcher.RuntimeExceptionHandler -= ThrowRuntimeException;
         PatchRegistry.Instance.UnpatchAll();
     }
 

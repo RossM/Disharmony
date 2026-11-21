@@ -73,7 +73,7 @@ public static class Patcher
     ///     <para>
     ///         Handlers must not add or remove patches, or wait for another thread to do so. Patching and unpatching
     ///         through <see cref="Patcher" /> from a handler throws <see cref="InvalidOperationException" />.
-    ///         Use handlers to record or display errors. Exceptions thrown by a handler propagate to the caller.
+    ///         Use handlers to record or display errors. Exceptions thrown by a handler are logged and suppressed.
     ///     </para>
     /// </remarks>
     public static event Action<Exception>? RuntimeExceptionHandler;
