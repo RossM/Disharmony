@@ -440,34 +440,49 @@ internal class MethodView
             return;
         }
 
-        switch (instruction.operand)
+        object operand = instruction.operand ?? throw new NotSupportedException($"Missing operand in {instruction}.");
+        switch (opCode.OperandType)
         {
-            case LocalBuilder local: Generator.Emit(opCode, local); break;
-            case Label label: Generator.Emit(opCode, label); break;
-            case Label[] labels: Generator.Emit(opCode, labels); break;
-            case MethodInfo method: Generator.Emit(opCode, method); break;
-            case ConstructorInfo constructor: Generator.Emit(opCode, constructor); break;
-            case FieldInfo field: Generator.Emit(opCode, field); break;
-            case Type type: Generator.Emit(opCode, type); break;
-            case string text: Generator.Emit(opCode, text); break;
-            case InlineSignature signature:
+            case OperandType.InlineI: Generator.Emit(opCode, Convert.ToInt32(operand)); break;
+            case OperandType.InlineI8: Generator.Emit(opCode, Convert.ToInt64(operand)); break;
+            case OperandType.ShortInlineR: Generator.Emit(opCode, Convert.ToSingle(operand)); break;
+            case OperandType.InlineR: Generator.Emit(opCode, Convert.ToDouble(operand)); break;
+            case OperandType.ShortInlineI when opCode == OpCodes.Ldc_I4_S:
+                Generator.Emit(opCode, Convert.ToSByte(operand));
+                break;
+            case OperandType.ShortInlineI: Generator.Emit(opCode, Convert.ToByte(operand)); break;
+            case OperandType.ShortInlineVar or OperandType.InlineVar when operand is LocalBuilder local:
+                Generator.Emit(opCode, local);
+                break;
+            case OperandType.ShortInlineVar: Generator.Emit(opCode, Convert.ToByte(operand)); break;
+            case OperandType.InlineVar:
+                // CLI indexes are unsigned, but Reflection.Emit exposes a signed short overload.
+                Generator.Emit(opCode, unchecked((short)Convert.ToUInt16(operand)));
+                break;
+            case OperandType.InlineBrTarget or OperandType.ShortInlineBrTarget:
+                Generator.Emit(opCode, (Label)operand);
+                break;
+            case OperandType.InlineSwitch: Generator.Emit(opCode, (Label[])operand); break;
+            case OperandType.InlineString: Generator.Emit(opCode, (string)operand); break;
+            case OperandType.InlineMethod or OperandType.InlineTok when operand is MethodInfo method:
+                Generator.Emit(opCode, method);
+                break;
+            case OperandType.InlineMethod or OperandType.InlineTok when operand is ConstructorInfo constructor:
+                Generator.Emit(opCode, constructor);
+                break;
+            case OperandType.InlineField or OperandType.InlineTok when operand is FieldInfo field:
+                Generator.Emit(opCode, field);
+                break;
+            case OperandType.InlineType or OperandType.InlineTok when operand is Type type:
+                Generator.Emit(opCode, type);
+                break;
+            case OperandType.InlineSig when operand is InlineSignature signature:
                 signature.Emit(Generator);
                 callSites.Add(Generator.ILOffset - sizeof(int), signature);
                 break;
-            case SignatureHelper signature: Generator.Emit(opCode, signature); break;
-            case float value: Generator.Emit(opCode, value); break;
-            case double value: Generator.Emit(opCode, value); break;
-            case long value: Generator.Emit(opCode, value); break;
-            case sbyte value: Generator.Emit(opCode, value); break;
-            case byte value: Generator.Emit(opCode, value); break;
-            case short value: Generator.Emit(opCode, value); break;
-            case int value when opCode == OpCodes.Ldc_I4_S: Generator.Emit(opCode, checked((sbyte)value)); break;
-            case int value when opCode.OperandType == OperandType.ShortInlineI: Generator.Emit(opCode, checked((byte)value)); break;
-            case int value when opCode.OperandType == OperandType.ShortInlineVar: Generator.Emit(opCode, checked((byte)value)); break;
-            case int value when opCode.OperandType == OperandType.InlineVar:
-                Generator.Emit(opCode, unchecked((short)checked((ushort)value)));
+            case OperandType.InlineSig when operand is SignatureHelper signature:
+                Generator.Emit(opCode, signature);
                 break;
-            case int value: Generator.Emit(opCode, value); break;
             default: throw new NotSupportedException($"Unsupported operand in {instruction}.");
         }
     }

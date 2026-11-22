@@ -1,4 +1,8 @@
 #if WAYLITHCLR_TESTS
+using System.IO;
+using System.Text;
+using Disharmony.RulesEngine;
+
 namespace Disharmony.Tests.EndToEnd.Interop;
 
 public static class MethodViewPatches
@@ -13,6 +17,186 @@ public static class MethodViewPatches
 [TestFixture]
 public sealed class MethodViewTests : PatchTestBase
 {
+    [TestCase(nameof(OpCodes.Ldc_I4), (byte)200, typeof(int), 200, 10)]
+    [TestCase(nameof(OpCodes.Ldc_I4), (short)-129, typeof(int), -129, 10)]
+    [TestCase(nameof(OpCodes.Ldc_I4), 1000L, typeof(int), 1000, 10)]
+    [TestCase(nameof(OpCodes.Ldc_I4), BindingFlags.ExactBinding, typeof(int), 65536, 10)]
+    [TestCase(nameof(OpCodes.Ldc_I4_S), (short)-12, typeof(int), -12, 7)]
+    [TestCase(nameof(OpCodes.Ldc_I4_S), (byte)12, typeof(int), 12, 7)]
+    [TestCase(nameof(OpCodes.Ldc_I8), 123456, typeof(long), 123456L, 14)]
+    [TestCase(nameof(OpCodes.Ldc_I8), (uint)42, typeof(long), 42L, 14)]
+    [TestCase(nameof(OpCodes.Ldc_R4), 1.25, typeof(float), 1.25f, 10)]
+    [TestCase(nameof(OpCodes.Ldc_R8), 1.25f, typeof(double), 1.25, 14)]
+    public void NumericOperands_UseOpcodeEncoding(string opcodeName, object operand, Type valueType, object expected, int returnOffset)
+    {
+        OpCode opcode = (OpCode)typeof(OpCodes).GetField(opcodeName)!.GetValue(null)!;
+        var assembly = new PersistedAssemblyBuilder(new AssemblyName(nameof(NumericOperands_UseOpcodeEncoding)), typeof(object).Assembly);
+        var type = assembly.DefineDynamicModule("Tests").DefineType("Target", TypeAttributes.Public);
+        var observed = type.DefineField("Observed", valueType, FieldAttributes.Public | FieldAttributes.Static);
+        var method = type.DefineMethod("Touch", MethodAttributes.Public | MethodAttributes.Static, typeof(void), Type.EmptyTypes);
+        method.SetImplementationFlags(MethodImplAttributes.NoInlining);
+        method.GetILGenerator().Emit(OpCodes.Ret);
+        type.CreateType();
+        using var stream = new MemoryStream();
+        assembly.Save(stream);
+        Type targetType = Assembly.Load(stream.ToArray()).GetType("Target")!;
+        MethodInfo target = targetType.GetMethod("Touch")!;
+        FieldInfo field = targetType.GetField("Observed")!;
+        var rules = new Ruleset(new Rule
+        {
+            Mode = OutputMode.MethodPrefix,
+            Output = [new CodeInstruction(opcode, operand), new CodeInstruction(OpCodes.Stsfld, field)],
+        });
+        FileLog.FlushBuffer();
+        using var logStream = new MemoryStream();
+        using var writer = new StreamWriter(logStream) { AutoFlush = true };
+        var previousWriter = FileLog.LogWriter;
+        FileLog.LogWriter = writer;
+        try
+        {
+            Backend.Instance.ApplyPatch(new MethodInvocation(target), rules, false, debug: true, optimize: false);
+            target.Invoke(null, null);
+            Assert.That(field.GetValue(null), Is.EqualTo(expected));
+            FileLog.FlushBuffer();
+            string log = Encoding.UTF8.GetString(logStream.ToArray());
+            Assert.That(log, Does.Match($@"IL_{returnOffset:X4}:\s+ret"));
+        }
+        finally
+        {
+            try { Backend.Instance.Unpatch(target); }
+            finally { FileLog.LogWriter = previousWriter; }
+        }
+    }
+
+    [TestCase(nameof(OpCodes.Ldarg), (byte)1, 4)]
+    [TestCase(nameof(OpCodes.Ldarg), 1L, 4)]
+    [TestCase(nameof(OpCodes.Ldarg), (ushort)1, 4)]
+    [TestCase(nameof(OpCodes.Ldarg_S), (short)1, 2)]
+    [TestCase(nameof(OpCodes.Ldarg_S), 1L, 2)]
+    public void ArgumentIndexes_UseOpcodeWidth(string opcodeName, object operand, int returnOffset)
+    {
+        OpCode opcode = (OpCode)typeof(OpCodes).GetField(opcodeName)!.GetValue(null)!;
+        var assembly = new PersistedAssemblyBuilder(new AssemblyName(nameof(ArgumentIndexes_UseOpcodeWidth)), typeof(object).Assembly);
+        var type = assembly.DefineDynamicModule("Tests").DefineType("Target", TypeAttributes.Public);
+        var method = type.DefineMethod("Value", MethodAttributes.Public | MethodAttributes.Static, typeof(int), [typeof(int), typeof(int)]);
+        method.SetImplementationFlags(MethodImplAttributes.NoInlining);
+        method.GetILGenerator().Emit(OpCodes.Ldc_I4_0);
+        method.GetILGenerator().Emit(OpCodes.Ret);
+        type.CreateType();
+        using var stream = new MemoryStream();
+        assembly.Save(stream);
+        Type targetType = Assembly.Load(stream.ToArray()).GetType("Target")!;
+        MethodInfo target = targetType.GetMethod("Value")!;
+        var invoke = (Func<int, int, int>)target.CreateDelegate(typeof(Func<int, int, int>));
+        var rules = new Ruleset(new Rule
+        {
+            Pattern = [new CodeInstruction(OpCodes.Ldc_I4_0)],
+            Output = [new CodeInstruction(opcode, operand)],
+        });
+        FileLog.FlushBuffer();
+        using var logStream = new MemoryStream();
+        using var writer = new StreamWriter(logStream) { AutoFlush = true };
+        var previousWriter = FileLog.LogWriter;
+        FileLog.LogWriter = writer;
+        try
+        {
+            Backend.Instance.ApplyPatch(new MethodInvocation(target), rules, false, debug: true, optimize: false);
+            Assert.That(invoke(11, 42), Is.EqualTo(42));
+            FileLog.FlushBuffer();
+            string log = Encoding.UTF8.GetString(logStream.ToArray());
+            Assert.That(log, Does.Match($@"IL_{returnOffset:X4}:\s+ret"));
+        }
+        finally
+        {
+            try { Backend.Instance.Unpatch(target); }
+            finally { FileLog.LogWriter = previousWriter; }
+        }
+    }
+
+    [TestCase((short)1)]
+    [TestCase(1L)]
+    public void UnalignedPrefix_UsesUnsignedByteOperand(object operand)
+    {
+        var assembly = new PersistedAssemblyBuilder(new AssemblyName(nameof(UnalignedPrefix_UsesUnsignedByteOperand)), typeof(object).Assembly);
+        var type = assembly.DefineDynamicModule("Tests").DefineType("Target", TypeAttributes.Public);
+        var source = type.DefineField("Source", typeof(int), FieldAttributes.Public | FieldAttributes.Static);
+        var observed = type.DefineField("Observed", typeof(int), FieldAttributes.Public | FieldAttributes.Static);
+        var method = type.DefineMethod("Touch", MethodAttributes.Public | MethodAttributes.Static, typeof(void), Type.EmptyTypes);
+        method.SetImplementationFlags(MethodImplAttributes.NoInlining);
+        method.GetILGenerator().Emit(OpCodes.Ret);
+        type.CreateType();
+        using var stream = new MemoryStream();
+        assembly.Save(stream);
+        Type targetType = Assembly.Load(stream.ToArray()).GetType("Target")!;
+        MethodInfo target = targetType.GetMethod("Touch")!;
+        targetType.GetField("Source")!.SetValue(null, 42);
+        var rules = new Ruleset(new Rule
+        {
+            Mode = OutputMode.MethodPrefix,
+            Output = [
+                new CodeInstruction(OpCodes.Ldsflda, targetType.GetField("Source")!),
+                new CodeInstruction(OpCodes.Unaligned, operand),
+                new CodeInstruction(OpCodes.Ldind_I4),
+                new CodeInstruction(OpCodes.Stsfld, targetType.GetField("Observed")!),
+            ],
+        });
+        try
+        {
+            Backend.Instance.ApplyPatch(new MethodInvocation(target), rules, false, debug: false, optimize: false);
+            target.Invoke(null, null);
+            Assert.That(targetType.GetField("Observed")!.GetValue(null), Is.EqualTo(42));
+        }
+        finally
+        {
+            Backend.Instance.Unpatch(target);
+        }
+    }
+
+    [TestCase(nameof(OpCodes.Ldc_I4), 2147483648L)]
+    [TestCase(nameof(OpCodes.Ldc_I4_S), 128)]
+    [TestCase(nameof(OpCodes.Ldarg_S), 256)]
+    [TestCase(nameof(OpCodes.Ldarg), 65536)]
+    public void NumericOperands_OutOfRange_ReportOverflow(string opcodeName, object operand)
+    {
+        OpCode opcode = (OpCode)typeof(OpCodes).GetField(opcodeName)!.GetValue(null)!;
+        var assembly = new PersistedAssemblyBuilder(new AssemblyName(nameof(NumericOperands_OutOfRange_ReportOverflow)), typeof(object).Assembly);
+        var type = assembly.DefineDynamicModule("Tests").DefineType("Target", TypeAttributes.Public);
+        var method = type.DefineMethod("Value", MethodAttributes.Public | MethodAttributes.Static, typeof(int), [typeof(int)]);
+        method.SetImplementationFlags(MethodImplAttributes.NoInlining);
+        method.GetILGenerator().Emit(OpCodes.Ldc_I4_7);
+        method.GetILGenerator().Emit(OpCodes.Ret);
+        type.CreateType();
+        using var stream = new MemoryStream();
+        assembly.Save(stream);
+        Type targetType = Assembly.Load(stream.ToArray()).GetType("Target")!;
+        MethodInfo target = targetType.GetMethod("Value")!;
+        var rules = new Ruleset(new Rule
+        {
+            Pattern = [new CodeInstruction(OpCodes.Ldc_I4_7)],
+            Output = [new CodeInstruction(opcode, operand)],
+        });
+        List<Exception> reports = [];
+        Action<Exception> handler = reports.Add;
+        Patcher.RuntimeExceptionHandler -= RecordRuntimeException;
+        Patcher.RuntimeExceptionHandler += handler;
+        try
+        {
+            Backend.Instance.ApplyPatch(new MethodInvocation(target), rules, false, debug: false, optimize: false);
+            Assert.That(reports, Has.Count.EqualTo(1));
+            Assert.That(reports[0], Is.TypeOf<OverflowException>());
+            Assert.That(target.Invoke(null, [42]), Is.EqualTo(7));
+        }
+        finally
+        {
+            try { Backend.Instance.Unpatch(target); }
+            finally
+            {
+                Patcher.RuntimeExceptionHandler -= handler;
+                Patcher.RuntimeExceptionHandler += RecordRuntimeException;
+            }
+        }
+    }
+
     [TestCase(System.Runtime.InteropServices.CallingConvention.Cdecl)]
     [TestCase(System.Runtime.InteropServices.CallingConvention.StdCall)]
     public void RoundTrip_PreservesUnmanagedCalliSignature(System.Runtime.InteropServices.CallingConvention convention)
