@@ -12,31 +12,24 @@ namespace Disharmony.WaylithCLR;
 internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder, InstructionAllocator allocator,
     List<(int offset, CodeInstruction instruction)> log)
 {
-    private sealed class Target(LabelHandle handle)
-    {
-        public readonly LabelHandle handle = handle;
-        // Index in the emitted instruction list for stack analysis. A forward branch can
-        // create the label handle before the target is emitted, so its index starts at -1.
-        public int index = -1;
-    }
+    // The encoder uses the handle. Stack analysis and exception boundaries use the
+    // instruction index, which is -1 until the label is marked.
+    private record Target(LabelHandle Handle, int InstructionIndex);
 
     // One entry per open try block. Each handler becomes a separate metadata clause
     // with the same try range. Nested try blocks have their own entries on the stack.
-    private sealed class Region(Boundary tryStart, Label leaveTarget)
+    private sealed class Region(Target tryStart, Label leaveTarget)
     {
-        public readonly Boundary tryStart = tryStart;
+        public readonly Target tryStart = tryStart;
         // Normal exits from the try or a catch jump past the entire handler sequence.
         public readonly Label leaveTarget = leaveTarget;
-        public LabelHandle tryEnd;
-        public Boundary? pendingFilter;
-        public Handler? handler;
+        public Target? tryEnd;
+        public Target? pendingFilter;
+        public Handler? activeHandler;
     }
 
-    // Metadata uses the label. The instruction index lets us tell whether the block emitted any IL.
-    private readonly record struct Boundary(LabelHandle Label, int InstructionIndex);
-
-    private readonly record struct Handler(ExceptionRegionKind Kind, Boundary Start, Type? CatchType = null,
-        LabelHandle FilterStart = default);
+    private readonly record struct Handler(ExceptionRegionKind Kind, Target Start, Type? CatchType = null,
+        Target? FilterStart = null);
 
     private readonly InstructionEncoder il = new(new BlobBuilder(), new ControlFlowBuilder());
     private readonly Dictionary<Label, Target> targets = [];
@@ -80,24 +73,24 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
     private Target GetTarget(Label label)
     {
         if (!targets.TryGetValue(label, out var target))
-            targets.Add(label, target = new Target(il.DefineLabel()));
+            targets.Add(label, target = new Target(il.DefineLabel(), -1));
         return target;
     }
 
     private void Mark(Label label)
     {
         var target = GetTarget(label);
-        if (target.index >= 0)
+        if (target.InstructionIndex >= 0)
             throw new InvalidOperationException($"Label {label.GetHashCode()} was marked twice.");
-        target.index = instructions.Count;
-        il.MarkLabel(target.handle);
+        targets[label] = MarkTarget(target.Handle);
     }
 
-    private Boundary MarkBoundary()
+    private Target MarkBoundary() => MarkTarget(il.DefineLabel());
+
+    private Target MarkTarget(LabelHandle handle)
     {
-        var label = il.DefineLabel();
-        il.MarkLabel(label);
-        return new Boundary(label, instructions.Count);
+        il.MarkLabel(handle);
+        return new Target(handle, instructions.Count);
     }
 
     private void BeginBlock(ExceptionBlock block)
@@ -116,17 +109,17 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
             if (block.blockType != ExceptionBlockType.BeginCatchBlock || block.catchType is not null)
                 throw new InvalidOperationException("An exception filter must be followed by its handler.");
             EnsureTerminator(filter, OpCodes.Endfilter);
-            BeginHandler(region, ExceptionRegionKind.Filter, filterStart: filter.Label);
+            BeginHandler(region, ExceptionRegionKind.Filter, filterStart: filter);
             region.pendingFilter = null;
             return;
         }
 
         // A new filter or handler ends the try on the first transition and the preceding
         // handler on subsequent transitions. Emit any needed exit before marking the boundary.
-        if (region.tryEnd.IsNil)
+        if (region.tryEnd is null)
         {
             LeaveIfNeeded(region.tryStart, region.leaveTarget);
-            region.tryEnd = MarkBoundary().Label;
+            region.tryEnd = MarkBoundary();
         }
         else
         {
@@ -154,11 +147,10 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
         }
     }
 
-    private void BeginHandler(Region region, ExceptionRegionKind kind, Type? catchType = null,
-        LabelHandle filterStart = default)
+    private void BeginHandler(Region region, ExceptionRegionKind kind, Type? catchType = null, Target? filterStart = null)
     {
         var start = MarkBoundary();
-        region.handler = new Handler(kind, start, catchType, filterStart);
+        region.activeHandler = new Handler(kind, start, catchType, filterStart);
         handlerRegionEntries.Add((start.InstructionIndex, kind is ExceptionRegionKind.Catch or ExceptionRegionKind.Filter ? 1 : 0));
     }
 
@@ -171,8 +163,10 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
 
     private void CloseHandler(Region region)
     {
-        if (region.handler is not { } handler)
+        if (region.activeHandler is not { } handler)
             throw new InvalidOperationException("An exception block ended without a handler.");
+        if (region.tryEnd is not { } tryEnd)
+            throw new InvalidOperationException("An exception region was not marked.");
 
         if (handler.Kind is ExceptionRegionKind.Finally or ExceptionRegionKind.Fault)
             EnsureTerminator(handler.Start, OpCodes.Endfinally);
@@ -181,29 +175,30 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
 
         // The range includes any terminator emitted above. Its end is the first byte
         // outside the handler, which can also be the start of the next filter or handler.
-        var handlerEnd = MarkBoundary().Label;
+        var handlerEnd = MarkBoundary();
         var flow = il.ControlFlowBuilder!;
         switch (handler.Kind)
         {
             case ExceptionRegionKind.Catch:
-                flow.AddCatchRegion(region.tryStart.Label, region.tryEnd, handler.Start.Label, handlerEnd,
+                flow.AddCatchRegion(region.tryStart.Handle, tryEnd.Handle, handler.Start.Handle, handlerEnd.Handle,
                     MetadataTokens.EntityHandle(builder.GetTokenFor(handler.CatchType!)));
                 break;
-            case ExceptionRegionKind.Filter:
-                flow.AddFilterRegion(region.tryStart.Label, region.tryEnd, handler.Start.Label, handlerEnd, handler.FilterStart);
+            case ExceptionRegionKind.Filter when handler.FilterStart is { } filterStart:
+                flow.AddFilterRegion(region.tryStart.Handle, tryEnd.Handle, handler.Start.Handle, handlerEnd.Handle, filterStart.Handle);
                 break;
             case ExceptionRegionKind.Finally:
-                flow.AddFinallyRegion(region.tryStart.Label, region.tryEnd, handler.Start.Label, handlerEnd);
+                flow.AddFinallyRegion(region.tryStart.Handle, tryEnd.Handle, handler.Start.Handle, handlerEnd.Handle);
                 break;
             case ExceptionRegionKind.Fault:
-                flow.AddFaultRegion(region.tryStart.Label, region.tryEnd, handler.Start.Label, handlerEnd);
+                flow.AddFaultRegion(region.tryStart.Handle, tryEnd.Handle, handler.Start.Handle, handlerEnd.Handle);
                 break;
+            default: throw new InvalidOperationException("Unknown handler kind");
         }
 
-        region.handler = null;
+        region.activeHandler = null;
     }
 
-    private void LeaveIfNeeded(Boundary start, Label target)
+    private void LeaveIfNeeded(Target start, Label target)
     {
         // A rule can supply an empty body or one that falls through. Both need a leave
         // to skip the remaining handlers.
@@ -211,7 +206,7 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
             WriteInstruction(new CodeInstruction(OpCodes.Leave, target));
     }
 
-    private void EnsureTerminator(Boundary start, OpCode opcode)
+    private void EnsureTerminator(Target start, OpCode opcode)
     {
         // The incoming IL may already have the terminator. Only fill in a missing one
         // at the boundary, preserving explicit exits earlier in the block.
@@ -219,7 +214,7 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
             WriteInstruction(new CodeInstruction(opcode));
     }
 
-    private OpCode? LastOpcodeIn(Boundary start) =>
+    private OpCode? LastOpcodeIn(Target start) =>
         instructions.Count > start.InstructionIndex ? instructions[^1].opcode : null;
 
     private static bool FallsThrough(OpCode opcode) =>
@@ -236,7 +231,7 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
         if (opcode.OperandType is OperandType.InlineBrTarget or OperandType.ShortInlineBrTarget)
         {
             // Rules can expand the distance to a branch target beyond a short branch's range.
-            il.Branch(OpCodeData.GetCanonicalOpcode(opcode), GetTarget((Label)operand!).handle);
+            il.Branch(OpCodeData.GetCanonicalOpcode(opcode), GetTarget((Label)operand!).Handle);
             return;
         }
 
@@ -255,7 +250,7 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
                 GetTarget(label);
             var branches = il.Switch(labels.Length);
             foreach (Label label in labels)
-                branches.Branch(targets[label].handle);
+                branches.Branch(targets[label].Handle);
             return;
         }
 
@@ -336,10 +331,10 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
             maxStack = Math.Max(maxStack, nextDepth);
 
             if (instruction.operand is Label label)
-                Enqueue(GetTarget(label).index, nextDepth);
+                Enqueue(GetTarget(label).InstructionIndex, nextDepth);
             else if (instruction.operand is Label[] labels)
                 foreach (Label target in labels)
-                    Enqueue(GetTarget(target).index, nextDepth);
+                    Enqueue(GetTarget(target).InstructionIndex, nextDepth);
 
             if (FallsThrough(opcode))
                 Enqueue(index + 1, nextDepth);
