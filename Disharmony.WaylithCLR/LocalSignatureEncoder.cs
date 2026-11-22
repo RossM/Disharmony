@@ -78,7 +78,7 @@ internal static class LocalSignatureEncoder
         Type[] parameters = type.GetFunctionPointerParameterTypes();
         Type[] conventions = type.GetFunctionPointerCallingConventions();
         var convention = type.IsUnmanagedFunctionPointer ? SignatureCallingConvention.Unmanaged : SignatureCallingConvention.Default;
-        encoder.FunctionPointer(convention, FunctionPointerAttributes.None, 0)
+        encoder.FunctionPointer(convention)
             .Parameters(parameters.Length, out var result, out var arguments);
         foreach (Type modifier in conventions)
             result.CustomModifiers().AddModifier(MetadataTokens.EntityHandle(builder.GetTokenFor(modifier)), isOptional: true);

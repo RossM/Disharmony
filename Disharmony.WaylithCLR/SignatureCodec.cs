@@ -8,9 +8,9 @@ using WaylithClr;
 namespace Disharmony.WaylithCLR;
 
 // SignatureDecoder reads local-variable and call-site signature blobs through this provider.
-// Each decoded type remains encoded as a signature fragment, preserving modifiers and array
-// shapes during token remapping. TypeSignature.Resolve obtains the Type needed by ILGenerator.
-internal sealed class SignatureCodec(Func<int, int>? importType = null) : ISignatureTypeProvider<SignatureCodec.TypeSignature, object?>
+// TypeSignature keeps each decoded type in metadata form so WaylithCLR can resolve it
+// in the original method's module and generic context.
+internal sealed class SignatureCodec : ISignatureTypeProvider<SignatureCodec.TypeSignature, object?>
 {
     internal sealed record TypeSignature(byte[] Bytes, bool Pinned = false)
     {
@@ -65,7 +65,7 @@ internal sealed class SignatureCodec(Func<int, int>? importType = null) : ISigna
         }
     }
 
-    public static byte[] WriteMethod(MethodSignature<TypeSignature> signature)
+    private static byte[] WriteMethod(MethodSignature<TypeSignature> signature)
     {
         var blob = new BlobBuilder();
         blob.WriteByte(signature.Header.RawValue);
@@ -88,26 +88,17 @@ internal sealed class SignatureCodec(Func<int, int>? importType = null) : ISigna
         var blob = new BlobBuilder();
         blob.WriteByte((byte)code);
         blob.WriteBytes(element.Bytes);
-        return new TypeSignature(blob.ToArray(), element.Pinned);
+        return element with { Bytes = blob.ToArray() };
     }
 
-    private TypeSignature NamedType(EntityHandle handle, byte kind)
+    private static TypeSignature NamedType(EntityHandle handle, byte kind)
     {
-        int token = HandleToToken(handle);
         var blob = new BlobBuilder();
         // SignatureDecoder passes kind == 0 for custom-modifier type handles. The class tag
         // is a placeholder that GetModifiedType discards when it writes the modifier's token.
         blob.WriteByte(kind == 0 ? (byte)SignatureTypeKind.Class : kind);
-        blob.WriteCompressedInteger(CodedIndex.TypeDefOrRefOrSpec(MetadataTokens.EntityHandle(token)));
+        blob.WriteCompressedInteger(CodedIndex.TypeDefOrRefOrSpec(handle));
         return new TypeSignature(blob.ToArray());
-    }
-
-    private int HandleToToken(EntityHandle handle)
-    {
-        int token = MetadataTokens.GetToken(handle);
-        if (importType is not null)
-            token = importType(token);
-        return token;
     }
 
     public TypeSignature GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind) =>
@@ -175,16 +166,11 @@ internal sealed class SignatureCodec(Func<int, int>? importType = null) : ISigna
         blob.WriteByte((byte)(isRequired ? SignatureTypeCode.RequiredModifier : SignatureTypeCode.OptionalModifier));
         blob.WriteBytes(modifier.Bytes, 1, modifier.Bytes.Length - 1);
         blob.WriteBytes(type.Bytes);
-        return new TypeSignature(blob.ToArray(), type.Pinned);
+        return type with { Bytes = blob.ToArray() };
     }
 
     public TypeSignature GetFunctionPointerType(MethodSignature<TypeSignature> signature)
     {
         return Prefix(SignatureTypeCode.FunctionPointer, new TypeSignature(WriteMethod(signature)));
-    }
-
-    public byte[] CopyMethod(byte[] bytes)
-    {
-        return WriteMethod(ReadMethod(bytes));
     }
 }

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Reflection;
+﻿using System.Reflection;
 using Disharmony.RulesEngine;
 using JetBrains.Annotations;
 using WaylithClr;
@@ -9,7 +8,7 @@ namespace Disharmony.WaylithCLR;
 [UsedImplicitly]
 internal class WaylithBackend : IBackend
 {
-    private Transformer transformer;
+    private readonly Transformer transformer;
 
     public WaylithBackend()
     {

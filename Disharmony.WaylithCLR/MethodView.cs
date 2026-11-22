@@ -113,13 +113,12 @@ internal class MethodView
         // pass but would require passing 'labels' to ReadOperand.
         foreach (var instruction in view.CodeInstructions)
         {
-            switch (instruction.opcode.OperandType)
+            instruction.operand = instruction.opcode.OperandType switch
             {
-                case OperandType.InlineBrTarget or OperandType.ShortInlineBrTarget:
-                    instruction.operand = GetLabel((int)instruction.operand);
-                    break;
-                case OperandType.InlineSwitch: instruction.operand = ((int[])instruction.operand).Select(GetLabel).ToArray(); break;
-            }
+                OperandType.InlineBrTarget or OperandType.ShortInlineBrTarget => GetLabel((int)instruction.operand),
+                OperandType.InlineSwitch => ((int[])instruction.operand).Select(GetLabel).ToArray(),
+                _ => instruction.operand,
+            };
         }
 
         // Exception clauses repeat the try range for each handler. The instruction markers

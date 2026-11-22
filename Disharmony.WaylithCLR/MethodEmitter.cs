@@ -129,21 +129,21 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
 
         region.filterStart = default;
         region.handlerStart = default;
-        if (block.blockType == ExceptionBlockType.BeginExceptFilterBlock)
+        switch (block.blockType)
         {
-            region.kind = ExceptionRegionKind.Filter;
-            region.filterStart = MarkBoundary();
-            handlerEntries.Add((instructions.Count, 1));
-            return;
+            case ExceptionBlockType.BeginExceptFilterBlock:
+            {
+                region.kind = ExceptionRegionKind.Filter;
+                region.filterStart = MarkBoundary();
+                handlerEntries.Add((instructions.Count, 1));
+                return;
+            }
+            case ExceptionBlockType.BeginCatchBlock: region.kind = ExceptionRegionKind.Catch; break;
+            case ExceptionBlockType.BeginFinallyBlock: region.kind = ExceptionRegionKind.Finally; break;
+            case ExceptionBlockType.BeginFaultBlock: region.kind = ExceptionRegionKind.Fault; break;
+            default: throw new NotSupportedException($"Unsupported exception block {block.blockType}.");
         }
 
-        region.kind = block.blockType switch
-        {
-            ExceptionBlockType.BeginCatchBlock => ExceptionRegionKind.Catch,
-            ExceptionBlockType.BeginFinallyBlock => ExceptionRegionKind.Finally,
-            ExceptionBlockType.BeginFaultBlock => ExceptionRegionKind.Fault,
-            _ => throw new NotSupportedException($"Unsupported exception block {block.blockType}."),
-        };
         region.catchType = block.catchType;
         region.handlerStart = MarkBoundary();
         handlerEntries.Add((instructions.Count, region.kind == ExceptionRegionKind.Catch ? 1 : 0));
@@ -206,11 +206,6 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
     {
         OpCode opcode = instruction.opcode;
         object? operand = instruction.operand;
-        if (operand is SignatureHelper helper && opcode.OperandType == OperandType.InlineSig)
-        {
-            operand = InlineSignature.FromHelper(method, builder, helper);
-            instruction = new CodeInstruction(opcode, operand);
-        }
 
         instructions.Add(instruction);
         hasLocalloc |= opcode == OpCodes.Localloc;
