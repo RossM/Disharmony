@@ -9,7 +9,10 @@ using WaylithClr;
 
 namespace Disharmony.WaylithCLR;
 
-internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder, InstructionAllocator allocator,
+internal sealed class MethodEmitter(
+    MethodBase method,
+    MethodBodyBuilder builder,
+    InstructionAllocator allocator,
     List<(int offset, CodeInstruction instruction)> log)
 {
     // The encoder uses the handle. Stack analysis and exception boundaries use the
@@ -21,6 +24,7 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
     private sealed class Region(Target tryStart, Label leaveTarget)
     {
         public readonly Target tryStart = tryStart;
+
         // Normal exits from the try or a catch jump past the entire handler sequence.
         public readonly Label leaveTarget = leaveTarget;
         public Target? tryEnd;
@@ -32,7 +36,9 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
     private readonly record struct Handler(ExceptionRegionKind Kind, Target Start, Type? CatchType = null, Target? BodyStart = null);
 
     private readonly InstructionEncoder il = new(new BlobBuilder(), new ControlFlowBuilder());
+
     private readonly Dictionary<Label, Target> targets = [];
+
     // Stack analysis follows the emitted instructions, including any added at exception boundaries.
     private readonly List<CodeInstruction> instructions = [];
     private readonly List<(int index, int depth)> handlerRegionEntries = [];
@@ -44,8 +50,10 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
         foreach (var instruction in code)
         {
             foreach (var block in instruction.blocks)
+            {
                 if (block.blockType != ExceptionBlockType.EndExceptionBlock)
                     BeginBlock(block);
+            }
 
             // A handler transition may emit a terminator for the preceding block.
             // Branches to this instruction must land after that terminator.
@@ -57,8 +65,10 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
                 WriteInstruction(instruction);
 
             foreach (var block in instruction.blocks)
+            {
                 if (block.blockType == ExceptionBlockType.EndExceptionBlock)
                     EndBlock();
+            }
         }
 
         if (regions.Count != 0)
@@ -129,20 +139,13 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
 
         switch (block.blockType)
         {
-            case ExceptionBlockType.BeginExceptFilterBlock:
-                BeginHandler(region, ExceptionRegionKind.Filter, entryDepth: 1);
-                break;
+            case ExceptionBlockType.BeginExceptFilterBlock: BeginHandler(region, ExceptionRegionKind.Filter, entryDepth: 1); break;
             case ExceptionBlockType.BeginCatchBlock:
                 BeginHandler(region, ExceptionRegionKind.Catch, entryDepth: 1, catchType: block.catchType);
                 break;
-            case ExceptionBlockType.BeginFinallyBlock:
-                BeginHandler(region, ExceptionRegionKind.Finally);
-                break;
-            case ExceptionBlockType.BeginFaultBlock:
-                BeginHandler(region, ExceptionRegionKind.Fault);
-                break;
-            default:
-                throw new NotSupportedException($"Unsupported exception block {block.blockType}.");
+            case ExceptionBlockType.BeginFinallyBlock: BeginHandler(region, ExceptionRegionKind.Finally); break;
+            case ExceptionBlockType.BeginFaultBlock: BeginHandler(region, ExceptionRegionKind.Fault); break;
+            default: throw new NotSupportedException($"Unsupported exception block {block.blockType}.");
         }
     }
 
@@ -173,12 +176,9 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
 
         switch (handler.Kind)
         {
-            case ExceptionRegionKind.Finally or ExceptionRegionKind.Fault: 
-                EnsureTerminator(handler.Start, OpCodes.Endfinally); break;
-            case ExceptionRegionKind.Filter: 
-                LeaveIfNeeded(handler.BodyStart!, region.leaveTarget); break;
-            default: 
-                LeaveIfNeeded(handler.Start, region.leaveTarget); break;
+            case ExceptionRegionKind.Finally or ExceptionRegionKind.Fault: EnsureTerminator(handler.Start, OpCodes.Endfinally); break;
+            case ExceptionRegionKind.Filter: LeaveIfNeeded(handler.BodyStart!, region.leaveTarget); break;
+            default: LeaveIfNeeded(handler.Start, region.leaveTarget); break;
         }
 
         // The range includes any terminator emitted above. Its end is the first byte
@@ -191,7 +191,8 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
                     MetadataTokens.EntityHandle(builder.GetTokenFor(handler.CatchType!)));
                 break;
             case ExceptionRegionKind.Filter:
-                flow.AddFilterRegion(region.tryStart.Handle, tryEnd.Handle, handler.BodyStart!.Handle, handlerEnd.Handle, handler.Start.Handle);
+                flow.AddFilterRegion(region.tryStart.Handle, tryEnd.Handle, handler.BodyStart!.Handle, handlerEnd.Handle,
+                    handler.Start.Handle);
                 break;
             case ExceptionRegionKind.Finally:
                 flow.AddFinallyRegion(region.tryStart.Handle, tryEnd.Handle, handler.Start.Handle, handlerEnd.Handle);
@@ -235,30 +236,32 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
         instructions.Add(instruction);
         hasLocalloc |= opcode == OpCodes.Localloc;
 
-        if (opcode.OperandType is OperandType.InlineBrTarget or OperandType.ShortInlineBrTarget)
+        switch (opcode.OperandType)
         {
-            // Rules can expand the distance to a branch target beyond a short branch's range.
-            il.Branch(OpCodeData.GetCanonicalOpcode(opcode), GetTarget((Label)operand!).Handle);
-            return;
-        }
-
-        if (opcode.OperandType == OperandType.InlineSwitch)
-        {
-            var labels = (Label[])operand!;
-            if (labels.Length == 0)
+            case OperandType.InlineBrTarget or OperandType.ShortInlineBrTarget:
             {
-                il.OpCode(ILOpCode.Switch);
-                il.CodeBuilder.WriteInt32(0);
+                // Rules can expand the distance to a branch target beyond a short branch's range.
+                il.Branch(OpCodeData.GetCanonicalOpcode(opcode), GetTarget((Label)operand!).Handle);
                 return;
             }
+            case OperandType.InlineSwitch:
+            {
+                var labels = (Label[])operand!;
+                if (labels.Length == 0)
+                {
+                    il.OpCode(ILOpCode.Switch);
+                    il.CodeBuilder.WriteInt32(0);
+                    return;
+                }
 
-            // The encoder requires all target handles to exist before opening a switch table.
-            foreach (Label label in labels)
-                GetTarget(label);
-            var branches = il.Switch(labels.Length);
-            foreach (Label label in labels)
-                branches.Branch(targets[label].Handle);
-            return;
+                // The encoder requires all target handles to exist before opening a switch table.
+                foreach (Label label in labels)
+                    GetTarget(label);
+                var branches = il.Switch(labels.Length);
+                foreach (Label label in labels)
+                    branches.Branch(targets[label].Handle);
+                return;
+            }
         }
 
         il.OpCode(unchecked((ILOpCode)opcode.Value));
@@ -275,31 +278,23 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
             case OperandType.InlineI8: bytes.WriteInt64(Convert.ToInt64(operand)); break;
             case OperandType.ShortInlineR: bytes.WriteSingle(Convert.ToSingle(operand)); break;
             case OperandType.InlineR: bytes.WriteDouble(Convert.ToDouble(operand)); break;
-            case OperandType.ShortInlineI when opcode == OpCodes.Ldc_I4_S:
-                bytes.WriteSByte(Convert.ToSByte(operand));
-                break;
+            case OperandType.ShortInlineI when opcode == OpCodes.Ldc_I4_S: bytes.WriteSByte(Convert.ToSByte(operand)); break;
             case OperandType.ShortInlineI: bytes.WriteByte(Convert.ToByte(operand)); break;
-            case OperandType.ShortInlineVar:
-                bytes.WriteByte(operand is LocalBuilder shortLocal ? checked((byte)shortLocal.LocalIndex) : Convert.ToByte(operand));
+            case OperandType.ShortInlineVar when operand is LocalBuilder shortLocal:
+                bytes.WriteByte(checked((byte)shortLocal.LocalIndex));
                 break;
-            case OperandType.InlineVar:
-                bytes.WriteUInt16(operand is LocalBuilder local ? checked((ushort)local.LocalIndex) : Convert.ToUInt16(operand));
-                break;
+            case OperandType.ShortInlineVar: bytes.WriteByte(Convert.ToByte(operand)); break;
+            case OperandType.InlineVar when operand is LocalBuilder local: bytes.WriteUInt16(checked((ushort)local.LocalIndex)); break;
+            case OperandType.InlineVar: bytes.WriteUInt16(Convert.ToUInt16(operand)); break;
             case OperandType.InlineMethod or OperandType.InlineTok when operand is MethodBase target:
                 il.Token(builder.GetTokenFor(target));
                 break;
             case OperandType.InlineField or OperandType.InlineTok when operand is FieldInfo field:
                 il.Token(builder.GetTokenFor(field));
                 break;
-            case OperandType.InlineType or OperandType.InlineTok when operand is Type type:
-                il.Token(builder.GetTokenFor(type));
-                break;
-            case OperandType.InlineString when operand is string text:
-                il.Token(builder.GetTokenFor(text));
-                break;
-            case OperandType.InlineSig when operand is InlineSignature signature:
-                il.Token(signature.GetToken(builder));
-                break;
+            case OperandType.InlineType or OperandType.InlineTok when operand is Type type: il.Token(builder.GetTokenFor(type)); break;
+            case OperandType.InlineString when operand is string text: il.Token(builder.GetTokenFor(text)); break;
+            case OperandType.InlineSig when operand is InlineSignature signature: il.Token(signature.GetToken(builder)); break;
             default: throw new NotSupportedException($"Unsupported operand in {instruction}.");
         }
     }
