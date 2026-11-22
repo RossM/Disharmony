@@ -5,7 +5,7 @@ namespace Disharmony;
 internal interface IInlineSignature
 {
     int ParameterCount { get; }
-    bool HasThis { get; }
+    bool HasImplicitThis { get; }
     Type ReturnType { get; }
 }
 
@@ -22,7 +22,7 @@ internal abstract class HarmonyInterface : IBackend
     {
         public object InlineSignature => inlineSignature;
         public int ParameterCount => harmonyInterface.InlineSignatureParameters(inlineSignature).Count;
-        public bool HasThis => harmonyInterface.InlineSignatureHasThis(inlineSignature);
+        public bool HasImplicitThis => harmonyInterface.InlineSignatureHasThis(inlineSignature);
         public Type ReturnType => (Type)harmonyInterface.InlineSignatureReturnType(inlineSignature);
     }
 
@@ -127,9 +127,10 @@ internal abstract class HarmonyInterface : IBackend
 
         try
         {
-            patch.ruleset.MatchAndReplace(method, ref instructionsList, generator);
+            var allocator = new InstructionAllocator(generator);
+            patch.ruleset.MatchAndReplace(method, ref instructionsList, allocator);
             if (instructionsList.Any(inst => inst.blocks.Count > 0))
-                ExceptionFixup.Fix(method, ref instructionsList, generator);
+                ExceptionFixup.Fix(method, ref instructionsList, allocator);
         }
         catch (Exception e)
         {

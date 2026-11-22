@@ -85,9 +85,16 @@ public class Ruleset
         MethodBase method,
         ref List<CodeInstruction> instructionsList,
         ILGenerator generator,
+        bool debug = false) =>
+        MatchAndReplace(method, ref instructionsList, new InstructionAllocator(generator), debug);
+
+    internal void MatchAndReplace(
+        MethodBase method,
+        ref List<CodeInstruction> instructionsList,
+        InstructionAllocator allocator,
         bool debug = false)
     {
-        var worker = new Processor(this, method, instructionsList, generator, debug || forceDebug);
+        var worker = new Processor(this, method, instructionsList, allocator, debug || forceDebug);
         worker.MatchAndReplace();
         instructionsList = worker.outInstructions;
     }

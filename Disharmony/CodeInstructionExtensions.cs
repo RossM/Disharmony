@@ -54,7 +54,7 @@ internal static class CodeInstructionExtensions
                                                                                     (methodInfo.HasThis ? 1 : 0),
                 StackBehaviour.Varpop when inst.operand is ConstructorInfo constructorInfo => constructorInfo.GetParameters().Length + 
                                                                                               (inst.opcode == OpCodes.Newobj ? 0 : 1),
-                StackBehaviour.Varpop when inst.operand is IInlineSignature signature => signature.ParameterCount + (signature.HasThis ? 2 : 1),
+                StackBehaviour.Varpop when inst.operand is IInlineSignature signature => signature.ParameterCount + (signature.HasImplicitThis ? 2 : 1),
                 StackBehaviour.Varpop => OpCodeData.GetCanonicalOpcode(inst) switch
                 {
                     OpCodeValues.Ret => methodReturnType == typeof(void) ? 0 : 1,

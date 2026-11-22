@@ -4,7 +4,7 @@ internal class Processor(
     Ruleset ruleset,
     MethodBase method,
     List<CodeInstruction> inInstructions,
-    ILGenerator generator,
+    InstructionAllocator allocator,
     bool debug)
 {
     internal class MatchData
@@ -462,7 +462,7 @@ internal class Processor(
         Dictionary<Label, Label> labelMap = ruleset.CrossRuleLabels.Contains(label) ? labelMap_Method : match.labelMap_Match;
         if (!labelMap.TryGetValue(label, out Label replacementLabel))
         {
-            replacementLabel = generator.DefineLabel();
+            replacementLabel = allocator.DefineLabel();
             labelMap.Add(label, replacementLabel);
         }
 
@@ -478,7 +478,7 @@ internal class Processor(
             var localMap = ruleset.CrossRuleLocals.Contains(builder) ? localMap_Method : match.localMap_Match;
             if (!localMap.TryGetValue(localIndex, out var substituteLocal))
             {
-                substituteLocal = new LocalTrackerBuilder(generator.DeclareLocal(builder.LocalType));
+                substituteLocal = new LocalTrackerBuilder(allocator.DeclareLocal(builder.LocalType));
                 localMap.Add(localIndex, substituteLocal);
             }
 

@@ -562,7 +562,7 @@ internal sealed class GetOutputTypeTests
     {
         public Type ReturnType => returnType;
         public int ParameterCount => 0;
-        public bool HasThis => false;
+        public bool HasImplicitThis => false;
     }
 
     private static IInlineSignature CreateInlineSignature(Type returnType)

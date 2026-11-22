@@ -1,5 +1,4 @@
 using System;
-using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -13,29 +12,16 @@ namespace Disharmony.WaylithCLR;
 
 internal class MethodView
 {
-    private sealed class InlineSignature(MethodBase method, byte[] bytes) : IInlineSignature
+    private sealed class TrackingAllocator() : InstructionAllocator(PatchProcessor.CreateILGenerator())
     {
-        public int ParameterCount => signature.ParameterTypes.Length;
-        public bool HasThis => signature.Header.IsInstance;
-        public Type ReturnType => signature.ReturnType.Resolve(method);
-        private readonly MethodSignature<SignatureCodec.TypeSignature> signature = new SignatureCodec().ReadMethod(bytes);
+        private readonly List<LocalBuilder> locals = [];
+        public IReadOnlyList<LocalBuilder> Locals => locals;
 
-        public byte[] Import(MethodBodyBuilder builder, Module targetModule)
+        public override LocalBuilder DeclareLocal(Type type, bool pinned = false)
         {
-            if (method.Module == targetModule)
-                return bytes;
-            int ImportType(int token) => builder.GetTokenFor((Type)MethodBodyUpdater.ResolveToken(method, token)!);
-            return new SignatureCodec(ImportType).CopyMethod(bytes);
-        }
-
-        public void Emit(ILGenerator generator)
-        {
-            // The temporary method is never executed. ILGenerator only needs the stack
-            // shape here; token fixup replaces this signature with the original blob.
-            int arguments = ParameterCount + (HasThis && !signature.Header.HasExplicitThis ? 1 : 0);
-            Type result = ReturnType == typeof(void) ? typeof(void) : typeof(object);
-            generator.EmitCalli(OpCodes.Calli, CallingConventions.Standard, result,
-                Enumerable.Repeat(typeof(object), arguments).ToArray(), null);
+            LocalBuilder local = base.DeclareLocal(type, pinned);
+            locals.Add(local);
+            return local;
         }
     }
 
@@ -48,13 +34,10 @@ internal class MethodView
         .Select(field => (OpCode)field.GetValue(null)!)
         .ToDictionary(opCode => unchecked((ushort)opCode.Value));
 
-    private readonly TypeBuilder typeBuilder;
-    private readonly MethodBuilder methodBuilder;
     private readonly byte[] localSignature;
-    private readonly LocalBuilder[] originalLocals;
-
-    // A mapping from the byte position of a Calli argument to the relevant InlineSignature
-    private readonly Dictionary<int, InlineSignature> calliSignaturesForFixup = [];
+    private readonly TrackingAllocator allocator = new();
+    private readonly int originalLocalCount;
+    private readonly bool initLocals;
 
     private readonly List<(int offset, CodeInstruction instruction)> emittedInstructions = [];
     private readonly List<Type> emittedLocalTypes = [];
@@ -65,40 +48,18 @@ internal class MethodView
     {
         this.method = method;
 
-        // In order to use System.Reflection.Emit to handle the work of mapping IL to bytes, we need a MethodBuilder. Define it
-        // inside a DynamicAssembly so it can be garbage collected after we're done.
-        var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Disharmony.MethodView"),
-            AssemblyBuilderAccess.RunAndCollect);
-        typeBuilder = assembly.DefineDynamicModule("Methods").DefineType("Replacement");
-        Type[] parameters = method.GetParameters().Select(parameter => parameter.ParameterType).ToArray();
-        if (!method.IsStatic)
-            parameters = [method.DeclaringType!.CallableType, .. parameters];
-        methodBuilder = typeBuilder.DefineMethod("Invoke", MethodAttributes.Public | MethodAttributes.Static,
-            method is MethodInfo info ? info.ReturnType : typeof(void), parameters);
+        initLocals = body.InitLocals;
 
-        // Only have the CLR initialize the locals in the copied method if the original method did. This is a change from Harmony,
-        // which always generated methods with InitLocals = true.
-        methodBuilder.InitLocals = body.InitLocals;
-
-        // Use the ILGenerator from our method body for declaring locals and labels
-        Generator = methodBuilder.GetILGenerator();
-
-        // Save the original local signature. The parsed LocalBuilders lose information from the original signature, so we
-        // reuse the original signature verbatim for locals that come from the original method, and append the new locals.
         localSignature = [.. body.LocalSignature];
 
-        // Parse the local signature to recover the types of all locals and declare them a LocalBuilders. This allows the
-        // main Disharmony code to know the types of all locals (except totally unused locals, which don't matter).
-        var signatureCodec = new SignatureCodec();
-        originalLocals =
-        [
-            .. signatureCodec.ReadLocals(localSignature)
-                .Select(signature => Generator.DeclareLocal(signature.Resolve(method), signature.Pinned)),
-        ];
+        // Keep the local types available to the rules and stack analysis.
+        foreach (var signature in new SignatureCodec().ReadLocals(localSignature))
+            allocator.DeclareLocal(signature.Resolve(method), signature.Pinned);
+        originalLocalCount = allocator.Locals.Count;
     }
 
     public List<CodeInstruction> CodeInstructions { get; set; } = [];
-    public ILGenerator Generator { get; }
+    public InstructionAllocator Allocator => allocator;
 
     public static unsafe MethodView Create(MethodBase method, in MethodBodyView body, ReadOnlySpan<MethodBodyClause> clauses)
     {
@@ -134,9 +95,9 @@ internal class MethodView
                 if (canonical is OpCodeValues.Ldloc or OpCodeValues.Ldloca or OpCodeValues.Stloc)
                 {
                     int index = OpCodeData.GetIntOperand(opCode, operand);
-                    if ((uint)index >= (uint)view.originalLocals.Length)
+                    if ((uint)index >= (uint)view.originalLocalCount)
                         throw new BadImageFormatException($"Invalid local #{index} at IL_{offset:X4}.");
-                    operand = view.originalLocals[index];
+                    operand = view.allocator.Locals[index];
                     opCode = opCodes[canonical];
                 }
 
@@ -161,10 +122,9 @@ internal class MethodView
             }
         }
 
-        // Construct the exception blocks. The incoming exception information has one entry per handler, with 'try' blocks that
-        // have multiple 'catch' and/or 'finally' blocks appearing multiple times. ILGenerator expects only a single exception
-        // block with multiple handlers, so we have to consolidate the 'try's. The CLR guarantees that the exception blocks
-        // nest properly, so the sort here puts them in proper nesting order.
+        // Exception clauses repeat the try range for each handler. The instruction markers
+        // describe one try block followed by its handlers. If two try blocks start at the same
+        // instruction, mark the outer one first so the emitter opens them in nesting order.
         foreach (var group in clauses.ToArray().GroupBy(clause => (clause.TryOffset, clause.TryLength))
                      .OrderBy(group => group.Key.TryOffset).ThenByDescending(group => group.Key.TryLength))
         {
@@ -208,7 +168,7 @@ internal class MethodView
                 throw new BadImageFormatException($"Invalid branch target IL_{offset:X4}.");
             if (labelAt.TryGetValue(offset, out Label label))
                 return label;
-            label = view.Generator.DefineLabel();
+            label = view.allocator.DefineLabel();
             labelAt.Add(offset, label);
             instruction.labels.Add(label);
             return label;
@@ -273,196 +233,38 @@ internal class MethodView
         }
     }
 
-    public unsafe void Emit(MethodBodyBuilder builder)
+    public void Emit(MethodBodyBuilder builder)
     {
-        EmitInstructions();
+        var emitter = new MethodEmitter(method, builder, allocator, emittedInstructions);
+        emitter.Write(CodeInstructions, WriteLocalSignature(builder), initLocals);
+        emittedLocalTypes.AddRange(allocator.Locals.Select(local => local.LocalType));
+    }
 
-        // Get the emitted IL bytes
-        MethodInfo emittedMethod = typeBuilder.CreateType()!.GetMethod(methodBuilder.Name)!;
-        MethodBody body = emittedMethod.GetMethodBody()!;
-        byte[] il = body.GetILAsByteArray()!;
+    private unsafe StandaloneSignatureHandle WriteLocalSignature(MethodBodyBuilder builder)
+    {
+        int count = allocator.Locals.Count;
+        if (count == 0)
+            return default;
+        if (count == originalLocalCount)
+            return SignatureHandle(localSignature);
 
-        int ImportType(int token) => builder.GetTokenFor(emittedMethod.Module.ResolveType(token));
-
-        // Remap the emitted tokens to those expected by MethodBodyBuilder.
-        fixed (byte* bytes = il)
-        {
-            var reader = new BlobReader(bytes, il.Length);
-            while (reader.RemainingBytes > 0)
-            {
-                OpCode opCode = ReadOpCode(ref reader);
-                int operandOffset = reader.Offset;
-                object? operand = ReadOperand(ref reader, opCode, emittedMethod);
-                int token;
-                switch (operand)
-                {
-                    case MethodBase target: token = builder.GetTokenFor(target); break;
-                    case FieldInfo field: token = builder.GetTokenFor(field); break;
-                    case Type type: token = builder.GetTokenFor(type); break;
-                    case string text: token = builder.GetTokenFor(text); break;
-                    case InlineSignature signature:
-                        // Restore the original signature after using a temporary stack-shape
-                        // signature for ILGenerator's maxstack accounting.
-                        if (calliSignaturesForFixup.TryGetValue(operandOffset, out var original))
-                            signature = original;
-                        token = builder.GetTokenForSignature(signature.Import(builder, method.Module));
-                        break;
-                    default: continue;
-                }
-
-                BinaryPrimitives.WriteInt32LittleEndian(il.AsSpan(operandOffset, sizeof(int)), token);
-            }
-        }
-
-        // We don't track the emitted locals explicitly so we have to parse the locals of the emitted method
-        var emittedLocals = body.LocalSignatureMetadataToken == 0
-            ? []
-            : new SignatureCodec(ImportType).ReadLocals(emittedMethod.Module.ResolveSignature(body.LocalSignatureMetadataToken));
-
-        emittedLocalTypes.AddRange(emittedLocals.Select(local => local.Resolve(method)));
-
-        // Magic number ???
-        var locals = new BlobBuilder();
-        locals.WriteByte(0x07);
-        locals.WriteCompressedInteger(emittedLocals.Length);
-
-        // DeclareLocal retains the Type and pinned flag, but its signature omits custom
-        // modifiers and explicit array bounds. Copy the incoming local entries verbatim
-        // and append the signatures of locals added during rewriting.
+        var blob = new BlobBuilder();
+        var locals = new BlobEncoder(blob).LocalVariableSignature(count);
         if (localSignature.Length > 0)
             fixed (byte* bytes = localSignature)
             {
+                // Keep modifiers and array bounds that are absent from the LocalBuilders.
                 var reader = new BlobReader(bytes, localSignature.Length);
                 reader.ReadSignatureHeader();
                 reader.ReadCompressedInteger();
-                locals.WriteBytes(localSignature, reader.Offset, reader.RemainingBytes);
+                blob.WriteBytes(localSignature, reader.Offset, reader.RemainingBytes);
             }
 
-        foreach (var local in emittedLocals.Skip(originalLocals.Length))
-            local.WriteTo(locals);
+        for (int i = originalLocalCount; i < count; i++)
+            LocalSignatureEncoder.Write(locals.AddVariable(), allocator.Locals[i], builder);
+        return SignatureHandle(blob.ToArray());
 
-        // Actually emit
-        var output = new BlobBuilder();
-        var encoder = new MethodBodyStreamEncoder(output);
-        var encodedBody = encoder.AddMethodBody(il.Length, body.MaxStackSize, body.ExceptionHandlingClauses.Count,
-            hasSmallExceptionRegions: false,
-            localVariablesSignature: emittedLocals.Length == 0
-                ? default
-                : (StandaloneSignatureHandle)MetadataTokens.Handle(builder.GetTokenForSignature(locals.ToArray())),
-            attributes: body.InitLocals ? MethodBodyAttributes.InitLocals : MethodBodyAttributes.None);
-        il.CopyTo(encodedBody.Instructions.GetBytes().AsSpan());
-        foreach (var clause in body.ExceptionHandlingClauses)
-        {
-            encodedBody.ExceptionRegions.Add((ExceptionRegionKind)clause.Flags, clause.TryOffset, clause.TryLength,
-                clause.HandlerOffset, clause.HandlerLength,
-                clause.Flags == ExceptionHandlingClauseOptions.Clause
-                    ? MetadataTokens.EntityHandle(builder.GetTokenFor(clause.CatchType!))
-                    : default,
-                clause.Flags == ExceptionHandlingClauseOptions.Filter ? clause.FilterOffset : 0);
-        }
-
-        builder.Write(output.ToArray());
-    }
-
-    private void EmitInstructions()
-    {
-        foreach (var instruction in CodeInstructions)
-        {
-            emittedInstructions.Add((offset: Generator.ILOffset, instruction));
-
-            foreach (Label label in instruction.labels)
-                Generator.MarkLabel(label);
-            foreach (var block in instruction.blocks)
-            {
-                switch (block.blockType)
-                {
-                    case ExceptionBlockType.BeginExceptionBlock: Generator.BeginExceptionBlock(); break;
-                    case ExceptionBlockType.BeginCatchBlock: Generator.BeginCatchBlock(block.catchType); break;
-                    case ExceptionBlockType.BeginExceptFilterBlock: Generator.BeginExceptFilterBlock(); break;
-                    case ExceptionBlockType.BeginFinallyBlock: Generator.BeginFinallyBlock(); break;
-                    case ExceptionBlockType.BeginFaultBlock: Generator.BeginFaultBlock(); break;
-                }
-            }
-
-            EmitInstruction(instruction);
-
-            // I do not know why Harmony chose to do this this way but this is how Harmony does it
-            foreach (var block in instruction.blocks)
-            {
-                if (block.blockType == ExceptionBlockType.EndExceptionBlock)
-                    Generator.EndExceptionBlock();
-            }
-        }
-    }
-
-    private void EmitInstruction(CodeInstruction instruction)
-    {
-        OpCode opCode = instruction.opcode;
-        if (opCode.OperandType == OperandType.ShortInlineBrTarget)
-            opCode = opCodes[OpCodeData.GetCanonicalOpcode(opCode)];
-
-        // A filter has exactly one endfilter, at its lexical end (ECMA-335, III.3.34).
-        // BeginCatchBlock(null) emits it when opening the corresponding handler.
-        if (opCode == OpCodes.Endfilter)
-            return;
-
-        // Finally and fault handlers can exit through multiple endfinally instructions.
-        // EndExceptionBlock supplies a replacement only at the handler boundary.
-        if (opCode == OpCodes.Endfinally && instruction.blocks.Any(block => block.blockType == ExceptionBlockType.EndExceptionBlock))
-            return;
-
-        if (opCode.OperandType == OperandType.InlineNone)
-        {
-            if (opCode == OpCodes.Nop && instruction.operand is string)
-                return;
-            Generator.Emit(opCode);
-            return;
-        }
-
-        object operand = instruction.operand ?? throw new NotSupportedException($"Missing operand in {instruction}.");
-        switch (opCode.OperandType)
-        {
-            case OperandType.InlineI: Generator.Emit(opCode, Convert.ToInt32(operand)); break;
-            case OperandType.InlineI8: Generator.Emit(opCode, Convert.ToInt64(operand)); break;
-            case OperandType.ShortInlineR: Generator.Emit(opCode, Convert.ToSingle(operand)); break;
-            case OperandType.InlineR: Generator.Emit(opCode, Convert.ToDouble(operand)); break;
-            case OperandType.ShortInlineI when opCode == OpCodes.Ldc_I4_S:
-                Generator.Emit(opCode, Convert.ToSByte(operand));
-                break;
-            case OperandType.ShortInlineI: Generator.Emit(opCode, Convert.ToByte(operand)); break;
-            case OperandType.ShortInlineVar or OperandType.InlineVar when operand is LocalBuilder local:
-                Generator.Emit(opCode, local);
-                break;
-            case OperandType.ShortInlineVar: Generator.Emit(opCode, Convert.ToByte(operand)); break;
-            case OperandType.InlineVar:
-                // CLI indexes are unsigned, but Reflection.Emit exposes a signed short overload.
-                Generator.Emit(opCode, unchecked((short)Convert.ToUInt16(operand)));
-                break;
-            case OperandType.InlineBrTarget or OperandType.ShortInlineBrTarget:
-                Generator.Emit(opCode, (Label)operand);
-                break;
-            case OperandType.InlineSwitch: Generator.Emit(opCode, (Label[])operand); break;
-            case OperandType.InlineString: Generator.Emit(opCode, (string)operand); break;
-            case OperandType.InlineMethod or OperandType.InlineTok when operand is MethodInfo method:
-                Generator.Emit(opCode, method);
-                break;
-            case OperandType.InlineMethod or OperandType.InlineTok when operand is ConstructorInfo constructor:
-                Generator.Emit(opCode, constructor);
-                break;
-            case OperandType.InlineField or OperandType.InlineTok when operand is FieldInfo field:
-                Generator.Emit(opCode, field);
-                break;
-            case OperandType.InlineType or OperandType.InlineTok when operand is Type type:
-                Generator.Emit(opCode, type);
-                break;
-            case OperandType.InlineSig when operand is InlineSignature signature:
-                signature.Emit(Generator);
-                calliSignaturesForFixup.Add(Generator.ILOffset - sizeof(int), signature);
-                break;
-            case OperandType.InlineSig when operand is SignatureHelper signature:
-                Generator.Emit(opCode, signature);
-                break;
-            default: throw new NotSupportedException($"Unsupported operand in {instruction}.");
-        }
+        StandaloneSignatureHandle SignatureHandle(byte[] bytes) =>
+            (StandaloneSignatureHandle)MetadataTokens.Handle(builder.GetTokenForSignature(bytes));
     }
 }

@@ -51,13 +51,13 @@ internal class Transformer() : MethodBodyTransformer(100)
         var methodView = MethodView.Create(method, body, clauses);
 
         var instructionsList = methodView.CodeInstructions;
-        var generator = methodView.Generator;
+        var allocator = methodView.Allocator;
 
         try
         {
-            patch.ruleset.MatchAndReplace(method, ref instructionsList, generator);
+            patch.ruleset.MatchAndReplace(method, ref instructionsList, allocator);
             if (instructionsList.Any(inst => inst.blocks.Count > 0))
-                ExceptionFixup.Fix(method, ref instructionsList, generator);
+                ExceptionFixup.Fix(method, ref instructionsList, allocator);
         }
         catch (Exception e)
         {
@@ -68,7 +68,7 @@ internal class Transformer() : MethodBodyTransformer(100)
         if (Backend.optimizerEnabled && patch.optimize)
             try
             {
-                var optimizer = new Optimizer.Optimizer(method, instructionsList, generator, debug: patch.debug);
+                var optimizer = new Optimizer.Optimizer(method, instructionsList, allocator.Generator, debug: patch.debug);
                 instructionsList = optimizer.Optimize();
             }
             catch (Exception e)

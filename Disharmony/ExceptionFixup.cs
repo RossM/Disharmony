@@ -17,9 +17,9 @@ internal static class ExceptionFixup
     /// </remarks>
     /// <param name="method"></param>
     /// <param name="instructions"></param>
-    /// <param name="generator"></param>
+    /// <param name="allocator">Declares locals used to save stack values.</param>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
-    internal static void Fix(MethodBase method, ref List<CodeInstruction> instructions, ILGenerator generator)
+    internal static void Fix(MethodBase method, ref List<CodeInstruction> instructions, InstructionAllocator allocator)
     {
         Dictionary<Label, Type[]> branchStacks = [];
         List<LocalTrackerBuilder[]> exceptionStacks = [];
@@ -59,7 +59,7 @@ internal static class ExceptionFixup
                     case ExceptionBlockType.BeginExceptionBlock when stack.Count == 0: exceptionStacks.Add([]); break;
                     case ExceptionBlockType.BeginExceptionBlock:
                     {
-                        LocalTrackerBuilder[] savedStack = [.. stack.Select(t => new LocalTrackerBuilder(generator.DeclareLocal(t)))];
+                        LocalTrackerBuilder[] savedStack = [.. stack.Select(t => new LocalTrackerBuilder(allocator.DeclareLocal(t)))];
                         for (int i = savedStack.Length - 1; i >= 0; --i)
                             output.Add(savedStack[i].Store());
                         exceptionStacks.Add(savedStack);

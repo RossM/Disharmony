@@ -407,7 +407,7 @@ public sealed class CreateControlFlowGraphTests
     {
         public Type ReturnType => returnType;
         public int ParameterCount => parameterTypes.Count;
-        public bool HasThis => false;
+        public bool HasImplicitThis => false;
     }
 
     [Test]

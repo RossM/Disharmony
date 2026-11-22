@@ -241,7 +241,7 @@ public sealed class ExceptionFixupTests
             new CodeInstruction(OpCodes.Ret),
         ];
 
-        ExceptionFixup.Fix(VoidMethod, ref instructions, generator);
+        ExceptionFixup.Fix(VoidMethod, ref instructions, new InstructionAllocator(generator));
 
         var savedValue = (LocalBuilder)instructions[1].operand;
         Assert.That(savedValue, Is.Not.SameAs(sourceLocal));
@@ -335,7 +335,7 @@ public sealed class ExceptionFixupTests
             new CodeInstruction(OpCodes.Ret),
         ];
 
-        ExceptionFixup.Fix(VoidMethod, ref instructions, generator);
+        ExceptionFixup.Fix(VoidMethod, ref instructions, new InstructionAllocator(generator));
 
         Assert.That(instructions.Select(instruction => instruction.opcode), Is.EqualTo(new[]
         {
@@ -370,7 +370,7 @@ public sealed class ExceptionFixupTests
             new CodeInstruction(OpCodes.Ret),
         ];
 
-        ExceptionFixup.Fix(VoidMethod, ref instructions, generator);
+        ExceptionFixup.Fix(VoidMethod, ref instructions, new InstructionAllocator(generator));
 
         Assert.That(instructions.Select(instruction => instruction.opcode), Is.EqualTo(new[]
         {
@@ -408,7 +408,7 @@ public sealed class ExceptionFixupTests
             new CodeInstruction(OpCodes.Ret).WithLabels(endLabel),
         ];
 
-        ExceptionFixup.Fix(VoidMethod, ref instructions, generator);
+        ExceptionFixup.Fix(VoidMethod, ref instructions, new InstructionAllocator(generator));
 
         Assert.That(instructions.Select(instruction => instruction.opcode), Is.EqualTo(new[]
         {
@@ -510,7 +510,7 @@ public sealed class ExceptionFixupTests
     private static List<CodeInstruction> Fix(MethodBase method, List<CodeInstruction> instructions)
     {
         List<CodeInstruction> result = [.. instructions];
-        ExceptionFixup.Fix(method, ref result, PatchProcessor.CreateILGenerator());
+        ExceptionFixup.Fix(method, ref result, new InstructionAllocator(PatchProcessor.CreateILGenerator()));
         return result;
     }
 }

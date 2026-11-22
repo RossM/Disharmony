@@ -579,6 +579,68 @@ public sealed class MethodViewTests : PatchTestBase
     }
 
     [Test]
+    public void RuleSuppliedLocal_PreservesConstructedType()
+    {
+        var local = PatchProcessor.CreateILGenerator().DeclareLocal(typeof(List<string[]>[,]));
+        Func<List<string[]>[,], List<string[]>[,]> invoke = Target;
+        var rules = new Ruleset(new Rule
+        {
+            Pattern = [new CodeInstruction(OpCodes.Ret)],
+            Output = [new CodeInstruction(OpCodes.Stloc, local), new CodeInstruction(OpCodes.Ldloc, local),
+                new CodeInstruction(OpCodes.Ret)],
+        });
+
+        try
+        {
+            Backend.Instance.ApplyPatch(new MethodInvocation(invoke.Method), rules, false, debug: false, optimize: false);
+            var value = new List<string[]>[1, 1];
+            Assert.That(invoke(value), Is.SameAs(value));
+            Assert.That(invoke.Method.GetMethodBody()!.LocalVariables[^1].LocalType, Is.EqualTo(local.LocalType));
+        }
+        finally
+        {
+            Backend.Instance.Unpatch(invoke.Method);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static List<string[]>[,] Target(List<string[]>[,] value) => value;
+    }
+
+    [Test]
+    public void RuleSuppliedCalli_ImportsSignatureTypeTokens()
+    {
+        var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(nameof(RuleSuppliedCalli_ImportsSignatureTypeTokens)),
+            AssemblyBuilderAccess.RunAndCollect);
+        var signature = SignatureHelper.GetMethodSigHelper(assembly.DefineDynamicModule("Signatures"),
+            CallingConventions.Standard, typeof(StringBuilder));
+        signature.AddArgument(typeof(StringBuilder));
+
+        Func<StringBuilder, StringBuilder> invoke = Target;
+        Func<StringBuilder, StringBuilder> callee = Append;
+        var rules = new Ruleset(new Rule
+        {
+            Pattern = [new CodeInstruction(OpCodes.Ret)],
+            Output = [new CodeInstruction(OpCodes.Ldftn, callee.Method), new CodeInstruction(OpCodes.Calli, signature),
+                new CodeInstruction(OpCodes.Ret)],
+        });
+
+        try
+        {
+            Backend.Instance.ApplyPatch(new MethodInvocation(invoke.Method), rules, false, debug: false, optimize: false);
+            Assert.That(invoke(new StringBuilder("calli")).ToString(), Is.EqualTo("calli!"));
+        }
+        finally
+        {
+            Backend.Instance.Unpatch(invoke.Method);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static StringBuilder Target(StringBuilder value) => value;
+
+        static StringBuilder Append(StringBuilder value) => value.Append('!');
+    }
+
+    [Test]
     public void RoundTrip_PreservesManagedCalliSignature()
     {
         var assembly = new PersistedAssemblyBuilder(new AssemblyName(nameof(RoundTrip_PreservesManagedCalliSignature)), typeof(object).Assembly);
