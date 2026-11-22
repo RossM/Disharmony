@@ -74,7 +74,7 @@ internal class MethodView
     private readonly LocalBuilder[] originalLocals;
 
     // A mapping from the byte position of a Calli argument to the relevant InlineSignature
-    private readonly Dictionary<int, InlineSignature> callSites = [];
+    private readonly Dictionary<int, InlineSignature> calliSignaturesForFixup = [];
 
     private readonly List<(int offset, CodeInstruction instruction)> emittedInstructions = [];
     private readonly List<Type> emittedLocalTypes = [];
@@ -324,7 +324,7 @@ internal class MethodView
                         // EmitCalli computes maxstack from the resolved parameter and return types.
                         // Its public overloads cannot preserve custom modifiers, so import the saved
                         // call-site signature to retain them.
-                        if (callSites.TryGetValue(operandOffset, out var original))
+                        if (calliSignaturesForFixup.TryGetValue(operandOffset, out var original))
                             signature = original;
                         token = builder.GetTokenForSignature(signature.Import(builder));
                         break;
@@ -478,7 +478,7 @@ internal class MethodView
                 break;
             case OperandType.InlineSig when operand is InlineSignature signature:
                 signature.Emit(Generator);
-                callSites.Add(Generator.ILOffset - sizeof(int), signature);
+                calliSignaturesForFixup.Add(Generator.ILOffset - sizeof(int), signature);
                 break;
             case OperandType.InlineSig when operand is SignatureHelper signature:
                 Generator.Emit(opCode, signature);
