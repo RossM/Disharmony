@@ -247,6 +247,40 @@ public sealed class MethodViewTests : PatchTestBase
     }
 
     [Test]
+    public void RuleSuppliedEmptyCatch_LeavesAfterTerminatedTry()
+    {
+        Func<int> invoke = Target;
+        var rules = new Ruleset(new Rule
+        {
+            Mode = OutputMode.MethodPrefix,
+            Output =
+            [
+                new CodeInstruction(OpCodes.Newobj, typeof(InvalidOperationException).GetConstructor(Type.EmptyTypes)!)
+                    .WithBlocks(new ExceptionBlock(ExceptionBlockType.BeginExceptionBlock)),
+                new CodeInstruction(OpCodes.Throw),
+                // An annotation carries the handler markers without emitting an instruction.
+                CodeInstruction.Annotation("Empty catch")
+                    .WithBlocks(new ExceptionBlock(ExceptionBlockType.BeginCatchBlock, typeof(InvalidOperationException)),
+                        new ExceptionBlock(ExceptionBlockType.EndExceptionBlock)),
+            ],
+        });
+
+        try
+        {
+            Backend.Instance.ApplyPatch(new MethodInvocation(invoke.Method), rules, false, debug: false, optimize: false);
+            Assert.That(invoke(), Is.EqualTo(42));
+            Assert.That(invoke.Method.GetMethodBody()!.ExceptionHandlingClauses.Single().HandlerLength, Is.GreaterThan(0));
+        }
+        finally
+        {
+            Backend.Instance.Unpatch(invoke.Method);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int Target() => 42;
+    }
+
+    [Test]
     public void RoundTrip_PreservesFaultHandlerOnExceptionalPathOnly()
     {
         var assembly = new PersistedAssemblyBuilder(new AssemblyName(nameof(RoundTrip_PreservesFaultHandlerOnExceptionalPathOnly)), typeof(object).Assembly);

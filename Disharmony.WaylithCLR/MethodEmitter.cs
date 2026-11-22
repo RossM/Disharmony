@@ -22,17 +22,20 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
 
     // One entry per open try block. Each handler becomes a separate metadata clause
     // with the same try range. Nested try blocks have their own entries on the stack.
-    private sealed class Region(LabelHandle tryStart, Label leaveTarget)
+    private sealed class Region(Boundary tryStart, Label leaveTarget)
     {
-        public readonly LabelHandle tryStart = tryStart;
+        public readonly Boundary tryStart = tryStart;
         // Normal exits from the try or a catch jump past the entire handler sequence.
         public readonly Label leaveTarget = leaveTarget;
         public LabelHandle tryEnd;
-        public LabelHandle pendingFilter;
+        public Boundary? pendingFilter;
         public Handler? handler;
     }
 
-    private readonly record struct Handler(ExceptionRegionKind Kind, LabelHandle Start, Type? CatchType = null,
+    // Metadata uses the label. The instruction index lets us tell whether the block emitted any IL.
+    private readonly record struct Boundary(LabelHandle Label, int InstructionIndex);
+
+    private readonly record struct Handler(ExceptionRegionKind Kind, Boundary Start, Type? CatchType = null,
         LabelHandle FilterStart = default);
 
     private readonly InstructionEncoder il = new(new BlobBuilder(), new ControlFlowBuilder());
@@ -90,11 +93,11 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
         il.MarkLabel(target.handle);
     }
 
-    private LabelHandle MarkBoundary()
+    private Boundary MarkBoundary()
     {
         var label = il.DefineLabel();
         il.MarkLabel(label);
-        return label;
+        return new Boundary(label, instructions.Count);
     }
 
     private void BeginBlock(ExceptionBlock block)
@@ -106,15 +109,15 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
         }
 
         var region = regions.Peek();
-        if (!region.pendingFilter.IsNil)
+        if (region.pendingFilter is { } filter)
         {
             // Harmony uses an untyped catch marker for the body selected by a filter.
             // The filter and that body belong to a single clause.
             if (block.blockType != ExceptionBlockType.BeginCatchBlock || block.catchType is not null)
                 throw new InvalidOperationException("An exception filter must be followed by its handler.");
-            EnsureTerminator(OpCodes.Endfilter);
-            BeginHandler(region, ExceptionRegionKind.Filter, filterStart: region.pendingFilter);
-            region.pendingFilter = default;
+            EnsureTerminator(filter, OpCodes.Endfilter);
+            BeginHandler(region, ExceptionRegionKind.Filter, filterStart: filter.Label);
+            region.pendingFilter = null;
             return;
         }
 
@@ -122,8 +125,8 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
         // handler on subsequent transitions. Emit any needed exit before marking the boundary.
         if (region.tryEnd.IsNil)
         {
-            LeaveIfNeeded(region.leaveTarget);
-            region.tryEnd = MarkBoundary();
+            LeaveIfNeeded(region.tryStart, region.leaveTarget);
+            region.tryEnd = MarkBoundary().Label;
         }
         else
         {
@@ -133,8 +136,9 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
         switch (block.blockType)
         {
             case ExceptionBlockType.BeginExceptFilterBlock:
-                region.pendingFilter = MarkBoundary();
-                handlerRegionEntries.Add((instructions.Count, 1));
+                var start = MarkBoundary();
+                region.pendingFilter = start;
+                handlerRegionEntries.Add((start.InstructionIndex, 1));
                 break;
             case ExceptionBlockType.BeginCatchBlock:
                 BeginHandler(region, ExceptionRegionKind.Catch, catchType: block.catchType);
@@ -153,8 +157,9 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
     private void BeginHandler(Region region, ExceptionRegionKind kind, Type? catchType = null,
         LabelHandle filterStart = default)
     {
-        region.handler = new Handler(kind, MarkBoundary(), catchType, filterStart);
-        handlerRegionEntries.Add((instructions.Count, kind is ExceptionRegionKind.Catch or ExceptionRegionKind.Filter ? 1 : 0));
+        var start = MarkBoundary();
+        region.handler = new Handler(kind, start, catchType, filterStart);
+        handlerRegionEntries.Add((start.InstructionIndex, kind is ExceptionRegionKind.Catch or ExceptionRegionKind.Filter ? 1 : 0));
     }
 
     private void EndBlock()
@@ -170,49 +175,52 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
             throw new InvalidOperationException("An exception block ended without a handler.");
 
         if (handler.Kind is ExceptionRegionKind.Finally or ExceptionRegionKind.Fault)
-            EnsureTerminator(OpCodes.Endfinally);
+            EnsureTerminator(handler.Start, OpCodes.Endfinally);
         else
-            LeaveIfNeeded(region.leaveTarget);
+            LeaveIfNeeded(handler.Start, region.leaveTarget);
 
         // The range includes any terminator emitted above. Its end is the first byte
         // outside the handler, which can also be the start of the next filter or handler.
-        var handlerEnd = MarkBoundary();
+        var handlerEnd = MarkBoundary().Label;
         var flow = il.ControlFlowBuilder!;
         switch (handler.Kind)
         {
             case ExceptionRegionKind.Catch:
-                flow.AddCatchRegion(region.tryStart, region.tryEnd, handler.Start, handlerEnd,
+                flow.AddCatchRegion(region.tryStart.Label, region.tryEnd, handler.Start.Label, handlerEnd,
                     MetadataTokens.EntityHandle(builder.GetTokenFor(handler.CatchType!)));
                 break;
             case ExceptionRegionKind.Filter:
-                flow.AddFilterRegion(region.tryStart, region.tryEnd, handler.Start, handlerEnd, handler.FilterStart);
+                flow.AddFilterRegion(region.tryStart.Label, region.tryEnd, handler.Start.Label, handlerEnd, handler.FilterStart);
                 break;
             case ExceptionRegionKind.Finally:
-                flow.AddFinallyRegion(region.tryStart, region.tryEnd, handler.Start, handlerEnd);
+                flow.AddFinallyRegion(region.tryStart.Label, region.tryEnd, handler.Start.Label, handlerEnd);
                 break;
             case ExceptionRegionKind.Fault:
-                flow.AddFaultRegion(region.tryStart, region.tryEnd, handler.Start, handlerEnd);
+                flow.AddFaultRegion(region.tryStart.Label, region.tryEnd, handler.Start.Label, handlerEnd);
                 break;
         }
 
         region.handler = null;
     }
 
-    private void LeaveIfNeeded(Label target)
+    private void LeaveIfNeeded(Boundary start, Label target)
     {
-        // Rule-generated try and catch bodies can end without an explicit exit.
-        // Convert that fallthrough to a leave so execution skips the remaining handlers.
-        if (instructions.Count == 0 || FallsThrough(instructions[^1].opcode))
+        // A rule can supply an empty body or one that falls through. Both need a leave
+        // to skip the remaining handlers.
+        if (LastOpcodeIn(start) is not { } last || FallsThrough(last))
             WriteInstruction(new CodeInstruction(OpCodes.Leave, target));
     }
 
-    private void EnsureTerminator(OpCode opcode)
+    private void EnsureTerminator(Boundary start, OpCode opcode)
     {
         // The incoming IL may already have the terminator. Only fill in a missing one
         // at the boundary, preserving explicit exits earlier in the block.
-        if (instructions.Count == 0 || instructions[^1].opcode != opcode)
+        if (LastOpcodeIn(start) != opcode)
             WriteInstruction(new CodeInstruction(opcode));
     }
+
+    private OpCode? LastOpcodeIn(Boundary start) =>
+        instructions.Count > start.InstructionIndex ? instructions[^1].opcode : null;
 
     private static bool FallsThrough(OpCode opcode) =>
         opcode.FlowControl is not (FlowControl.Branch or FlowControl.Return or FlowControl.Throw) && opcode != OpCodes.Jmp;
