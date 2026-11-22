@@ -14,21 +14,24 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
 {
     private sealed class Target(LabelHandle handle)
     {
-        public readonly LabelHandle Handle = handle;
+        public readonly LabelHandle handle = handle;
         // Index in the emitted instruction list for stack analysis. A forward branch can
         // create the label handle before the target is emitted, so its index starts at -1.
-        public int Index = -1;
+        public int index = -1;
     }
 
-    private sealed class Region(LabelHandle tryStart, Label end)
+    private sealed class Region(LabelHandle tryStart, Label endMarker)
     {
-        public readonly LabelHandle TryStart = tryStart;
-        public readonly Label End = end;
-        public LabelHandle TryEnd;
-        public LabelHandle FilterStart;
-        public LabelHandle HandlerStart;
-        public ExceptionRegionKind Kind;
-        public Type? CatchType;
+        public readonly LabelHandle tryStart = tryStart;
+        /// <summary>
+        /// A label that will be emitted to mark the end of the region
+        /// </summary>
+        public readonly Label endMarker = endMarker;
+        public LabelHandle tryEnd;
+        public LabelHandle filterStart;
+        public LabelHandle handlerStart;
+        public ExceptionRegionKind kind;
+        public Type? catchType;
     }
 
     private readonly InstructionEncoder il = new(new BlobBuilder(), new ControlFlowBuilder());
@@ -80,10 +83,10 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
     private void Mark(Label label)
     {
         var target = GetTarget(label);
-        if (target.Index >= 0)
+        if (target.index >= 0)
             throw new InvalidOperationException($"Label {label.GetHashCode()} was marked twice.");
-        target.Index = instructions.Count;
-        il.MarkLabel(target.Handle);
+        target.index = instructions.Count;
+        il.MarkLabel(target.handle);
     }
 
     private LabelHandle MarkBoundary()
@@ -102,82 +105,82 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
         }
 
         var region = regions.Peek();
-        if (!region.FilterStart.IsNil && region.HandlerStart.IsNil)
+        if (!region.filterStart.IsNil && region.handlerStart.IsNil)
         {
             // Harmony marks the handler of a filter with a catch block that has no catch type.
             if (block.blockType != ExceptionBlockType.BeginCatchBlock || block.catchType is not null)
                 throw new InvalidOperationException("An exception filter must be followed by its handler.");
             EnsureTerminator(OpCodes.Endfilter);
-            region.HandlerStart = MarkBoundary();
+            region.handlerStart = MarkBoundary();
             handlerEntries.Add((instructions.Count, 1));
             return;
         }
 
-        if (region.TryEnd.IsNil)
+        if (region.tryEnd.IsNil)
         {
-            LeaveIfNeeded(region.End);
-            region.TryEnd = MarkBoundary();
+            LeaveIfNeeded(region.endMarker);
+            region.tryEnd = MarkBoundary();
         }
         else
         {
             CloseHandler(region);
         }
 
-        region.FilterStart = default;
-        region.HandlerStart = default;
+        region.filterStart = default;
+        region.handlerStart = default;
         if (block.blockType == ExceptionBlockType.BeginExceptFilterBlock)
         {
-            region.Kind = ExceptionRegionKind.Filter;
-            region.FilterStart = MarkBoundary();
+            region.kind = ExceptionRegionKind.Filter;
+            region.filterStart = MarkBoundary();
             handlerEntries.Add((instructions.Count, 1));
             return;
         }
 
-        region.Kind = block.blockType switch
+        region.kind = block.blockType switch
         {
             ExceptionBlockType.BeginCatchBlock => ExceptionRegionKind.Catch,
             ExceptionBlockType.BeginFinallyBlock => ExceptionRegionKind.Finally,
             ExceptionBlockType.BeginFaultBlock => ExceptionRegionKind.Fault,
             _ => throw new NotSupportedException($"Unsupported exception block {block.blockType}."),
         };
-        region.CatchType = block.catchType;
-        region.HandlerStart = MarkBoundary();
-        handlerEntries.Add((instructions.Count, region.Kind == ExceptionRegionKind.Catch ? 1 : 0));
+        region.catchType = block.catchType;
+        region.handlerStart = MarkBoundary();
+        handlerEntries.Add((instructions.Count, region.kind == ExceptionRegionKind.Catch ? 1 : 0));
     }
 
     private void EndBlock()
     {
         var region = regions.Pop();
         CloseHandler(region);
-        Mark(region.End);
+        Mark(region.endMarker);
     }
 
     private void CloseHandler(Region region)
     {
-        if (region.HandlerStart.IsNil)
+        if (region.handlerStart.IsNil)
             throw new InvalidOperationException("An exception block ended without a handler.");
 
-        if (region.Kind is ExceptionRegionKind.Finally or ExceptionRegionKind.Fault)
+        if (region.kind is ExceptionRegionKind.Finally or ExceptionRegionKind.Fault)
             EnsureTerminator(OpCodes.Endfinally);
         else
-            LeaveIfNeeded(region.End);
+            LeaveIfNeeded(region.endMarker);
 
         var end = MarkBoundary();
         var flow = il.ControlFlowBuilder!;
-        switch (region.Kind)
+        switch (region.kind)
         {
             case ExceptionRegionKind.Catch:
-                flow.AddCatchRegion(region.TryStart, region.TryEnd, region.HandlerStart, end,
-                    MetadataTokens.EntityHandle(builder.GetTokenFor(region.CatchType!)));
+                flow.AddCatchRegion(region.tryStart, region.tryEnd, region.handlerStart, end,
+                    MetadataTokens.EntityHandle(builder.GetTokenFor(region.catchType!)));
                 break;
             case ExceptionRegionKind.Filter:
-                flow.AddFilterRegion(region.TryStart, region.TryEnd, region.HandlerStart, end, region.FilterStart);
+                flow.AddFilterRegion(region.tryStart, region.tryEnd, region.handlerStart, end, region.filterStart);
                 break;
             case ExceptionRegionKind.Finally:
-                flow.AddFinallyRegion(region.TryStart, region.TryEnd, region.HandlerStart, end);
+                flow.AddFinallyRegion(region.tryStart, region.tryEnd, region.handlerStart, end);
                 break;
             case ExceptionRegionKind.Fault:
-                flow.AddFaultRegion(region.TryStart, region.TryEnd, region.HandlerStart, end);
+                flow.AddFaultRegion(region.tryStart, region.tryEnd, region.handlerStart, end);
                 break;
         }
     }
@@ -214,7 +217,7 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
         if (opcode.OperandType is OperandType.InlineBrTarget or OperandType.ShortInlineBrTarget)
         {
             // Rules can expand the distance to a branch target beyond a short branch's range.
-            il.Branch((ILOpCode)OpCodeData.GetCanonicalOpcode(opcode), GetTarget((Label)operand!).Handle);
+            il.Branch((ILOpCode)OpCodeData.GetCanonicalOpcode(opcode), GetTarget((Label)operand!).handle);
             return;
         }
 
@@ -233,7 +236,7 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
                 GetTarget(label);
             var branches = il.Switch(labels.Length);
             foreach (Label label in labels)
-                branches.Branch(targets[label].Handle);
+                branches.Branch(targets[label].handle);
             return;
         }
 
@@ -314,10 +317,10 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
             maxStack = Math.Max(maxStack, nextDepth);
 
             if (instruction.operand is Label label)
-                Enqueue(GetTarget(label).Index, nextDepth);
+                Enqueue(GetTarget(label).index, nextDepth);
             else if (instruction.operand is Label[] labels)
                 foreach (Label target in labels)
-                    Enqueue(GetTarget(target).Index, nextDepth);
+                    Enqueue(GetTarget(target).index, nextDepth);
 
             if (FallsThrough(opcode))
                 Enqueue(index + 1, nextDepth);
