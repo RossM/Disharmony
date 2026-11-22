@@ -24,7 +24,8 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
     {
         public readonly LabelHandle tryStart = tryStart;
         /// <summary>
-        /// A label that will be emitted to mark the end of the region
+        /// A label that will be emitted to mark the end of the region. We use an actual Label because it will be emitted
+        /// as part of a synthetic Leave instruction.
         /// </summary>
         public readonly Label endMarker = endMarker;
         public LabelHandle tryEnd;
