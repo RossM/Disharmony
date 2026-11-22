@@ -137,21 +137,21 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
                 BeginHandler(region, ExceptionRegionKind.Catch, catchType: block.catchType);
                 break;
             case ExceptionBlockType.BeginFinallyBlock:
-                BeginHandler(region, ExceptionRegionKind.Finally);
+                BeginHandler(region, ExceptionRegionKind.Finally, depth: 1);
                 break;
             case ExceptionBlockType.BeginFaultBlock:
-                BeginHandler(region, ExceptionRegionKind.Fault);
+                BeginHandler(region, ExceptionRegionKind.Fault, depth: 1);
                 break;
             default:
                 throw new NotSupportedException($"Unsupported exception block {block.blockType}.");
         }
     }
 
-    private void BeginHandler(Region region, ExceptionRegionKind kind, Type? catchType = null, Target? filterStart = null)
+    private void BeginHandler(Region region, ExceptionRegionKind kind, Type? catchType = null, Target? filterStart = null, int depth = 0)
     {
         var start = MarkBoundary();
         region.activeHandler = new Handler(kind, start, catchType, filterStart);
-        handlerRegionEntries.Add((start.InstructionIndex, kind is ExceptionRegionKind.Catch or ExceptionRegionKind.Filter ? 1 : 0));
+        handlerRegionEntries.Add((start.InstructionIndex, depth));
     }
 
     private void EndBlock()
