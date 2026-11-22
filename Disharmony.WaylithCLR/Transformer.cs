@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Threading;
+using HarmonyLib;
 using WaylithClr;
 
 namespace Disharmony.WaylithCLR;
@@ -78,6 +79,31 @@ internal class Transformer() : MethodBodyTransformer(100)
 
         methodView.CodeInstructions = instructionsList;
         methodView.Emit(result);
+
+        if (patch.debug)
+        {
+            FileLog.LogBuffered($"### Disharmony patch: {method}");
+            for (int i = 0; i < methodView.Locals.Count; i++)
+                FileLog.LogBuffered($"IL_0000: Local var {i}: {methodView.Locals[i].LocalType.FullName}");
+            foreach ((int offset, CodeInstruction instruction) in methodView.EmittedInstructions)
+            {
+                foreach (var label in instruction.labels)
+                    FileLog.LogIL(offset, label);
+                foreach (var block in instruction.blocks)
+                    FileLog.LogILBlockBegin(offset, block);
+                if (instruction.opcode == OpCodes.Nop && instruction.operand is string comment)
+                    FileLog.LogILComment(offset, comment);
+                else if (instruction.opcode.OperandType == OperandType.InlineNone)
+                    FileLog.LogIL(offset, instruction.opcode);
+                // TODO: Special case for InlineSignature
+                else
+                    FileLog.LogIL(offset, instruction.opcode, instruction.operand);
+                foreach (var block in instruction.blocks)
+                    FileLog.LogILBlockEnd(offset, block);
+            }
+            FileLog.LogBuffered("");
+            FileLog.FlushBuffer();
+        }
 
         return true;
     }

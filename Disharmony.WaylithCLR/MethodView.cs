@@ -31,6 +31,11 @@ internal class MethodView
         .Select(field => (OpCode)field.GetValue(null)!)
         .ToDictionary(opCode => unchecked((ushort)opCode.Value));
 
+    private readonly List<(int offset, CodeInstruction instruction)> emittedInstructions = new List<(int offset, CodeInstruction instruction)>();
+
+    public IReadOnlyList<LocalBuilder> Locals => originalLocals;
+    public IReadOnlyList<(int offset, CodeInstruction instruction)> EmittedInstructions => emittedInstructions;
+
     private MethodView(MethodBase method, in MethodBodyView body)
     {
         // In order to use System.Reflection.Emit to handle the work of mapping IL to bytes, we need a MethodBuilder. Define it
@@ -325,6 +330,8 @@ internal class MethodView
     {
         foreach (var instruction in CodeInstructions)
         {
+            emittedInstructions.Add((offset: Generator.ILOffset, instruction));
+
             foreach (Label label in instruction.labels)
                 Generator.MarkLabel(label);
             foreach (var block in instruction.blocks)
@@ -352,11 +359,16 @@ internal class MethodView
         OpCode opCode = instruction.opcode;
         if (opCode.OperandType == OperandType.ShortInlineBrTarget)
             opCode = opCodes[OpCodeData.GetCanonicalOpcode(opCode)];
+        
         // BeginCatchBlock(null) emits endfilter, and EndExceptionBlock emits endfinally
         // for finally and fault handlers. Emitting the parsed terminator too would leave
         // an extra instruction between the filter and its handler or after the handler.
+
+        // TODO: This seems like a very bug-prone way of handling this, as one of these
+        //  instructions could have been inserted into the instruction stream manually
         if (opCode == OpCodes.Endfilter || opCode == OpCodes.Endfinally)
             return;
+
         if (opCode.OperandType == OperandType.InlineNone)
         {
             if (opCode == OpCodes.Nop && instruction.operand is string)
