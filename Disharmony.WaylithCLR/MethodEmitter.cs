@@ -85,7 +85,7 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
         targets[label] = MarkTarget(target.Handle);
     }
 
-    private Target MarkBoundary() => MarkTarget(il.DefineLabel());
+    private Target MarkTarget() => MarkTarget(il.DefineLabel());
 
     private Target MarkTarget(LabelHandle handle)
     {
@@ -97,7 +97,7 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
     {
         if (block.blockType == ExceptionBlockType.BeginExceptionBlock)
         {
-            regions.Push(new Region(MarkBoundary(), allocator.DefineLabel()));
+            regions.Push(new Region(MarkTarget(), allocator.DefineLabel()));
             return;
         }
 
@@ -106,10 +106,10 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
         {
             // Harmony uses an untyped catch marker for the body selected by a filter.
             // The filter and that body belong to a single clause.
-            if (block.blockType != ExceptionBlockType.BeginCatchBlock || block.catchType is not null)
+            if (block is not { blockType: ExceptionBlockType.BeginCatchBlock, catchType: null })
                 throw new InvalidOperationException("An exception filter must be followed by its handler.");
             EnsureTerminator(filter.Start, OpCodes.Endfilter);
-            var bodyStart = MarkBoundary();
+            var bodyStart = MarkTarget();
             region.activeHandler = filter with { BodyStart = bodyStart };
             handlerRegionEntries.Add((bodyStart.InstructionIndex, 1));
             return;
@@ -120,7 +120,7 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
         if (region.tryEnd is null)
         {
             LeaveIfNeeded(region.tryStart, region.leaveTarget);
-            region.tryEnd = MarkBoundary();
+            region.tryEnd = MarkTarget();
         }
         else
         {
@@ -148,7 +148,7 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
 
     private void BeginHandler(Region region, ExceptionRegionKind kind, int entryDepth = 0, Type? catchType = null)
     {
-        var start = MarkBoundary();
+        var start = MarkTarget();
         region.activeHandler = new Handler(kind, start, catchType);
         handlerRegionEntries.Add((start.InstructionIndex, entryDepth));
     }
@@ -183,7 +183,7 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
 
         // The range includes any terminator emitted above. Its end is the first byte
         // outside the handler, which can also be the start of the next filter or handler.
-        var handlerEnd = MarkBoundary();
+        var handlerEnd = MarkTarget();
         switch (handler.Kind)
         {
             case ExceptionRegionKind.Catch:
@@ -222,7 +222,7 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
     }
 
     private OpCode? LastOpcodeIn(Target start) =>
-        instructions.Count > start.InstructionIndex ? instructions[^1].opcode : null;
+        start.InstructionIndex < instructions.Count ? instructions[^1].opcode : null;
 
     private static bool FallsThrough(OpCode opcode) =>
         opcode.FlowControl is not (FlowControl.Branch or FlowControl.Return or FlowControl.Throw) && opcode != OpCodes.Jmp;

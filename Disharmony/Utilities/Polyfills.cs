@@ -1,4 +1,6 @@
-﻿namespace Disharmony.Utilities;
+﻿#if NETFRAMEWORK
+
+namespace Disharmony.Utilities;
 
 internal static class Polyfills
 {
@@ -11,3 +13,5 @@ internal static class Polyfills
         }
     }
 }
+
+#endif
