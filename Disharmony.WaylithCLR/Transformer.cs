@@ -83,8 +83,8 @@ internal class Transformer() : MethodBodyTransformer(100)
         if (patch.debug)
         {
             FileLog.LogBuffered($"### Disharmony patch: {method}");
-            for (int i = 0; i < methodView.Locals.Count; i++)
-                FileLog.LogBuffered($"IL_0000: Local var {i}: {methodView.Locals[i].LocalType.FullName}");
+            for (int i = 0; i < methodView.EmittedLocalTypes.Count; i++)
+                FileLog.LogBuffered($"IL_0000: Local var {i}: {methodView.EmittedLocalTypes[i].FullName}");
             foreach ((int offset, CodeInstruction instruction) in methodView.EmittedInstructions)
             {
                 foreach (var label in instruction.labels)

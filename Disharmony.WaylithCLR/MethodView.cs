@@ -31,13 +31,18 @@ internal class MethodView
         .Select(field => (OpCode)field.GetValue(null)!)
         .ToDictionary(opCode => unchecked((ushort)opCode.Value));
 
-    private readonly List<(int offset, CodeInstruction instruction)> emittedInstructions = new List<(int offset, CodeInstruction instruction)>();
+    private readonly List<(int offset, CodeInstruction instruction)> emittedInstructions = [];
+    private readonly List<Type> emittedLocalTypes = [];
 
-    public IReadOnlyList<LocalBuilder> Locals => originalLocals;
     public IReadOnlyList<(int offset, CodeInstruction instruction)> EmittedInstructions => emittedInstructions;
+    public IReadOnlyList<Type> EmittedLocalTypes => emittedLocalTypes;
+
+    private readonly MethodBase method;
 
     private MethodView(MethodBase method, in MethodBodyView body)
     {
+        this.method = method;
+
         // In order to use System.Reflection.Emit to handle the work of mapping IL to bytes, we need a MethodBuilder. Define it
         // inside a DynamicAssembly so it can be garbage collected after we're done.
         var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Disharmony.MethodView"), AssemblyBuilderAccess.RunAndCollect);
@@ -288,6 +293,8 @@ internal class MethodView
         // We don't track the emitted locals explicitly so we have to parse the locals of the emitted method
         var emittedLocals = body.LocalSignatureMetadataToken == 0 ? [] :
             new SignatureCodec(ImportType).ReadLocals(emittedMethod.Module.ResolveSignature(body.LocalSignatureMetadataToken));
+
+        emittedLocalTypes.AddRange(emittedLocals.Select(local => local.Resolve(method)));
 
         // Magic number ???
         var locals = new BlobBuilder();
