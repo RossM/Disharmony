@@ -18,6 +18,21 @@ public static class HarmonyCoexistenceTargets
     public static int TranspilerInnerTarget() => Inner(OriginalValue());
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int TranspilerLocalsTarget(bool fail)
+    {
+        try
+        {
+            if (fail)
+                throw new InvalidOperationException("Target failed.");
+            return Inner(OriginalValue());
+        }
+        finally
+        {
+            Events.Add("finally");
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static int Inner(int value) => value;
 
     [MethodImpl(MethodImplOptions.NoInlining)]

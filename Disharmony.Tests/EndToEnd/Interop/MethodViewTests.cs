@@ -1,9 +1,138 @@
 #if WAYLITHCLR_TESTS
 namespace Disharmony.Tests.EndToEnd.Interop;
 
+public static class MethodViewPatches
+{
+    [System.Runtime.InteropServices.UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+    public static int RoundTrip_PreservesUnmanagedCalliSignature_Cdecl(int value) => value * 2;
+
+    [System.Runtime.InteropServices.UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+    public static int RoundTrip_PreservesUnmanagedCalliSignature_StdCall(int value) => value * 2;
+}
+
 [TestFixture]
 public sealed class MethodViewTests : PatchTestBase
 {
+    [TestCase(System.Runtime.InteropServices.CallingConvention.Cdecl)]
+    [TestCase(System.Runtime.InteropServices.CallingConvention.StdCall)]
+    public void RoundTrip_PreservesUnmanagedCalliSignature(System.Runtime.InteropServices.CallingConvention convention)
+    {
+        var assembly = new PersistedAssemblyBuilder(new AssemblyName(nameof(RoundTrip_PreservesUnmanagedCalliSignature)), typeof(object).Assembly);
+        var type = assembly.DefineDynamicModule("Tests").DefineType("Target", TypeAttributes.Public);
+        var method = type.DefineMethod("Value", MethodAttributes.Public | MethodAttributes.Static, typeof(int), [typeof(nint), typeof(int)]);
+        method.SetImplementationFlags(MethodImplAttributes.NoInlining);
+        var il = method.GetILGenerator();
+        il.Emit(OpCodes.Ldarg_1);
+        il.Emit(OpCodes.Ldarg_0);
+        il.EmitCalli(OpCodes.Calli, convention, typeof(int), [typeof(int)]);
+        il.Emit(OpCodes.Ret);
+
+        var patch = type.DefineMethod("Postfix", MethodAttributes.Public | MethodAttributes.Static, typeof(void), [typeof(int).MakeByRefType()]);
+        patch.DefineParameter(1, ParameterAttributes.None, "__result");
+        var patchIL = patch.GetILGenerator();
+        patchIL.Emit(OpCodes.Ldarg_0);
+        patchIL.Emit(OpCodes.Dup);
+        patchIL.Emit(OpCodes.Ldind_I4);
+        patchIL.Emit(OpCodes.Ldc_I4_1);
+        patchIL.Emit(OpCodes.Add);
+        patchIL.Emit(OpCodes.Stind_I4);
+        patchIL.Emit(OpCodes.Ret);
+
+        type.CreateType();
+        using var stream = new System.IO.MemoryStream();
+        assembly.Save(stream);
+        Type targetType = Assembly.Load(stream.ToArray()).GetType("Target")!;
+        MethodInfo target = targetType.GetMethod("Value")!;
+        var invoke = (Func<nint, int, int>)target.CreateDelegate(typeof(Func<nint, int, int>));
+        MethodInfo unmanaged = typeof(MethodViewPatches).GetMethod(convention == System.Runtime.InteropServices.CallingConvention.Cdecl
+            ? nameof(MethodViewPatches.RoundTrip_PreservesUnmanagedCalliSignature_Cdecl)
+            : nameof(MethodViewPatches.RoundTrip_PreservesUnmanagedCalliSignature_StdCall))!;
+        nint pointer = unmanaged.MethodHandle.GetFunctionPointer();
+        Assert.That(invoke(pointer, 6), Is.EqualTo(12));
+        PatchHandle handle = Patcher.Patch(Patch.Postfix.Of(target).With(targetType.GetMethod("Postfix")!));
+        try
+        {
+            Assert.That(invoke(pointer, 6), Is.EqualTo(13));
+            Assert.That(invoke(pointer, -3), Is.EqualTo(-5));
+        }
+        finally
+        {
+            Patcher.Unpatch(handle);
+        }
+        Assert.That(invoke(pointer, 6), Is.EqualTo(12));
+    }
+
+    [Test]
+    public void RoundTrip_PreservesFaultHandlerOnExceptionalPathOnly()
+    {
+        var assembly = new PersistedAssemblyBuilder(new AssemblyName(nameof(RoundTrip_PreservesFaultHandlerOnExceptionalPathOnly)), typeof(object).Assembly);
+        var type = assembly.DefineDynamicModule("Tests").DefineType("Target", TypeAttributes.Public);
+        var faults = type.DefineField("FaultCalls", typeof(int), FieldAttributes.Public | FieldAttributes.Static);
+        var prefixes = type.DefineField("PrefixCalls", typeof(int), FieldAttributes.Public | FieldAttributes.Static);
+        var method = type.DefineMethod("Value", MethodAttributes.Public | MethodAttributes.Static, typeof(int), [typeof(bool)]);
+        method.SetImplementationFlags(MethodImplAttributes.NoInlining);
+        var il = method.GetILGenerator();
+        LocalBuilder result = il.DeclareLocal(typeof(int));
+        Label normal = il.DefineLabel();
+        Label end = il.BeginExceptionBlock();
+        il.Emit(OpCodes.Ldarg_0);
+        il.Emit(OpCodes.Brfalse_S, normal);
+        il.Emit(OpCodes.Newobj, typeof(InvalidOperationException).GetConstructor(Type.EmptyTypes)!);
+        il.Emit(OpCodes.Throw);
+        il.MarkLabel(normal);
+        il.Emit(OpCodes.Ldc_I4_5);
+        il.Emit(OpCodes.Stloc, result);
+        il.Emit(OpCodes.Leave, end);
+        il.BeginFaultBlock();
+        il.Emit(OpCodes.Ldsfld, faults);
+        il.Emit(OpCodes.Ldc_I4_1);
+        il.Emit(OpCodes.Add);
+        il.Emit(OpCodes.Stsfld, faults);
+        il.EndExceptionBlock();
+        il.Emit(OpCodes.Ldloc, result);
+        il.Emit(OpCodes.Ret);
+
+        var patch = type.DefineMethod("Prefix", MethodAttributes.Public | MethodAttributes.Static, typeof(void), Type.EmptyTypes);
+        var patchIL = patch.GetILGenerator();
+        patchIL.Emit(OpCodes.Ldsfld, prefixes);
+        patchIL.Emit(OpCodes.Ldc_I4_1);
+        patchIL.Emit(OpCodes.Add);
+        patchIL.Emit(OpCodes.Stsfld, prefixes);
+        patchIL.Emit(OpCodes.Ret);
+        type.CreateType();
+        using var stream = new System.IO.MemoryStream();
+        assembly.Save(stream);
+        Type targetType = Assembly.Load(stream.ToArray()).GetType("Target")!;
+        FieldInfo faultCalls = targetType.GetField("FaultCalls")!;
+        FieldInfo prefixCalls = targetType.GetField("PrefixCalls")!;
+        var invoke = (Func<bool, int>)targetType.GetMethod("Value")!.CreateDelegate(typeof(Func<bool, int>));
+        Assert.That(invoke(false), Is.EqualTo(5));
+        Assert.That(faultCalls.GetValue(null), Is.EqualTo(0));
+        Assert.Throws<InvalidOperationException>(() => invoke(true));
+        Assert.That(faultCalls.GetValue(null), Is.EqualTo(1));
+        faultCalls.SetValue(null, 0);
+
+        PatchHandle handle = Patcher.Patch(Patch.Prefix.Of(targetType.GetMethod("Value")!).With(targetType.GetMethod("Prefix")!));
+        try
+        {
+            Assert.That(invoke(false), Is.EqualTo(5));
+            Assert.That(faultCalls.GetValue(null), Is.EqualTo(0));
+            Assert.That(prefixCalls.GetValue(null), Is.EqualTo(1));
+            Assert.Throws<InvalidOperationException>(() => invoke(true));
+            Assert.That(faultCalls.GetValue(null), Is.EqualTo(1));
+            Assert.That(prefixCalls.GetValue(null), Is.EqualTo(2));
+        }
+        finally
+        {
+            Patcher.Unpatch(handle);
+        }
+        Assert.That(invoke(false), Is.EqualTo(5));
+        Assert.That(prefixCalls.GetValue(null), Is.EqualTo(2));
+        Assert.Throws<InvalidOperationException>(() => invoke(true));
+        Assert.That(faultCalls.GetValue(null), Is.EqualTo(2));
+        Assert.That(prefixCalls.GetValue(null), Is.EqualTo(2));
+    }
+
     [Test]
     public void RoundTrip_PreservesTypedLocalsSwitchesAndMetadataOperands()
     {

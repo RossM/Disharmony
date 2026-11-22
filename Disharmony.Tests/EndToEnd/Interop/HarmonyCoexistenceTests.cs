@@ -5,6 +5,30 @@ public static class HarmonyCoexistencePatches
     public static int ObservedResult;
     public static int ObservedArgument;
 
+    public static IEnumerable<CodeInstruction> HarmonyTranspiler_IntroducedLocals_PreserveInnerPatchAcrossRebuilds_Transpiler(
+        IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+    {
+        LocalBuilder text = generator.DeclareLocal(typeof(string));
+        MethodInfo original = typeof(HarmonyCoexistenceTargets).GetMethod(nameof(HarmonyCoexistenceTargets.OriginalValue))!;
+        MethodInfo parse = typeof(int).GetMethod(nameof(int.Parse), [typeof(string)])!;
+        foreach (CodeInstruction instruction in instructions)
+        {
+            if (instruction.Calls(original))
+            {
+                yield return new CodeInstruction(OpCodes.Ldstr, "37")
+                    .WithLabels(instruction.labels.ToArray()).WithBlocks(instruction.blocks.ToArray());
+                yield return new CodeInstruction(OpCodes.Stloc, text);
+                yield return new CodeInstruction(OpCodes.Ldloc, text);
+                yield return new CodeInstruction(OpCodes.Call, parse);
+            }
+            else
+                yield return instruction;
+        }
+    }
+
+    public static void HarmonyTranspiler_IntroducedLocals_PreserveInnerPatchAcrossRebuilds_Prefix(int value) =>
+        ObservedArgument = value;
+
     public static void HarmonyFirst_PrefixPostfix_UseBackendNestingOrder_HarmonyPrefix() =>
         HarmonyCoexistenceTargets.Events.Add("harmony-prefix");
 
@@ -307,6 +331,53 @@ public sealed class HarmonyCoexistenceTests : PatchTestBase
                 "harmony-postfix",
             ];
         Assert.That(HarmonyCoexistenceTargets.Events, Is.EqualTo(expectedEvents));
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void HarmonyTranspiler_IntroducedLocals_PreserveInnerPatchAcrossRebuilds(bool disharmonyFirst)
+    {
+        MethodInfo target = typeof(HarmonyCoexistenceTargets).GetMethod(nameof(HarmonyCoexistenceTargets.TranspilerLocalsTarget))!;
+        MethodInfo inner = typeof(HarmonyCoexistenceTargets).GetMethod(nameof(HarmonyCoexistenceTargets.Inner))!;
+        MethodInfo transpiler = typeof(HarmonyCoexistencePatches).GetMethod(nameof(HarmonyCoexistencePatches
+            .HarmonyTranspiler_IntroducedLocals_PreserveInnerPatchAcrossRebuilds_Transpiler))!;
+        MethodInfo prefix = typeof(HarmonyCoexistencePatches).GetMethod(nameof(HarmonyCoexistencePatches
+            .HarmonyTranspiler_IntroducedLocals_PreserveInnerPatchAcrossRebuilds_Prefix))!;
+        PatchHandle handle;
+        if (disharmonyFirst)
+        {
+            handle = Patcher.Patch(Patch.Prefix.Inner(inner).With(prefix).Of(target));
+            harmony.Patch(target, transpiler: new HarmonyMethod(transpiler));
+        }
+        else
+        {
+            harmony.Patch(target, transpiler: new HarmonyMethod(transpiler));
+            handle = Patcher.Patch(Patch.Prefix.Inner(inner).With(prefix).Of(target));
+        }
+
+        HarmonyCoexistencePatches.ObservedArgument = 0;
+        Assert.That(HarmonyCoexistenceTargets.TranspilerLocalsTarget(false), Is.EqualTo(37));
+        Assert.That(HarmonyCoexistencePatches.ObservedArgument, Is.EqualTo(37));
+        Assert.That(HarmonyCoexistenceTargets.Events, Is.EqualTo(new[] { "finally" }));
+        HarmonyCoexistencePatches.ObservedArgument = 0;
+        Assert.Throws<InvalidOperationException>(() => HarmonyCoexistenceTargets.TranspilerLocalsTarget(true));
+        Assert.That(HarmonyCoexistencePatches.ObservedArgument, Is.Zero);
+        Assert.That(HarmonyCoexistenceTargets.Events, Is.EqualTo(new[] { "finally", "finally" }));
+
+        harmony.Unpatch(target, HarmonyPatchType.Transpiler, HarmonyId);
+        HarmonyCoexistencePatches.ObservedArgument = 0;
+        Assert.That(HarmonyCoexistenceTargets.TranspilerLocalsTarget(false), Is.EqualTo(1));
+        Assert.That(HarmonyCoexistencePatches.ObservedArgument, Is.EqualTo(1));
+
+        harmony.Patch(target, transpiler: new HarmonyMethod(transpiler));
+        HarmonyCoexistencePatches.ObservedArgument = 0;
+        Assert.That(HarmonyCoexistenceTargets.TranspilerLocalsTarget(false), Is.EqualTo(37));
+        Assert.That(HarmonyCoexistencePatches.ObservedArgument, Is.EqualTo(37));
+
+        Patcher.Unpatch(handle);
+        HarmonyCoexistencePatches.ObservedArgument = 0;
+        Assert.That(HarmonyCoexistenceTargets.TranspilerLocalsTarget(false), Is.EqualTo(37));
+        Assert.That(HarmonyCoexistencePatches.ObservedArgument, Is.Zero);
     }
 
     [Test]

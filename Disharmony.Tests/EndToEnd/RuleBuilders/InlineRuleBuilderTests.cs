@@ -108,6 +108,25 @@ public sealed class InlineRuleBuilderTests : PatchTestBase
         Assert.That(InlineRuleBuilderPatches.SwitchObserved, Is.EqualTo(99));
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public void Prefix_ExceptionFilter_PreservesHandlersAndCallFallback(bool inline)
+    {
+        MethodInfo patch = typeof(InlineRuleBuilderPatches)
+            .GetMethod(nameof(InlineRuleBuilderPatches.Prefix_ExceptionFilter_PreservesHandlersAndCallFallback))!;
+        MethodInfo target = typeof(StaticMethodTargets).GetMethod(nameof(StaticMethodTargets.IntIdentity))!;
+        InlineRuleBuilderPatches.FilterThrowSite = null;
+        Assert.That(StaticMethodTargets.IntIdentity(-7), Is.EqualTo(-7));
+        Patcher.Patch(Patch.Prefix.With(patch).Options(inline ? PatchOptions.Inline : PatchOptions.Default).Of(target));
+
+        Assert.That(StaticMethodTargets.IntIdentity(-7), Is.EqualTo(41));
+        // Exception regions prevent inlining. The exception must still originate in the patch method.
+        Assert.That(InlineRuleBuilderPatches.FilterThrowSite, Is.EqualTo(patch));
+        InlineRuleBuilderPatches.FilterThrowSite = null;
+        Assert.That(StaticMethodTargets.IntIdentity(7), Is.EqualTo(42));
+        Assert.That(InlineRuleBuilderPatches.FilterThrowSite, Is.EqualTo(patch));
+    }
+
     [Test]
     public void Prefix_ExceptionHandling_TryCatch_WithoutCarriedStack()
     {

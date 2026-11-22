@@ -2,6 +2,27 @@ namespace Disharmony.Tests;
 
 public static class InlineRuleBuilderPatches
 {
+    public static MethodBase? FilterThrowSite;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void Prefix_ExceptionFilter_PreservesHandlersAndCallFallback(ref int value)
+    {
+        try
+        {
+            throw new InvalidOperationException(value < 0 ? "match" : "other");
+        }
+        catch (InvalidOperationException exception) when (exception.Message == "match")
+        {
+            FilterThrowSite = exception.TargetSite;
+            value = 41;
+        }
+        catch (InvalidOperationException exception)
+        {
+            FilterThrowSite = exception.TargetSite;
+            value = 42;
+        }
+    }
+
     public static int ArgumentLoaded;
     public static int ArgumentAddressed;
     public static int ArgumentStored;
