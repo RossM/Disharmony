@@ -411,7 +411,7 @@ internal sealed class GetOutputTypeTests
             [], ClassType.MakeByRefType(), Operand: StaticClassField),
 
         // Varpush opcodes use method/signature metadata. Both void and value cases are explicit because Push0 handling is
-        // already tested separately in OpCodeValuesTests.
+        // already tested separately in ILOpCodeTests.
         new("Call_ReturnVoid", OpCodes.Call, [], typeof(void), Operand: ReturnVoid),
         new("Call_ReturnByte", OpCodes.Call, [], typeof(int), Operand: ReturnByte),
         new("Call_ReturnInt", OpCodes.Call, [], typeof(int), Operand: ReturnInt),

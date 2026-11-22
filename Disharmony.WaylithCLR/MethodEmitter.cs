@@ -218,7 +218,7 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
         if (opcode.OperandType is OperandType.InlineBrTarget or OperandType.ShortInlineBrTarget)
         {
             // Rules can expand the distance to a branch target beyond a short branch's range.
-            il.Branch((ILOpCode)OpCodeData.GetCanonicalOpcode(opcode), GetTarget((Label)operand!).handle);
+            il.Branch(OpCodeData.GetCanonicalOpcode(opcode), GetTarget((Label)operand!).handle);
             return;
         }
 
@@ -241,7 +241,7 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
             return;
         }
 
-        il.OpCode((ILOpCode)(ushort)opcode.Value);
+        il.OpCode(unchecked((ILOpCode)opcode.Value));
         if (opcode.OperandType == OperandType.InlineNone)
             return;
 

@@ -355,11 +355,11 @@ internal class CreateControlFlowGraph : Pass
     {
         Branch branch = OpCodeData.GetCanonicalOpcode(instruction) switch
         {
-            OpCodeValues.Br when instruction.operand is Label label => new UnconditionalBranch(BlockLabels[label]),
-            OpCodeValues.Leave when instruction.operand is Label label => new Leave(BlockLabels[label]),
-            OpCodeValues.Throw => new Throw(popped[0]),
-            OpCodeValues.Rethrow => new Rethrow(),
-            OpCodeValues.Jmp => new Jump(new ILOp(il, popped, typeof(void))),
+            ILOpCode.Br when instruction.operand is Label label => new UnconditionalBranch(BlockLabels[label]),
+            ILOpCode.Leave when instruction.operand is Label label => new Leave(BlockLabels[label]),
+            ILOpCode.Throw => new Throw(popped[0]),
+            ILOpCode.Rethrow => new Rethrow(),
+            ILOpCode.Jmp => new Jump(new ILOp(il, popped, typeof(void))),
             _ => instruction.opcode.FlowControl switch
             {
                 FlowControl.Cond_Branch when instruction.operand is Label label =>

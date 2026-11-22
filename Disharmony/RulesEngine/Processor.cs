@@ -335,14 +335,14 @@ internal class Processor(
         var canonicalPattern = OpCodeData.GetCanonicalOpcode(patternInst);
 
         if (canonicalInst != canonicalPattern &&
-            !(canonicalInst == OpCodeValues.Callvirt && canonicalPattern == OpCodeValues.Call))
+            !(canonicalInst == ILOpCode.Callvirt && canonicalPattern == ILOpCode.Call))
             return false;
 
         switch (canonicalPattern)
         {
-            case OpCodeValues.Stloc:
-            case OpCodeValues.Ldloc:
-            case OpCodeValues.Ldloca:
+            case ILOpCode.Stloc:
+            case ILOpCode.Ldloc:
+            case ILOpCode.Ldloca:
             {
                 int localIndex = LocalTracker.IndexFrom(patternInst);
                 var targetLocal = LocalTracker.From(inst);
@@ -354,10 +354,10 @@ internal class Processor(
                 return true;
             }
 
-            case OpCodeValues.Starg:
-            case OpCodeValues.Ldarg:
-            case OpCodeValues.Ldarga:
-            case OpCodeValues.Ldc_I4:
+            case ILOpCode.Starg:
+            case ILOpCode.Ldarg:
+            case ILOpCode.Ldarga:
+            case ILOpCode.Ldc_i4:
                 return OpCodeData.GetIntOperand(inst) == OpCodeData.GetIntOperand(patternInst);
 
             case var _ when patternInst.operand is Label label:
@@ -419,9 +419,9 @@ internal class Processor(
     {
         CodeInstruction inst = OpCodeData.GetCanonicalOpcode(replaceInst) switch
         {
-            OpCodeValues.Stloc => GetReplacementLocal(replaceInst, match).Store(),
-            OpCodeValues.Ldloca => GetReplacementLocal(replaceInst, match).Load(true),
-            OpCodeValues.Ldloc => GetReplacementLocal(replaceInst, match).Load(),
+            ILOpCode.Stloc => GetReplacementLocal(replaceInst, match).Store(),
+            ILOpCode.Ldloca => GetReplacementLocal(replaceInst, match).Load(true),
+            ILOpCode.Ldloc => GetReplacementLocal(replaceInst, match).Load(),
             _ when replaceInst.operand is Label label => new(replaceInst.opcode, GetReplacementLabel(label, match)),
             _ when replaceInst.operand is Label[] labels => new(replaceInst.opcode,
                 labels.Select(label2 => GetReplacementLabel(label2, match)).ToArray()),

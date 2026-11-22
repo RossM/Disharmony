@@ -57,7 +57,7 @@ internal static class CodeInstructionExtensions
                 StackBehaviour.Varpop when inst.operand is IInlineSignature signature => signature.ParameterCount + (signature.HasImplicitThis ? 2 : 1),
                 StackBehaviour.Varpop => OpCodeData.GetCanonicalOpcode(inst) switch
                 {
-                    OpCodeValues.Ret => methodReturnType == typeof(void) ? 0 : 1,
+                    ILOpCode.Ret => methodReturnType == typeof(void) ? 0 : 1,
                     _ => throw new ArgumentOutOfRangeException(),
                 },
                 _ => throw new ArgumentOutOfRangeException(),

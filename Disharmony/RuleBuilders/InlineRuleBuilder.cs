@@ -57,9 +57,9 @@ internal class InlineRuleBuilder : RuleBuilder
 
         foreach (var inst in instructions)
         {
-            ushort canonicalOpcode = OpCodeData.GetCanonicalOpcode(inst);
+            ILOpCode canonicalOpcode = OpCodeData.GetCanonicalOpcode(inst);
 
-            if (canonicalOpcode == OpCodeValues.Ret && returnLocal != null)
+            if (canonicalOpcode == ILOpCode.Ret && returnLocal != null)
             {
                 output.Add(returnLocal.Store().WithLabels(inst.labels.Select(GetLabel))
                     .WithBlocks(inst.blocks.Where(b => b.blockType != ExceptionBlockType.EndExceptionBlock)));
@@ -71,13 +71,13 @@ internal class InlineRuleBuilder : RuleBuilder
             CodeInstruction translated = canonicalOpcode switch
             {
                 // @formatter:off
-                OpCodeValues.Ldarg    => GetArgument(inst).Load(),
-                OpCodeValues.Ldarga   => GetArgument(inst).Load(true),
-                OpCodeValues.Starg    => GetArgument(inst).Store(),
-                OpCodeValues.Ldloc    => GetLocal(inst).Load(),
-                OpCodeValues.Ldloca   => GetLocal(inst).Load(true),
-                OpCodeValues.Stloc    => GetLocal(inst).Store(),
-                OpCodeValues.Ret      => new(OpCodes.Br, returnLabel),
+                ILOpCode.Ldarg    => GetArgument(inst).Load(),
+                ILOpCode.Ldarga   => GetArgument(inst).Load(true),
+                ILOpCode.Starg    => GetArgument(inst).Store(),
+                ILOpCode.Ldloc    => GetLocal(inst).Load(),
+                ILOpCode.Ldloca   => GetLocal(inst).Load(true),
+                ILOpCode.Stloc    => GetLocal(inst).Store(),
+                ILOpCode.Ret      => new(OpCodes.Br, returnLabel),
                 _ when inst.operand is Label label => new(inst.opcode, GetLabel(label)),
                 _ when inst.operand is Label[] labels => new(inst.opcode, labels.Select(GetLabel).ToArray()),
                 _ => inst,

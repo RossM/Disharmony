@@ -117,19 +117,19 @@ internal static class OpcodeUtilities
 
         return data.canonical switch
         {
-            OpCodeValues.Call or OpCodeValues.Callvirt when operand is MethodInfo method => method.ReturnType,
-            OpCodeValues.Call when operand is ConstructorInfo => typeof(void),
-            OpCodeValues.Calli when operand is IInlineSignature signature => signature.ReturnType,
-            OpCodeValues.Ldelem_Ref when inputTypes[0].IsArray => inputTypes[0].GetElementType()!,
-            OpCodeValues.Ldelem_Ref when inputTypes[0] == TypeLattice.Unknown || inputTypes[0] == TypeLattice.Null => TypeLattice.Unknown,
-            OpCodeValues.Ldelem_Ref => typeof(object),
-            OpCodeValues.Ldfld or OpCodeValues.Ldsfld when operand is FieldInfo field => field.FieldType,
-            OpCodeValues.Ldflda or OpCodeValues.Ldsflda when operand is FieldInfo field => field.FieldType.MakeByRefType(),
-            OpCodeValues.Ldtoken when operand is FieldInfo => typeof(RuntimeFieldHandle),
-            OpCodeValues.Ldtoken when operand is MethodBase => typeof(RuntimeMethodHandle),
-            OpCodeValues.Ldtoken when operand is Type => typeof(RuntimeTypeHandle),
-            OpCodeValues.Newarr when operand is Type type => type.MakeArrayType(),
-            OpCodeValues.Newobj when operand is ConstructorInfo constructor => constructor.DeclaringType!,
+            ILOpCode.Call or ILOpCode.Callvirt when operand is MethodInfo method => method.ReturnType,
+            ILOpCode.Call when operand is ConstructorInfo => typeof(void),
+            ILOpCode.Calli when operand is IInlineSignature signature => signature.ReturnType,
+            ILOpCode.Ldelem_ref when inputTypes[0].IsArray => inputTypes[0].GetElementType()!,
+            ILOpCode.Ldelem_ref when inputTypes[0] == TypeLattice.Unknown || inputTypes[0] == TypeLattice.Null => TypeLattice.Unknown,
+            ILOpCode.Ldelem_ref => typeof(object),
+            ILOpCode.Ldfld or ILOpCode.Ldsfld when operand is FieldInfo field => field.FieldType,
+            ILOpCode.Ldflda or ILOpCode.Ldsflda when operand is FieldInfo field => field.FieldType.MakeByRefType(),
+            ILOpCode.Ldtoken when operand is FieldInfo => typeof(RuntimeFieldHandle),
+            ILOpCode.Ldtoken when operand is MethodBase => typeof(RuntimeMethodHandle),
+            ILOpCode.Ldtoken when operand is Type => typeof(RuntimeTypeHandle),
+            ILOpCode.Newarr when operand is Type type => type.MakeArrayType(),
+            ILOpCode.Newobj when operand is ConstructorInfo constructor => constructor.DeclaringType!,
             _ => throw new NotImplementedException($"{opcode} ({operand?.GetType()}) is not implemented"),
         };
     }

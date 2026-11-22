@@ -22,10 +22,10 @@ internal class EscapingVariablesVisitor(ControlFlowGraph cfg) : RecursiveVisitor
 
         switch (OpCodeData.GetCanonicalOpcode(op.IL))
         {
-            case OpCodeValues.Ldloc: CheckEscape(cfg.GetLocal(op.IL)); break;
-            case OpCodeValues.Ldloca: EscapingVariables.Add(cfg.GetLocal(op.IL)); break;
-            case OpCodeValues.Ldarg: CheckEscape(cfg.GetArgument(op.IL)); break;
-            case OpCodeValues.Ldarga: EscapingVariables.Add(cfg.GetArgument(op.IL)); break;
+            case ILOpCode.Ldloc: CheckEscape(cfg.GetLocal(op.IL)); break;
+            case ILOpCode.Ldloca: EscapingVariables.Add(cfg.GetLocal(op.IL)); break;
+            case ILOpCode.Ldarg: CheckEscape(cfg.GetArgument(op.IL)); break;
+            case ILOpCode.Ldarga: EscapingVariables.Add(cfg.GetArgument(op.IL)); break;
         }
     }
 
@@ -60,10 +60,10 @@ internal class PromoteVariablesVisitor(ControlFlowGraph cfg, HashSet<Variable> e
     {
         return OpCodeData.GetCanonicalOpcode(op.IL) switch
         {
-            OpCodeValues.Ldarg => VisitLoad(op, cfg.GetArgument(op.IL)),
-            OpCodeValues.Ldloc => VisitLoad(op, cfg.GetLocal(op.IL)),
-            OpCodeValues.Starg => VisitStore(op, cfg.GetArgument(op.IL)),
-            OpCodeValues.Stloc => VisitStore(op, cfg.GetLocal(op.IL)),
+            ILOpCode.Ldarg => VisitLoad(op, cfg.GetArgument(op.IL)),
+            ILOpCode.Ldloc => VisitLoad(op, cfg.GetLocal(op.IL)),
+            ILOpCode.Starg => VisitStore(op, cfg.GetArgument(op.IL)),
+            ILOpCode.Stloc => VisitStore(op, cfg.GetLocal(op.IL)),
             _ => base.Visit(op)
         };
     }

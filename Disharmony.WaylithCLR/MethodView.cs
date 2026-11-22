@@ -91,14 +91,14 @@ internal class MethodView
 
                 // Normalize accesses to locals to the forms that take a LocalBuilder operand, so that types
                 // are preserved. This means replacing macros such as ldloc.0 with non-macro forms.
-                ushort canonical = OpCodeData.GetCanonicalOpcode(opCode);
-                if (canonical is OpCodeValues.Ldloc or OpCodeValues.Ldloca or OpCodeValues.Stloc)
+                ILOpCode canonical = OpCodeData.GetCanonicalOpcode(opCode);
+                if (canonical is ILOpCode.Ldloc or ILOpCode.Ldloca or ILOpCode.Stloc)
                 {
                     int index = OpCodeData.GetIntOperand(opCode, operand);
                     if ((uint)index >= (uint)view.originalLocalCount)
                         throw new BadImageFormatException($"Invalid local #{index} at IL_{offset:X4}.");
                     operand = view.allocator.Locals[index];
-                    opCode = opCodes[canonical];
+                    opCode = opCodes[(ushort)canonical];
                 }
 
                 // Create the instruction and add it to the mappings for label and exception block parsing later
