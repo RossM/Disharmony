@@ -79,6 +79,7 @@ internal sealed class SignatureCodec(Func<int, int>? importType = null) : ISigna
                 blob.WriteByte((byte)SignatureTypeCode.Sentinel);
             signature.ParameterTypes[i].WriteTo(blob);
         }
+
         return blob.ToArray();
     }
 
@@ -115,7 +116,11 @@ internal sealed class SignatureCodec(Func<int, int>? importType = null) : ISigna
     public TypeSignature GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind) =>
         NamedType(handle, rawTypeKind);
 
-    public TypeSignature GetTypeFromSpecification(MetadataReader reader, object? context, TypeSpecificationHandle handle, byte rawTypeKind) =>
+    public TypeSignature GetTypeFromSpecification(
+        MetadataReader reader,
+        object? context,
+        TypeSpecificationHandle handle,
+        byte rawTypeKind) =>
         NamedType(handle, rawTypeKind);
 
     public TypeSignature GetPrimitiveType(PrimitiveTypeCode code) => new([(byte)code]);
@@ -150,8 +155,11 @@ internal sealed class SignatureCodec(Func<int, int>? importType = null) : ISigna
         return new TypeSignature(blob.ToArray());
     }
 
-    public TypeSignature GetGenericMethodParameter(object? context, int index) => GenericParameter(SignatureTypeCode.GenericMethodParameter, index);
-    public TypeSignature GetGenericTypeParameter(object? context, int index) => GenericParameter(SignatureTypeCode.GenericTypeParameter, index);
+    public TypeSignature GetGenericMethodParameter(object? context, int index) =>
+        GenericParameter(SignatureTypeCode.GenericMethodParameter, index);
+
+    public TypeSignature GetGenericTypeParameter(object? context, int index) =>
+        GenericParameter(SignatureTypeCode.GenericTypeParameter, index);
 
     private static TypeSignature GenericParameter(SignatureTypeCode code, int index)
     {

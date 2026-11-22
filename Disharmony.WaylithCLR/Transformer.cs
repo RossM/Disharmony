@@ -1,11 +1,10 @@
-﻿using Disharmony.RulesEngine;
-using Disharmony.Utilities;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Threading;
+using Disharmony.RulesEngine;
 using HarmonyLib;
 using WaylithClr;
 
@@ -101,6 +100,7 @@ internal class Transformer() : MethodBodyTransformer(100)
                 foreach (var block in instruction.blocks)
                     FileLog.LogILBlockEnd(offset, block);
             }
+
             FileLog.LogBuffered("");
             FileLog.FlushBuffer();
         }

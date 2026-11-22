@@ -1,4 +1,3 @@
-using HarmonyLib;
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
@@ -8,14 +7,66 @@ using System.Reflection.Emit;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
+using HarmonyLib;
 using WaylithClr;
 
 namespace Disharmony.WaylithCLR;
 
 internal class MethodView
 {
-    public List<CodeInstruction> CodeInstructions { get; set; } = [];
-    public ILGenerator Generator { get; }
+    private sealed class InlineSignature(MethodBase method, byte[] bytes) : IInlineSignature
+    {
+        public int ParameterCount => signature.ParameterTypes.Length;
+        public bool HasThis => signature.Header.IsInstance;
+        public Type ReturnType => signature.ReturnType.Resolve(method);
+        private readonly MethodSignature<SignatureCodec.TypeSignature> signature = new SignatureCodec().ReadMethod(bytes);
+
+        public byte[] Import(MethodBodyBuilder builder)
+        {
+            int ImportType(int token) => builder.GetTokenFor((Type)MethodBodyUpdater.ResolveToken(method, token)!);
+            return SignatureCodec.WriteMethod(new SignatureCodec(ImportType).ReadMethod(bytes));
+        }
+
+        public void Emit(ILGenerator generator)
+        {
+            Type[] parameters = signature.ParameterTypes.Select(type => type.Resolve(method)).ToArray();
+            if (signature.Header.CallingConvention is SignatureCallingConvention.Default or SignatureCallingConvention.VarArgs)
+            {
+                CallingConventions convention = signature.Header.CallingConvention == SignatureCallingConvention.VarArgs
+                    ? CallingConventions.VarArgs
+                    : CallingConventions.Standard;
+                if (HasThis)
+                    convention |= CallingConventions.HasThis;
+                if (signature.Header.HasExplicitThis)
+                    convention |= CallingConventions.ExplicitThis;
+                generator.EmitCalli(OpCodes.Calli, convention, ReturnType,
+                    parameters[..signature.RequiredParameterCount],
+                    signature.RequiredParameterCount < parameters.Length ? parameters[signature.RequiredParameterCount..] : null);
+            }
+            else
+            {
+                CallingConvention convention = signature.Header.CallingConvention switch
+                {
+                    SignatureCallingConvention.CDecl => CallingConvention.Cdecl,
+                    SignatureCallingConvention.StdCall => CallingConvention.StdCall,
+                    SignatureCallingConvention.ThisCall => CallingConvention.ThisCall,
+                    SignatureCallingConvention.FastCall => CallingConvention.FastCall,
+                    SignatureCallingConvention.Unmanaged => CallingConvention.Winapi,
+                    _ => throw new NotSupportedException($"Unsupported calli convention {signature.Header.CallingConvention}."),
+                };
+                generator.EmitCalli(OpCodes.Calli, convention, ReturnType, parameters);
+            }
+        }
+    }
+
+    public IReadOnlyList<(int offset, CodeInstruction instruction)> EmittedInstructions => emittedInstructions;
+    public IReadOnlyList<Type> EmittedLocalTypes => emittedLocalTypes;
+
+    // Mapping from numerical opcode values to OpCodes
+    private static readonly Dictionary<ushort, OpCode> opCodes = typeof(OpCodes)
+        .GetFields(BindingFlags.Public | BindingFlags.Static)
+        .Select(field => (OpCode)field.GetValue(null)!)
+        .ToDictionary(opCode => unchecked((ushort)opCode.Value));
 
     private readonly TypeBuilder typeBuilder;
     private readonly MethodBuilder methodBuilder;
@@ -25,17 +76,8 @@ internal class MethodView
     // A mapping from the byte position of a Calli argument to the relevant InlineSignature
     private readonly Dictionary<int, InlineSignature> callSites = [];
 
-    // Mapping from numerical opcode values to OpCodes
-    private static readonly Dictionary<ushort, OpCode> opCodes = typeof(OpCodes)
-        .GetFields(BindingFlags.Public | BindingFlags.Static)
-        .Select(field => (OpCode)field.GetValue(null)!)
-        .ToDictionary(opCode => unchecked((ushort)opCode.Value));
-
     private readonly List<(int offset, CodeInstruction instruction)> emittedInstructions = [];
     private readonly List<Type> emittedLocalTypes = [];
-
-    public IReadOnlyList<(int offset, CodeInstruction instruction)> EmittedInstructions => emittedInstructions;
-    public IReadOnlyList<Type> EmittedLocalTypes => emittedLocalTypes;
 
     private readonly MethodBase method;
 
@@ -45,7 +87,8 @@ internal class MethodView
 
         // In order to use System.Reflection.Emit to handle the work of mapping IL to bytes, we need a MethodBuilder. Define it
         // inside a DynamicAssembly so it can be garbage collected after we're done.
-        var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Disharmony.MethodView"), AssemblyBuilderAccess.RunAndCollect);
+        var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Disharmony.MethodView"),
+            AssemblyBuilderAccess.RunAndCollect);
         typeBuilder = assembly.DefineDynamicModule("Methods").DefineType("Replacement");
         Type[] parameters = method.GetParameters().Select(parameter => parameter.ParameterType).ToArray();
         if (!method.IsStatic)
@@ -69,9 +112,13 @@ internal class MethodView
         var signatureCodec = new SignatureCodec();
         originalLocals =
         [
-            .. signatureCodec.ReadLocals(localSignature).Select(signature => Generator.DeclareLocal(signature.Resolve(method), signature.Pinned)),
+            .. signatureCodec.ReadLocals(localSignature)
+                .Select(signature => Generator.DeclareLocal(signature.Resolve(method), signature.Pinned)),
         ];
     }
+
+    public List<CodeInstruction> CodeInstructions { get; set; } = [];
+    public ILGenerator Generator { get; }
 
     public static unsafe MethodView Create(MethodBase method, in MethodBodyView body, ReadOnlySpan<MethodBodyClause> clauses)
     {
@@ -130,12 +177,10 @@ internal class MethodView
                 case OperandType.InlineBrTarget or OperandType.ShortInlineBrTarget:
                     instruction.operand = GetLabel((int)instruction.operand);
                     break;
-                case OperandType.InlineSwitch:
-                    instruction.operand = ((int[])instruction.operand).Select(GetLabel).ToArray();
-                    break;
+                case OperandType.InlineSwitch: instruction.operand = ((int[])instruction.operand).Select(GetLabel).ToArray(); break;
             }
         }
-        
+
         // Construct the exception blocks. The incoming exception information has one entry per handler, with 'try' blocks that
         // have multiple 'catch' and/or 'finally' blocks appearing multiple times. ILGenerator expects only a single exception
         // block with multiple handlers, so we have to consolidate the 'try's. The CLR guarantees that the exception blocks
@@ -161,20 +206,19 @@ internal class MethodView
                             (Type)MethodBodyUpdater.ResolveToken(method, clause.ClassTokenOrFilterOffset)!));
                         break;
                     case ExceptionHandlingClauseOptions.Filter:
-                        instructionStartingAt[clause.ClassTokenOrFilterOffset].blocks.Add(new ExceptionBlock(ExceptionBlockType.BeginExceptFilterBlock));
+                        instructionStartingAt[clause.ClassTokenOrFilterOffset].blocks
+                            .Add(new ExceptionBlock(ExceptionBlockType.BeginExceptFilterBlock));
                         blocks.Add(new ExceptionBlock(ExceptionBlockType.BeginCatchBlock));
                         break;
                     case ExceptionHandlingClauseOptions.Finally:
                         blocks.Add(new ExceptionBlock(ExceptionBlockType.BeginFinallyBlock));
                         break;
-                    case ExceptionHandlingClauseOptions.Fault:
-                        blocks.Add(new ExceptionBlock(ExceptionBlockType.BeginFaultBlock));
-                        break;
-                    default:
-                        throw new BadImageFormatException($"Invalid exception clause flags {clause.Flags}.");
+                    case ExceptionHandlingClauseOptions.Fault: blocks.Add(new ExceptionBlock(ExceptionBlockType.BeginFaultBlock)); break;
+                    default: throw new BadImageFormatException($"Invalid exception clause flags {clause.Flags}.");
                 }
             }
         }
+
         return view;
 
         // Get the label for an offset, or create one if it doesn't exist
@@ -192,7 +236,7 @@ internal class MethodView
     }
 
     /// <summary>
-    /// Reads the byte(s) of an opcode from the reader and returns the corresponding OpCode
+    ///     Reads the byte(s) of an opcode from the reader and returns the corresponding OpCode
     /// </summary>
     private static OpCode ReadOpCode(ref BlobReader reader)
     {
@@ -205,7 +249,7 @@ internal class MethodView
     }
 
     /// <summary>
-    /// Reads the byte(s) of an operand from the reader and returns the corresponding operand object
+    ///     Reads the byte(s) of an operand from the reader and returns the corresponding operand object
     /// </summary>
     private static object? ReadOperand(ref BlobReader reader, OpCode opCode, MethodBase method)
     {
@@ -242,10 +286,10 @@ internal class MethodView
             }
             case OperandType.InlineSig:
                 return new InlineSignature(method, (byte[])MethodBodyUpdater.ResolveToken(method, reader.ReadInt32())!);
-            case OperandType.InlineField or OperandType.InlineMethod or OperandType.InlineType or OperandType.InlineTok or OperandType.InlineString:
+            case OperandType.InlineField or OperandType.InlineMethod or OperandType.InlineType or OperandType.InlineTok or
+                 OperandType.InlineString:
                 return MethodBodyUpdater.ResolveToken(method, reader.ReadInt32());
-            default:
-                throw new BadImageFormatException($"Unsupported operand encoding {opCode.OperandType}.");
+            default: throw new BadImageFormatException($"Unsupported operand encoding {opCode.OperandType}.");
         }
     }
 
@@ -259,7 +303,7 @@ internal class MethodView
         byte[] il = body.GetILAsByteArray()!;
 
         int ImportType(int token) => builder.GetTokenFor(emittedMethod.Module.ResolveType(token));
-        
+
         // Remap the emitted tokens to those expected by MethodBodyBuilder.
         fixed (byte* bytes = il)
         {
@@ -286,13 +330,15 @@ internal class MethodView
                         break;
                     default: continue;
                 }
+
                 BinaryPrimitives.WriteInt32LittleEndian(il.AsSpan(operandOffset, sizeof(int)), token);
             }
         }
 
         // We don't track the emitted locals explicitly so we have to parse the locals of the emitted method
-        var emittedLocals = body.LocalSignatureMetadataToken == 0 ? [] :
-            new SignatureCodec(ImportType).ReadLocals(emittedMethod.Module.ResolveSignature(body.LocalSignatureMetadataToken));
+        var emittedLocals = body.LocalSignatureMetadataToken == 0
+            ? []
+            : new SignatureCodec(ImportType).ReadLocals(emittedMethod.Module.ResolveSignature(body.LocalSignatureMetadataToken));
 
         emittedLocalTypes.AddRange(emittedLocals.Select(local => local.Resolve(method)));
 
@@ -305,7 +351,6 @@ internal class MethodView
         // modifiers and explicit array bounds. Copy the incoming local entries verbatim
         // and append the signatures of locals added during rewriting.
         if (localSignature.Length > 0)
-        {
             fixed (byte* bytes = localSignature)
             {
                 var reader = new BlobReader(bytes, localSignature.Length);
@@ -313,7 +358,7 @@ internal class MethodView
                 reader.ReadCompressedInteger();
                 locals.WriteBytes(localSignature, reader.Offset, reader.RemainingBytes);
             }
-        }
+
         foreach (var local in emittedLocals.Skip(originalLocals.Length))
             local.WriteTo(locals);
 
@@ -322,14 +367,21 @@ internal class MethodView
         var encoder = new MethodBodyStreamEncoder(output);
         var encodedBody = encoder.AddMethodBody(il.Length, body.MaxStackSize, body.ExceptionHandlingClauses.Count,
             hasSmallExceptionRegions: false,
-            localVariablesSignature: emittedLocals.Length == 0 ? default : (StandaloneSignatureHandle)MetadataTokens.Handle(builder.GetTokenForSignature(locals.ToArray())),
+            localVariablesSignature: emittedLocals.Length == 0
+                ? default
+                : (StandaloneSignatureHandle)MetadataTokens.Handle(builder.GetTokenForSignature(locals.ToArray())),
             attributes: body.InitLocals ? MethodBodyAttributes.InitLocals : MethodBodyAttributes.None);
         il.CopyTo(encodedBody.Instructions.GetBytes().AsSpan());
         foreach (var clause in body.ExceptionHandlingClauses)
+        {
             encodedBody.ExceptionRegions.Add((ExceptionRegionKind)clause.Flags, clause.TryOffset, clause.TryLength,
                 clause.HandlerOffset, clause.HandlerLength,
-                clause.Flags == ExceptionHandlingClauseOptions.Clause ? MetadataTokens.EntityHandle(builder.GetTokenFor(clause.CatchType!)) : default,
+                clause.Flags == ExceptionHandlingClauseOptions.Clause
+                    ? MetadataTokens.EntityHandle(builder.GetTokenFor(clause.CatchType!))
+                    : default,
                 clause.Flags == ExceptionHandlingClauseOptions.Filter ? clause.FilterOffset : 0);
+        }
+
         builder.Write(output.ToArray());
     }
 
@@ -352,12 +404,15 @@ internal class MethodView
                     case ExceptionBlockType.BeginFaultBlock: Generator.BeginFaultBlock(); break;
                 }
             }
+
             EmitInstruction(instruction);
 
             // I do not know why Harmony chose to do this this way but this is how Harmony does it
             foreach (var block in instruction.blocks)
+            {
                 if (block.blockType == ExceptionBlockType.EndExceptionBlock)
                     Generator.EndExceptionBlock();
+            }
         }
     }
 
@@ -366,7 +421,7 @@ internal class MethodView
         OpCode opCode = instruction.opcode;
         if (opCode.OperandType == OperandType.ShortInlineBrTarget)
             opCode = opCodes[OpCodeData.GetCanonicalOpcode(opCode)];
-        
+
         // A filter has exactly one endfilter, at its lexical end (ECMA-335, III.3.34).
         // BeginCatchBlock(null) emits it when opening the corresponding handler.
         if (opCode == OpCodes.Endfilter)
@@ -384,6 +439,7 @@ internal class MethodView
             Generator.Emit(opCode);
             return;
         }
+
         switch (instruction.operand)
         {
             case LocalBuilder local: Generator.Emit(opCode, local); break;
@@ -408,54 +464,11 @@ internal class MethodView
             case int value when opCode == OpCodes.Ldc_I4_S: Generator.Emit(opCode, checked((sbyte)value)); break;
             case int value when opCode.OperandType == OperandType.ShortInlineI: Generator.Emit(opCode, checked((byte)value)); break;
             case int value when opCode.OperandType == OperandType.ShortInlineVar: Generator.Emit(opCode, checked((byte)value)); break;
-            case int value when opCode.OperandType == OperandType.InlineVar: Generator.Emit(opCode, unchecked((short)checked((ushort)value))); break;
+            case int value when opCode.OperandType == OperandType.InlineVar:
+                Generator.Emit(opCode, unchecked((short)checked((ushort)value)));
+                break;
             case int value: Generator.Emit(opCode, value); break;
             default: throw new NotSupportedException($"Unsupported operand in {instruction}.");
-        }
-    }
-
-    private sealed class InlineSignature(MethodBase method, byte[] bytes) : IInlineSignature
-    {
-        private readonly MethodSignature<SignatureCodec.TypeSignature> signature = new SignatureCodec().ReadMethod(bytes);
-
-        public int ParameterCount => signature.ParameterTypes.Length;
-        public bool HasThis => signature.Header.IsInstance;
-        public Type ReturnType => signature.ReturnType.Resolve(method);
-
-        public byte[] Import(MethodBodyBuilder builder)
-        {
-            int ImportType(int token) => builder.GetTokenFor((Type)MethodBodyUpdater.ResolveToken(method, token)!);
-            return SignatureCodec.WriteMethod(new SignatureCodec(ImportType).ReadMethod(bytes));
-        }
-
-        public void Emit(ILGenerator generator)
-        {
-            Type[] parameters = signature.ParameterTypes.Select(type => type.Resolve(method)).ToArray();
-            if (signature.Header.CallingConvention is SignatureCallingConvention.Default or SignatureCallingConvention.VarArgs)
-            {
-                CallingConventions convention = signature.Header.CallingConvention == SignatureCallingConvention.VarArgs
-                    ? CallingConventions.VarArgs : CallingConventions.Standard;
-                if (HasThis)
-                    convention |= CallingConventions.HasThis;
-                if (signature.Header.HasExplicitThis)
-                    convention |= CallingConventions.ExplicitThis;
-                generator.EmitCalli(OpCodes.Calli, convention, ReturnType,
-                    parameters[..signature.RequiredParameterCount],
-                    signature.RequiredParameterCount < parameters.Length ? parameters[signature.RequiredParameterCount..] : null);
-            }
-            else
-            {
-                CallingConvention convention = signature.Header.CallingConvention switch
-                {
-                    SignatureCallingConvention.CDecl => CallingConvention.Cdecl,
-                    SignatureCallingConvention.StdCall => CallingConvention.StdCall,
-                    SignatureCallingConvention.ThisCall => CallingConvention.ThisCall,
-                    SignatureCallingConvention.FastCall => CallingConvention.FastCall,
-                    SignatureCallingConvention.Unmanaged => CallingConvention.Winapi,
-                    _ => throw new NotSupportedException($"Unsupported calli convention {signature.Header.CallingConvention}.")
-                };
-                generator.EmitCalli(OpCodes.Calli, convention, ReturnType, parameters);
-            }
         }
     }
 }
