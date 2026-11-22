@@ -182,4 +182,9 @@ internal sealed class SignatureCodec(Func<int, int>? importType = null) : ISigna
     {
         return Prefix(SignatureTypeCode.FunctionPointer, new TypeSignature(WriteMethod(signature)));
     }
+
+    public byte[] CopyMethod(byte[] bytes)
+    {
+        return WriteMethod(ReadMethod(bytes));
+    }
 }

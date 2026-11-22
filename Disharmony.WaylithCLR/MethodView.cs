@@ -24,7 +24,7 @@ internal class MethodView
         public byte[] Import(MethodBodyBuilder builder)
         {
             int ImportType(int token) => builder.GetTokenFor((Type)MethodBodyUpdater.ResolveToken(method, token)!);
-            return SignatureCodec.WriteMethod(new SignatureCodec(ImportType).ReadMethod(bytes));
+            return new SignatureCodec(ImportType).CopyMethod(bytes);
         }
 
         public void Emit(ILGenerator generator)
