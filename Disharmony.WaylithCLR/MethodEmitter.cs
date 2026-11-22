@@ -24,12 +24,12 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
         // Normal exits from the try or a catch jump past the entire handler sequence.
         public readonly Label leaveTarget = leaveTarget;
         public Target? tryEnd;
-        public Target? pendingFilter;
         public Handler? activeHandler;
     }
 
-    private readonly record struct Handler(ExceptionRegionKind Kind, Target Start, Type? CatchType = null,
-        Target? FilterStart = null);
+    // Start marks the handler body for ordinary clauses and the filter code for
+    // filtered clauses. Only a filtered clause needs a separate BodyStart.
+    private readonly record struct Handler(ExceptionRegionKind Kind, Target Start, Type? CatchType = null, Target? BodyStart = null);
 
     private readonly InstructionEncoder il = new(new BlobBuilder(), new ControlFlowBuilder());
     private readonly Dictionary<Label, Target> targets = [];
@@ -102,15 +102,16 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
         }
 
         var region = regions.Peek();
-        if (region.pendingFilter is { } filter)
+        if (region.activeHandler is { Kind: ExceptionRegionKind.Filter, BodyStart: null } filter)
         {
             // Harmony uses an untyped catch marker for the body selected by a filter.
             // The filter and that body belong to a single clause.
             if (block.blockType != ExceptionBlockType.BeginCatchBlock || block.catchType is not null)
                 throw new InvalidOperationException("An exception filter must be followed by its handler.");
-            EnsureTerminator(filter, OpCodes.Endfilter);
-            BeginHandler(region, ExceptionRegionKind.Filter, filterStart: filter);
-            region.pendingFilter = null;
+            EnsureTerminator(filter.Start, OpCodes.Endfilter);
+            var bodyStart = MarkBoundary();
+            region.activeHandler = filter with { BodyStart = bodyStart };
+            handlerRegionEntries.Add((bodyStart.InstructionIndex, 1));
             return;
         }
 
@@ -129,29 +130,27 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
         switch (block.blockType)
         {
             case ExceptionBlockType.BeginExceptFilterBlock:
-                var start = MarkBoundary();
-                region.pendingFilter = start;
-                handlerRegionEntries.Add((start.InstructionIndex, 1));
+                BeginHandler(region, ExceptionRegionKind.Filter, entryDepth: 1);
                 break;
             case ExceptionBlockType.BeginCatchBlock:
-                BeginHandler(region, ExceptionRegionKind.Catch, catchType: block.catchType);
+                BeginHandler(region, ExceptionRegionKind.Catch, entryDepth: 1, catchType: block.catchType);
                 break;
             case ExceptionBlockType.BeginFinallyBlock:
-                BeginHandler(region, ExceptionRegionKind.Finally, depth: 1);
+                BeginHandler(region, ExceptionRegionKind.Finally);
                 break;
             case ExceptionBlockType.BeginFaultBlock:
-                BeginHandler(region, ExceptionRegionKind.Fault, depth: 1);
+                BeginHandler(region, ExceptionRegionKind.Fault);
                 break;
             default:
                 throw new NotSupportedException($"Unsupported exception block {block.blockType}.");
         }
     }
 
-    private void BeginHandler(Region region, ExceptionRegionKind kind, Type? catchType = null, Target? filterStart = null, int depth = 0)
+    private void BeginHandler(Region region, ExceptionRegionKind kind, int entryDepth = 0, Type? catchType = null)
     {
         var start = MarkBoundary();
-        region.activeHandler = new Handler(kind, start, catchType, filterStart);
-        handlerRegionEntries.Add((start.InstructionIndex, depth));
+        region.activeHandler = new Handler(kind, start, catchType);
+        handlerRegionEntries.Add((start.InstructionIndex, entryDepth));
     }
 
     private void EndBlock()
@@ -167,24 +166,32 @@ internal sealed class MethodEmitter(MethodBase method, MethodBodyBuilder builder
             throw new InvalidOperationException("An exception block ended without a handler.");
         if (region.tryEnd is not { } tryEnd)
             throw new InvalidOperationException("An exception region was not marked.");
+        if (handler is { Kind: ExceptionRegionKind.Filter, BodyStart: null })
+            throw new InvalidOperationException("An exception filter must be followed by its handler.");
 
-        if (handler.Kind is ExceptionRegionKind.Finally or ExceptionRegionKind.Fault)
-            EnsureTerminator(handler.Start, OpCodes.Endfinally);
-        else
-            LeaveIfNeeded(handler.Start, region.leaveTarget);
+        var flow = il.ControlFlowBuilder!;
+
+        switch (handler.Kind)
+        {
+            case ExceptionRegionKind.Finally or ExceptionRegionKind.Fault: 
+                EnsureTerminator(handler.Start, OpCodes.Endfinally); break;
+            case ExceptionRegionKind.Filter: 
+                LeaveIfNeeded(handler.BodyStart!, region.leaveTarget); break;
+            default: 
+                LeaveIfNeeded(handler.Start, region.leaveTarget); break;
+        }
 
         // The range includes any terminator emitted above. Its end is the first byte
         // outside the handler, which can also be the start of the next filter or handler.
         var handlerEnd = MarkBoundary();
-        var flow = il.ControlFlowBuilder!;
         switch (handler.Kind)
         {
             case ExceptionRegionKind.Catch:
                 flow.AddCatchRegion(region.tryStart.Handle, tryEnd.Handle, handler.Start.Handle, handlerEnd.Handle,
                     MetadataTokens.EntityHandle(builder.GetTokenFor(handler.CatchType!)));
                 break;
-            case ExceptionRegionKind.Filter when handler.FilterStart is { } filterStart:
-                flow.AddFilterRegion(region.tryStart.Handle, tryEnd.Handle, handler.Start.Handle, handlerEnd.Handle, filterStart.Handle);
+            case ExceptionRegionKind.Filter:
+                flow.AddFilterRegion(region.tryStart.Handle, tryEnd.Handle, handler.BodyStart!.Handle, handlerEnd.Handle, handler.Start.Handle);
                 break;
             case ExceptionRegionKind.Finally:
                 flow.AddFinallyRegion(region.tryStart.Handle, tryEnd.Handle, handler.Start.Handle, handlerEnd.Handle);

@@ -246,10 +246,18 @@ public sealed class MethodViewTests : PatchTestBase
         Assert.That(invoke(pointer, 6), Is.EqualTo(12));
     }
 
-    [Test]
-    public void RuleSuppliedEmptyCatch_LeavesAfterTerminatedTry()
+    [TestCase(false)]
+    [TestCase(true)]
+    public void RuleSuppliedEmptyCatch_LeavesAfterTerminatedTry(bool filtered)
     {
         Func<int> invoke = Target;
+        CodeInstruction[] filter = filtered
+            ? [
+                new CodeInstruction(OpCodes.Pop).WithBlocks(new ExceptionBlock(ExceptionBlockType.BeginExceptFilterBlock)),
+                new CodeInstruction(OpCodes.Ldc_I4_1),
+                new CodeInstruction(OpCodes.Endfilter),
+            ]
+            : [];
         var rules = new Ruleset(new Rule
         {
             Mode = OutputMode.MethodPrefix,
@@ -258,9 +266,10 @@ public sealed class MethodViewTests : PatchTestBase
                 new CodeInstruction(OpCodes.Newobj, typeof(InvalidOperationException).GetConstructor(Type.EmptyTypes)!)
                     .WithBlocks(new ExceptionBlock(ExceptionBlockType.BeginExceptionBlock)),
                 new CodeInstruction(OpCodes.Throw),
+                .. filter,
                 // An annotation carries the handler markers without emitting an instruction.
                 CodeInstruction.Annotation("Empty catch")
-                    .WithBlocks(new ExceptionBlock(ExceptionBlockType.BeginCatchBlock, typeof(InvalidOperationException)),
+                    .WithBlocks(new ExceptionBlock(ExceptionBlockType.BeginCatchBlock, filtered ? null : typeof(InvalidOperationException)),
                         new ExceptionBlock(ExceptionBlockType.EndExceptionBlock)),
             ],
         });
@@ -269,7 +278,9 @@ public sealed class MethodViewTests : PatchTestBase
         {
             Backend.Instance.ApplyPatch(new MethodInvocation(invoke.Method), rules, false, debug: false, optimize: false);
             Assert.That(invoke(), Is.EqualTo(42));
-            Assert.That(invoke.Method.GetMethodBody()!.ExceptionHandlingClauses.Single().HandlerLength, Is.GreaterThan(0));
+            var clause = invoke.Method.GetMethodBody()!.ExceptionHandlingClauses.Single();
+            Assert.That(clause.Flags, Is.EqualTo(filtered ? ExceptionHandlingClauseOptions.Filter : ExceptionHandlingClauseOptions.Clause));
+            Assert.That(clause.HandlerLength, Is.GreaterThan(0));
         }
         finally
         {
