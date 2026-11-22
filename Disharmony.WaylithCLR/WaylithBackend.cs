@@ -37,6 +37,6 @@ internal class WaylithBackend : IBackend
     }
 
 #if DEBUG
-    public event Action? ApplyPatchHookForTesting;
+    public event System.Action? ApplyPatchHookForTesting;
 #endif
 }
