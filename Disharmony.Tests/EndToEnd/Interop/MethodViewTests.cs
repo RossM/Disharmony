@@ -133,6 +133,106 @@ public sealed class MethodViewTests : PatchTestBase
         Assert.That(prefixCalls.GetValue(null), Is.EqualTo(2));
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public void RoundTrip_PreservesEarlyEndfinallyInFinallyAndFaultHandlers(bool fault)
+    {
+        var assembly = new PersistedAssemblyBuilder(new AssemblyName(nameof(RoundTrip_PreservesEarlyEndfinallyInFinallyAndFaultHandlers)), typeof(object).Assembly);
+        var type = assembly.DefineDynamicModule("Tests").DefineType("Target", TypeAttributes.Public);
+        var early = type.DefineField("EarlyCalls", typeof(int), FieldAttributes.Public | FieldAttributes.Static);
+        var late = type.DefineField("LateCalls", typeof(int), FieldAttributes.Public | FieldAttributes.Static);
+        var prefixes = type.DefineField("PrefixCalls", typeof(int), FieldAttributes.Public | FieldAttributes.Static);
+        var method = type.DefineMethod("Value", MethodAttributes.Public | MethodAttributes.Static, typeof(int), [typeof(bool)]);
+        method.SetImplementationFlags(MethodImplAttributes.NoInlining);
+        var il = method.GetILGenerator();
+        LocalBuilder result = il.DeclareLocal(typeof(int));
+        Label slow = il.DefineLabel();
+        Label end = il.BeginExceptionBlock();
+        if (fault)
+        {
+            il.Emit(OpCodes.Newobj, typeof(InvalidOperationException).GetConstructor(Type.EmptyTypes)!);
+            il.Emit(OpCodes.Throw);
+            il.BeginFaultBlock();
+        }
+        else
+        {
+            il.Emit(OpCodes.Ldc_I4, 42);
+            il.Emit(OpCodes.Stloc, result);
+            il.Emit(OpCodes.Leave, end);
+            il.BeginFinallyBlock();
+        }
+        il.Emit(OpCodes.Ldarg_0);
+        il.Emit(OpCodes.Brfalse_S, slow);
+        il.Emit(OpCodes.Ldsfld, early);
+        il.Emit(OpCodes.Ldc_I4_1);
+        il.Emit(OpCodes.Add);
+        il.Emit(OpCodes.Stsfld, early);
+        // Both handlers can return here without executing the remaining handler instructions.
+        il.Emit(OpCodes.Endfinally);
+        il.MarkLabel(slow);
+        il.Emit(OpCodes.Ldsfld, late);
+        il.Emit(OpCodes.Ldc_I4_1);
+        il.Emit(OpCodes.Add);
+        il.Emit(OpCodes.Stsfld, late);
+        il.EndExceptionBlock();
+        il.Emit(OpCodes.Ldloc, result);
+        il.Emit(OpCodes.Ret);
+
+        var patch = type.DefineMethod("Prefix", MethodAttributes.Public | MethodAttributes.Static, typeof(void), Type.EmptyTypes);
+        var patchIL = patch.GetILGenerator();
+        patchIL.Emit(OpCodes.Ldsfld, prefixes);
+        patchIL.Emit(OpCodes.Ldc_I4_1);
+        patchIL.Emit(OpCodes.Add);
+        patchIL.Emit(OpCodes.Stsfld, prefixes);
+        patchIL.Emit(OpCodes.Ret);
+        type.CreateType();
+        using var stream = new System.IO.MemoryStream();
+        assembly.Save(stream);
+        Type targetType = Assembly.Load(stream.ToArray()).GetType("Target")!;
+        FieldInfo earlyCalls = targetType.GetField("EarlyCalls")!;
+        FieldInfo lateCalls = targetType.GetField("LateCalls")!;
+        FieldInfo prefixCalls = targetType.GetField("PrefixCalls")!;
+        MethodInfo target = targetType.GetMethod("Value")!;
+        var invoke = (Func<bool, int>)target.CreateDelegate(typeof(Func<bool, int>));
+        if (fault)
+            Assert.Throws<InvalidOperationException>(() => invoke(true));
+        else
+            Assert.That(invoke(true), Is.EqualTo(42));
+        Assert.That(earlyCalls.GetValue(null), Is.EqualTo(1));
+        Assert.That(lateCalls.GetValue(null), Is.EqualTo(0));
+        if (fault)
+            Assert.Throws<InvalidOperationException>(() => invoke(false));
+        else
+            Assert.That(invoke(false), Is.EqualTo(42));
+        Assert.That(earlyCalls.GetValue(null), Is.EqualTo(1));
+        Assert.That(lateCalls.GetValue(null), Is.EqualTo(1));
+        earlyCalls.SetValue(null, 0);
+        lateCalls.SetValue(null, 0);
+
+        PatchHandle handle = Patcher.Patch(Patch.Prefix.Of(target).With(targetType.GetMethod("Prefix")!));
+        try
+        {
+            if (fault)
+                Assert.Throws<InvalidOperationException>(() => invoke(true));
+            else
+                Assert.That(invoke(true), Is.EqualTo(42));
+            Assert.That(prefixCalls.GetValue(null), Is.EqualTo(1));
+            Assert.That(earlyCalls.GetValue(null), Is.EqualTo(1));
+            Assert.That(lateCalls.GetValue(null), Is.EqualTo(0));
+            if (fault)
+                Assert.Throws<InvalidOperationException>(() => invoke(false));
+            else
+                Assert.That(invoke(false), Is.EqualTo(42));
+            Assert.That(prefixCalls.GetValue(null), Is.EqualTo(2));
+            Assert.That(earlyCalls.GetValue(null), Is.EqualTo(1));
+            Assert.That(lateCalls.GetValue(null), Is.EqualTo(1));
+        }
+        finally
+        {
+            Patcher.Unpatch(handle);
+        }
+    }
+
     [Test]
     public void RoundTrip_PreservesTypedLocalsSwitchesAndMetadataOperands()
     {

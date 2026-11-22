@@ -360,13 +360,14 @@ internal class MethodView
         if (opCode.OperandType == OperandType.ShortInlineBrTarget)
             opCode = opCodes[OpCodeData.GetCanonicalOpcode(opCode)];
         
-        // BeginCatchBlock(null) emits endfilter, and EndExceptionBlock emits endfinally
-        // for finally and fault handlers. Emitting the parsed terminator too would leave
-        // an extra instruction between the filter and its handler or after the handler.
+        // A filter has exactly one endfilter, at its lexical end (ECMA-335, III.3.34).
+        // BeginCatchBlock(null) emits it when opening the corresponding handler.
+        if (opCode == OpCodes.Endfilter)
+            return;
 
-        // TODO: This seems like a very bug-prone way of handling this, as one of these
-        //  instructions could have been inserted into the instruction stream manually
-        if (opCode == OpCodes.Endfilter || opCode == OpCodes.Endfinally)
+        // Finally and fault handlers can exit through multiple endfinally instructions.
+        // EndExceptionBlock supplies a replacement only at the handler boundary.
+        if (opCode == OpCodes.Endfinally && instruction.blocks.Any(block => block.blockType == ExceptionBlockType.EndExceptionBlock))
             return;
 
         if (opCode.OperandType == OperandType.InlineNone)
