@@ -6,7 +6,6 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-using System.Runtime.InteropServices;
 using HarmonyLib;
 using WaylithClr;
 
@@ -21,41 +20,22 @@ internal class MethodView
         public Type ReturnType => signature.ReturnType.Resolve(method);
         private readonly MethodSignature<SignatureCodec.TypeSignature> signature = new SignatureCodec().ReadMethod(bytes);
 
-        public byte[] Import(MethodBodyBuilder builder)
+        public byte[] Import(MethodBodyBuilder builder, Module targetModule)
         {
+            if (method.Module == targetModule)
+                return bytes;
             int ImportType(int token) => builder.GetTokenFor((Type)MethodBodyUpdater.ResolveToken(method, token)!);
             return new SignatureCodec(ImportType).CopyMethod(bytes);
         }
 
         public void Emit(ILGenerator generator)
         {
-            Type[] parameters = signature.ParameterTypes.Select(type => type.Resolve(method)).ToArray();
-            if (signature.Header.CallingConvention is SignatureCallingConvention.Default or SignatureCallingConvention.VarArgs)
-            {
-                CallingConventions convention = signature.Header.CallingConvention == SignatureCallingConvention.VarArgs
-                    ? CallingConventions.VarArgs
-                    : CallingConventions.Standard;
-                if (HasThis)
-                    convention |= CallingConventions.HasThis;
-                if (signature.Header.HasExplicitThis)
-                    convention |= CallingConventions.ExplicitThis;
-                generator.EmitCalli(OpCodes.Calli, convention, ReturnType,
-                    parameters[..signature.RequiredParameterCount],
-                    signature.RequiredParameterCount < parameters.Length ? parameters[signature.RequiredParameterCount..] : null);
-            }
-            else
-            {
-                CallingConvention convention = signature.Header.CallingConvention switch
-                {
-                    SignatureCallingConvention.CDecl => CallingConvention.Cdecl,
-                    SignatureCallingConvention.StdCall => CallingConvention.StdCall,
-                    SignatureCallingConvention.ThisCall => CallingConvention.ThisCall,
-                    SignatureCallingConvention.FastCall => CallingConvention.FastCall,
-                    SignatureCallingConvention.Unmanaged => CallingConvention.Winapi,
-                    _ => throw new NotSupportedException($"Unsupported calli convention {signature.Header.CallingConvention}."),
-                };
-                generator.EmitCalli(OpCodes.Calli, convention, ReturnType, parameters);
-            }
+            // The temporary method is never executed. ILGenerator only needs the stack
+            // shape here; token fixup replaces this signature with the original blob.
+            int arguments = ParameterCount + (HasThis && !signature.Header.HasExplicitThis ? 1 : 0);
+            Type result = ReturnType == typeof(void) ? typeof(void) : typeof(object);
+            generator.EmitCalli(OpCodes.Calli, CallingConventions.Standard, result,
+                Enumerable.Repeat(typeof(object), arguments).ToArray(), null);
         }
     }
 
@@ -321,12 +301,11 @@ internal class MethodView
                     case Type type: token = builder.GetTokenFor(type); break;
                     case string text: token = builder.GetTokenFor(text); break;
                     case InlineSignature signature:
-                        // EmitCalli computes maxstack from the resolved parameter and return types.
-                        // Its public overloads cannot preserve custom modifiers, so import the saved
-                        // call-site signature to retain them.
+                        // Restore the original signature after using a temporary stack-shape
+                        // signature for ILGenerator's maxstack accounting.
                         if (calliSignaturesForFixup.TryGetValue(operandOffset, out var original))
                             signature = original;
-                        token = builder.GetTokenForSignature(signature.Import(builder));
+                        token = builder.GetTokenForSignature(signature.Import(builder, method.Module));
                         break;
                     default: continue;
                 }

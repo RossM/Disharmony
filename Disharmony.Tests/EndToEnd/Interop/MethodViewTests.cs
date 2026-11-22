@@ -499,6 +499,85 @@ public sealed class MethodViewTests : PatchTestBase
         Assert.That(invoke(0), Is.EqualTo(-128));
     }
 
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public void RoundTrip_PreservesInstanceCalliSignature(bool returnsValue, bool explicitThis)
+    {
+        var assembly = new PersistedAssemblyBuilder(new AssemblyName($"InstanceCalliCallee_{Guid.NewGuid():N}"), typeof(object).Assembly);
+        var type = assembly.DefineDynamicModule("Tests").DefineType("Target", TypeAttributes.Public);
+        type.DefineDefaultConstructor(MethodAttributes.Public);
+        var observed = type.DefineField("Observed", typeof(int), FieldAttributes.Public | FieldAttributes.Static);
+        Type returnType = returnsValue ? typeof(int) : typeof(void);
+        var callee = type.DefineMethod("Callee", MethodAttributes.Public, returnType, [typeof(int)]);
+        callee.SetImplementationFlags(MethodImplAttributes.NoInlining);
+        var calleeIL = callee.GetILGenerator();
+        calleeIL.Emit(OpCodes.Ldarg_1);
+        calleeIL.Emit(OpCodes.Ldc_I4_7);
+        calleeIL.Emit(OpCodes.Add);
+        calleeIL.Emit(OpCodes.Stsfld, observed);
+        if (returnsValue)
+            calleeIL.Emit(OpCodes.Ldsfld, observed);
+        calleeIL.Emit(OpCodes.Ret);
+
+        // Save the callee first so the explicit-this signature can reference its resolved type.
+        type.CreateType();
+        using var calleeStream = new MemoryStream();
+        assembly.Save(calleeStream);
+        calleeStream.Position = 0;
+        Type calleeType = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromStream(calleeStream).GetType("Target")!;
+        assembly = new PersistedAssemblyBuilder(new AssemblyName("InstanceCalliCaller"), typeof(object).Assembly);
+        type = assembly.DefineDynamicModule("Tests").DefineType("Caller", TypeAttributes.Public);
+
+        var method = type.DefineMethod("Value", MethodAttributes.Public | MethodAttributes.Static, typeof(int), [typeof(int)]);
+        method.SetImplementationFlags(MethodImplAttributes.NoInlining);
+        var il = method.GetILGenerator();
+        il.Emit(OpCodes.Newobj, calleeType.GetConstructor(Type.EmptyTypes)!);
+        il.Emit(OpCodes.Ldarg_0);
+        il.Emit(OpCodes.Ldftn, calleeType.GetMethod("Callee")!);
+        CallingConventions convention = CallingConventions.Standard | CallingConventions.HasThis;
+        if (explicitThis)
+            convention |= CallingConventions.ExplicitThis;
+        var callSite = SignatureHelper.GetMethodSigHelper(type.Module, convention, returnType);
+        if (explicitThis)
+            callSite.AddArgument(calleeType);
+        callSite.AddArgument(typeof(int));
+        il.Emit(OpCodes.Calli, callSite);
+        if (!returnsValue)
+            il.Emit(OpCodes.Ldsfld, calleeType.GetField("Observed")!);
+        il.Emit(OpCodes.Ret);
+
+        var patch = type.DefineMethod("Postfix", MethodAttributes.Public | MethodAttributes.Static, typeof(void), [typeof(int).MakeByRefType()]);
+        patch.DefineParameter(1, ParameterAttributes.None, "__result");
+        var patchIL = patch.GetILGenerator();
+        patchIL.Emit(OpCodes.Ldarg_0);
+        patchIL.Emit(OpCodes.Dup);
+        patchIL.Emit(OpCodes.Ldind_I4);
+        patchIL.Emit(OpCodes.Ldc_I4_1);
+        patchIL.Emit(OpCodes.Add);
+        patchIL.Emit(OpCodes.Stind_I4);
+        patchIL.Emit(OpCodes.Ret);
+        type.CreateType();
+        using var stream = new MemoryStream();
+        assembly.Save(stream);
+        Type targetType = Assembly.Load(stream.ToArray()).GetType("Caller")!;
+        MethodInfo target = targetType.GetMethod("Value")!;
+        var invoke = (Func<int, int>)target.CreateDelegate(typeof(Func<int, int>));
+        Assert.That(invoke(5), Is.EqualTo(12));
+        PatchHandle handle = Patcher.Patch(Patch.Postfix.Of(target).With(targetType.GetMethod("Postfix")!));
+        try
+        {
+            Assert.That(invoke(5), Is.EqualTo(13));
+            Assert.That(invoke(-3), Is.EqualTo(5));
+        }
+        finally
+        {
+            Patcher.Unpatch(handle);
+        }
+        Assert.That(invoke(5), Is.EqualTo(12));
+    }
+
     [Test]
     public void RoundTrip_PreservesManagedCalliSignature()
     {
