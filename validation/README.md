@@ -20,6 +20,8 @@ Recheck compiler-host selection, analyzer diagnostics in a consumer, SourceLink/
 
 `Test-ReleaseFiles.ps1` compares directory trees by relative file path and SHA-256 hash. The checklist uses it for the Workshop upload/subscribed installation and downloaded GitHub assets; an extra, missing, or changed file fails the check.
 
+`Test-RimWorldModVersion.ps1` compares the source manifest's `<modVersion>` with the evaluated NuGet package version, including the prerelease suffix. Both the release test runner and the mod packaging script call it.
+
 `Test-ReleaseCandidate.ps1` runs the library's CLR, Mono, and .NET 10 suites with their supported Harmony majors, plus the analyzer tests, in Debug and Release. It copies each runtime result into a configuration-specific directory before another run can overwrite it; analyzer results and a transcript are retained there too. It requires a new output directory and accepts `-MonoExecutable PATH`.
 
 `Build-RimWorldRelease.ps1` packages a clean Release build from the main checkout. It checks the version, directory layout, bundled Harmony majors, and the WaylithCLR backend for RimWorld 1.7. It compares the Disharmony assemblies with the local Release binaries and verifies that extracting the archive preserves every file. Its new output directory contains the mod ZIP, `mod-upload/`, `workshop-description.txt`, and a build transcript. It does not change the game's upload directory.

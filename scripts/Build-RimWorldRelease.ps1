@@ -17,9 +17,7 @@ $buildDirectory = Join-Path $repositoryRoot 'Disharmony.RimWorld/bin/Release'
 $mod = Join-Path $buildDirectory 'Mod'
 $output = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($OutputDirectory)
 if (Test-Path -LiteralPath $output) { throw 'Use a new mod release output directory.' }
-$packageVersion = dotnet msbuild (Join-Path $repositoryRoot 'Disharmony/Disharmony.csproj') -nologo -getProperty:PackageVersion
-if ($LASTEXITCODE -ne 0) { throw 'Could not read PackageVersion.' }
-if ($packageVersion.Trim() -ne $Version) { throw "Source version $packageVersion does not match requested version $Version." }
+& (Join-Path $PSScriptRoot 'Test-RimWorldModVersion.ps1') -ExpectedVersion $Version
 New-Item -ItemType Directory -Path $output | Out-Null
 
 Start-Transcript -Path (Join-Path $output 'build.log') | Out-Null

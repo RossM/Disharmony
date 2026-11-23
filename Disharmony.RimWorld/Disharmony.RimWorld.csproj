@@ -26,6 +26,14 @@
     <ProjectReference Include="..\Disharmony.WaylithCLR\Disharmony.WaylithCLR.csproj" Condition="'$(TargetFramework)' == 'net10.0'" />
   </ItemGroup>
 
+  <ItemGroup>
+    <_ModAboutFiles Include="$(MSBuildProjectDirectory)\About\**\*"
+                    Original="%(FullPath)"
+                    ModDestination="$(ModOutputDirectory)\About\%(RecursiveDir)%(Filename)%(Extension)" />
+    <!-- Let Visual Studio detect edits to metadata copied by BuildRimWorldMod. -->
+    <UpToDateCheckBuilt Include="@(_ModAboutFiles->'%(ModDestination)')" />
+  </ItemGroup>
+
   <Target Name="RequireRimWorldWaylithCLR" BeforeTargets="ResolveProjectReferences"
           Condition="'$(TargetFramework)' == 'net10.0'">
     <Error Condition="'$(WaylithCLRAvailable)' != 'true'"
@@ -63,14 +71,11 @@
              Properties="TargetFramework=net10.0;Configuration=$(Configuration)">
       <Output TaskParameter="TargetOutputs" ItemName="_AllModAssemblies" />
     </MSBuild>
-    <ItemGroup>
-      <_ModAboutFiles Include="$(MSBuildProjectDirectory)\About\**\*" />
-    </ItemGroup>
 
     <!-- Recreate the generated mod folder so removed files and stale root assemblies are not shipped. -->
     <RemoveDir Directories="$(ModOutputDirectory)" />
     <Copy SourceFiles="@(_ModAboutFiles)"
-          DestinationFiles="@(_ModAboutFiles->'$(ModOutputDirectory)\About\%(RecursiveDir)%(Filename)%(Extension)')" />
+          DestinationFiles="@(_ModAboutFiles->'%(ModDestination)')" />
     <Copy SourceFiles="@(_AllModAssemblies)"
           DestinationFiles="@(_AllModAssemblies->'$(ModOutputDirectory)\%(RimWorldVersion)\Assemblies\%(Filename)%(Extension)')" />
     <Copy SourceFiles="$(MSBuildProjectDirectory)\LoadFolders.xml;$(MSBuildProjectDirectory)\..\LICENSE;$(MSBuildProjectDirectory)\..\THIRD-PARTY-NOTICES.txt"

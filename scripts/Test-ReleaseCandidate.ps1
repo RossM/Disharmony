@@ -13,6 +13,7 @@ $ErrorActionPreference = 'Stop'
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $output = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($OutputDirectory)
 if (Test-Path -LiteralPath $output) { throw 'Use a new test output directory.' }
+& (Join-Path $PSScriptRoot 'Test-RimWorldModVersion.ps1')
 New-Item -ItemType Directory -Path $output | Out-Null
 $pwsh = Join-Path $PSHOME 'pwsh.exe'
 

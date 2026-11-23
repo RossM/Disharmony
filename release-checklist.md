@@ -17,20 +17,20 @@ The [validation fixtures](validation/README.md) supply the package consumers. Re
 
 ## 1. Prepare the source
 
-- [ ] Merge the release changes into `main` and set `Version` in `Directory.Build.props`. Confirm that version is absent from the [NuGet version list](https://www.nuget.org/packages/Disharmony#versions-body-tab).
+- [ ] Merge the release changes into `main`. Set `Version` in `Directory.Build.props` and `<modVersion>` in [About.xml](Disharmony.RimWorld/About/About.xml) to the same release version, including any prerelease suffix. Confirm that version is absent from the [NuGet version list](https://www.nuget.org/packages/Disharmony#versions-body-tab).
 - [ ] Move any diagnostic changes from [Unshipped](Disharmony.Analyzers/AnalyzerReleases.Unshipped.md) to [Shipped](Disharmony.Analyzers/AnalyzerReleases.Shipped.md), using a numeric release heading and a comment naming the first beta where applicable. Leave the files unchanged if there are no diagnostic changes.
 - [ ] Update [release-notes.md](release-notes.md) for this version. It supplies the GitHub notes and Workshop change notes.
 - [ ] Update affected documentation and install-command versions in `Disharmony/README.md` and `Disharmony/PackageReadme.md`. If support changes, update `docs/compatibility.md`, `About.xml`, and `LoadFolders.xml`. For a final release, update beta wording on the landing pages.
-- [ ] Confirm the package version and create a new output directory. The version printed below must equal `VERSION`; the output directory must not already exist.
+- [ ] Verify that the package and mod versions both equal `VERSION`. Then create a new output directory.
 
 ```powershell
-dotnet msbuild ./Disharmony/Disharmony.csproj -nologo -getProperty:PackageVersion
+./scripts/Test-RimWorldModVersion.ps1 -ExpectedVersion VERSION
 New-Item -ItemType Directory ./artifacts/release-VERSION
 ```
 
 ## 2. Test and tag
 
-- [ ] Run all runtime and analyzer suites in Debug and Release. The runner covers CLR/net472 and Mono/net472 with Harmony 2, plus CLR/net10.0 with Harmony 2 and 3. It stops on failure and retains logs and separate result files.
+- [ ] Run all runtime and analyzer suites in Debug and Release. The runner checks the manifest version first, then tests CLR/net472 and Mono/net472 with Harmony 2 and CLR/net10.0 with Harmony 2 and 3. It stops on failure and retains logs and separate result files.
 
 ```powershell
 ./scripts/Test-ReleaseCandidate.ps1 -OutputDirectory ./artifacts/release-VERSION/tests
