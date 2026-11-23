@@ -50,8 +50,12 @@ internal class WaylithBackend : IBackend
         RuntimeMethodHandle[] methods = [.. methodsToRebuild];
         methodsToRebuild.Clear();
 
-        foreach (MethodBodyTransformFailure failure in transformer.Rebuild(methods))
+        MethodBodyTransformFailure[] failures = transformer.Rebuild(methods);
+        foreach (MethodBodyTransformFailure failure in failures)
             Patcher.ReportException(failure.Exception);
+
+        if (failures.Length > 0)
+            return failures[0].Exception;
 
         return null;
     }
