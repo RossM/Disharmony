@@ -12,7 +12,7 @@ Its bundled analyzer catches patch mistakes as you edit and compile, and its run
 
 ## Compatibility
 
-The [Disharmony 1.0 NuGet package](https://www.nuget.org/packages/Disharmony) supports **Mono/net472**, **Microsoft CLR/net472**, and **Microsoft CLR/net10.0** with Harmony 2. Harmony 3 is also supported on CLR/net10.0. See [compatibility](https://rossm.github.io/Disharmony/compatibility.html) to choose the library build and Harmony version for your game.
+The [Disharmony NuGet package](https://www.nuget.org/packages/Disharmony) supports **Mono/net472**, **Microsoft CLR/net472**, and **Microsoft CLR/net10.0** with Harmony 2. Harmony 3 is also supported on CLR/net10.0. See [compatibility](https://rossm.github.io/Disharmony/compatibility.html) to choose the library build and Harmony version for your game.
 
 ## Start writing mods
 

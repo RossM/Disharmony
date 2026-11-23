@@ -1,4 +1,5 @@
-# 1.0.1
+# 1.1.0-rc.1
 
-- Fix a RimWorld 1.7 hang when Disharmony patches a method already patched through Harmony's WaylithCLR provider. Disharmony now generates patched method bodies during registration on WaylithCLR.
-- Support Harmony 3.0.0-rc.5 and bundle it with the RimWorld 1.7 mod.
+- Bundle Harmony 3.0.0-rc.7 with the RimWorld 1.7 mod.
+- Log and suppress exceptions thrown by `Patcher.RuntimeExceptionHandler` subscribers.
+- Use the WaylithCLR backend to patch methods in RimWorld 1.7.

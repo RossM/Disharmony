@@ -30,7 +30,7 @@ When proposing a change, explain the resulting behavior and how you checked it. 
 
 ## Build and test
 
-Run these commands from the repository root. Build the solution, then run the library tests for both targets or select one with `--framework`:
+Run these commands from the repository root. Build the solution after configuring the [RimWorld 1.7 runtime](#build-the-rimworld-integration), then run the library tests for both targets or select one with `--framework`. You can run the library tests directly on a machine without RimWorld:
 
 ```powershell
 dotnet build .\Disharmony.sln
@@ -93,7 +93,9 @@ These tests use minimal attribute metadata and do not execute patches or load th
 
 ## Build the RimWorld integration
 
-To build the official Disharmony mod from this repository, run:
+To build the official Disharmony mod, copy `Directory.Build.local.example.props` to `Directory.Build.local.props` and
+point `WaylithCLRDirectory` to a RimWorld 1.7 installation. The 1.7 backend compiles against that installation's
+runtime assemblies. Then run:
 
 ```powershell
 dotnet build .\Disharmony.RimWorld\Disharmony.RimWorld.csproj --configuration Release
@@ -115,12 +117,13 @@ LoadFolders.xml
   0Harmony.dll
   Disharmony.dll
   Disharmony.RimWorld.dll
+  Disharmony.WaylithCLR.dll
 LICENSE
 THIRD-PARTY-NOTICES.txt
 ```
 
 `LoadFolders.xml` selects one version directory when the game loads the mod. The 1.6 directory contains
-Harmony 2; the 1.7 directory contains the merged Harmony 3 DLL restored from NuGet. The version for the mod
+Harmony 2. The 1.7 directory contains the WaylithCLR backend and the merged Harmony 3 DLL restored from NuGet. The version for the mod
 and compatibility tests is pinned by `HarmonyV3Version` in `Directory.Build.props`. To use a different merged
 .NET 10 Harmony 3 build, pass `-p:HarmonyV3Path=C:\path\to\0Harmony.dll`.
 Build without `--framework` to assemble the complete mod; a single-framework build only produces that framework's

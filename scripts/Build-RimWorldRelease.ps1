@@ -37,7 +37,9 @@ try
     foreach ($gameVersion in $targetFrameworks.Keys)
     {
         $assemblies = Join-Path $mod "$gameVersion/Assemblies"
-        $expectedAssemblies = @('0Harmony.dll', 'Disharmony.dll', 'Disharmony.RimWorld.dll')
+        $disharmonyAssemblies = @('Disharmony.dll', 'Disharmony.RimWorld.dll')
+        if ($gameVersion -eq '1.7') { $disharmonyAssemblies += 'Disharmony.WaylithCLR.dll' }
+        $expectedAssemblies = @('0Harmony.dll') + $disharmonyAssemblies
         $actualAssemblies = @(Get-ChildItem -LiteralPath $assemblies -Force | ForEach-Object Name)
         if (Compare-Object $expectedAssemblies $actualAssemblies) { throw "Unexpected assemblies for RimWorld $gameVersion." }
         $expectedMajor = if ($gameVersion -eq '1.6') { 2 } else { 3 }
@@ -45,7 +47,7 @@ try
         if ($harmonyVersion.Major -ne $expectedMajor) { throw "RimWorld $gameVersion requires Harmony $expectedMajor; found $harmonyVersion." }
 
         $framework = $targetFrameworks[$gameVersion]
-        foreach ($name in 'Disharmony.dll', 'Disharmony.RimWorld.dll')
+        foreach ($name in $disharmonyAssemblies)
         {
             $builtPath = Join-Path $buildDirectory "$framework/$name"
             $modPath = Join-Path $assemblies $name

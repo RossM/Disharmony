@@ -45,7 +45,7 @@ Use the [.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0), 
 ```shell
 dotnet new console --name FirstDisharmonyPatch --framework net10.0
 cd FirstDisharmonyPatch
-dotnet add package Disharmony --version 1.0.1
+dotnet add package Disharmony --version 1.1.0-rc.1
 ```
 
 The last command adds Disharmony to the project and restores its Harmony dependency and bundled analyzer. This console example uses `net10.0`; for a game mod, choose the target framework that matches the game's runtime. See [compatibility](../docs/compatibility.md) for the supported builds and Harmony versions.
@@ -305,8 +305,8 @@ changes after the handler returns.
 
 If `ForceApply()` cannot compile a method, it reports the error and continues compiling the other methods. A later
 `ForceApply()` call does not retry that failed method. This error-handling behavior is provisional and may change in a
-future release. An exception thrown by your handler, or by Harmony while recovering from a failure, still propagates
-to the caller.
+future release. Disharmony logs and suppresses exceptions thrown by your handler. An exception thrown by Harmony
+while recovering from a failure still propagates to the caller.
 
 ### Use alongside Harmony
 

@@ -11,7 +11,7 @@ Replace these placeholders before running commands:
 | `RIMWORLD` | The game directory, normally `C:/Program Files (x86)/Steam/steamapps/common/RimWorld`. |
 | `STEAM_LIBRARY` | The Steam library containing RimWorld's Workshop downloads, normally `C:/Program Files (x86)/Steam`. |
 
-The repository's SDK, Mono, and [GitHub CLI](https://cli.github.com/manual/) must be installed; GitHub authentication and NuGet trusted publishing must already be configured. The Workshop item is [3818084845](https://steamcommunity.com/sharedfiles/filedetails/?id=3818084845), and its upload symlink points to `Disharmony.RimWorld/bin/Release/Mod` in this checkout.
+For the RimWorld build, set `WaylithCLRDirectory` in `Directory.Build.local.props` to the RimWorld 1.7 installation. The repository's SDK, Mono, and [GitHub CLI](https://cli.github.com/manual/) must be installed; GitHub authentication and NuGet trusted publishing must already be configured. The Workshop item is [3818084845](https://steamcommunity.com/sharedfiles/filedetails/?id=3818084845), and its upload symlink points to `Disharmony.RimWorld/bin/Release/Mod` in this checkout.
 
 The [validation fixtures](validation/README.md) supply the package consumers. Recheck unchanged compiler-host and packaging setup only when changes affect it.
 
@@ -71,7 +71,7 @@ gh run watch BUILD_RUN_ID --exit-status
 gh run download BUILD_RUN_ID --name nuget-release --dir ./artifacts/release-VERSION/build-only
 ```
 
-- [ ] Create a clean worktree at the tag for the NuGet validation scripts and release notes. Close RimWorld, then make a **clean Release build of `Disharmony.RimWorld` in the main checkout at the tagged commit**. Use the exact output of that build for packaging, in-game validation, and publication. The packaging script reads the existing output, checks both Disharmony assemblies against the local Release binaries, and verifies the extracted archive.
+- [ ] Create a clean worktree at the tag for the NuGet validation scripts and release notes. Close RimWorld, then make a **clean Release build of `Disharmony.RimWorld` in the main checkout at the tagged commit**. Use the exact output of that build for packaging, in-game validation, and publication. The packaging script reads the existing output, checks the Disharmony assemblies, including the 1.7 WaylithCLR backend, against the local Release binaries, and verifies the extracted archive.
 
   Builds that bundle Disharmony from this checkout, such as XylXenos, copy the DLLs returned by `GetRimWorldModAssemblies` from `Disharmony.RimWorld/bin/Release/<target-framework>`. A release built in another worktree can pass validation while those local DLLs are still stale. The clean build refreshes the files downstream projects bundle, and the hash checks verify that the Workshop candidate contains those same files.
 

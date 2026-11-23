@@ -23,17 +23,27 @@
     <PackageReference Include="Krafs.Rimworld.Ref" Version="1.7.5000-unstable" PrivateAssets="all" Condition="'$(TargetFramework)' == 'net10.0'" />
     <PackageReference Include="Lib.Harmony" Version="$(HarmonyV3Version)" PrivateAssets="all" GeneratePathProperty="true" Condition="'$(TargetFramework)' == 'net10.0'" />
     <ProjectReference Include="..\Disharmony\Disharmony.csproj" />
+    <ProjectReference Include="..\Disharmony.WaylithCLR\Disharmony.WaylithCLR.csproj" Condition="'$(TargetFramework)' == 'net10.0'" />
   </ItemGroup>
 
-  <Target Name="GetRimWorldModAssemblies" Returns="@(_ModAssemblies)">
+  <Target Name="RequireRimWorldWaylithCLR" BeforeTargets="ResolveProjectReferences"
+          Condition="'$(TargetFramework)' == 'net10.0'">
+    <Error Condition="'$(WaylithCLRAvailable)' != 'true'"
+           Text="Building the RimWorld 1.7 mod requires WaylithCLR. Set WaylithCLRDirectory in Directory.Build.local.props to a RimWorld 1.7 installation." />
+  </Target>
+
+  <Target Name="GetRimWorldModAssemblies" DependsOnTargets="RequireRimWorldWaylithCLR" Returns="@(_ModAssemblies)">
     <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">
       <HarmonyV3Path Condition="'$(HarmonyV3Path)' == ''">$(PkgLib_Harmony)\lib\net10.0\0Harmony.dll</HarmonyV3Path>
     </PropertyGroup>
     <Error Condition="'$(RimWorldVersion)' == ''" Text="No RimWorld version configured for $(TargetFramework)." />
     <Error Condition="'$(TargetFramework)' == 'net10.0' and !Exists('$(HarmonyV3Path)')"
            Text="Harmony 3 was not found at $(HarmonyV3Path). Set HarmonyV3Path to the merged .NET 10 DLL." />
+    <Error Condition="'$(TargetFramework)' == 'net10.0' and !Exists('$(TargetDir)Disharmony.WaylithCLR.dll')"
+           Text="The WaylithCLR backend was not found in $(TargetDir). Build Disharmony.RimWorld for net10.0 before collecting its assemblies." />
     <ItemGroup>
       <_ModAssemblies Include="$(TargetPath);$(TargetDir)Disharmony.dll" />
+      <_ModAssemblies Include="$(TargetDir)Disharmony.WaylithCLR.dll" Condition="'$(TargetFramework)' == 'net10.0'" />
       <_ModAssemblies Include="$(TargetDir)0Harmony.dll" Condition="'$(TargetFramework)' == 'net472'" />
       <_ModAssemblies Include="$(HarmonyV3Path)" Condition="'$(TargetFramework)' == 'net10.0'" />
       <_ModAssemblies Update="@(_ModAssemblies)">

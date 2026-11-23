@@ -8,8 +8,6 @@
     <LangVersion>14.0</LangVersion>
     <IsPackable>false</IsPackable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <WaylithCLRAvailable>false</WaylithCLRAvailable>
-    <WaylithCLRAvailable Condition="'$(WaylithCLRDirectory)' != '' and Exists('$(WaylithCLRDirectory)/System.Private.CoreLib.dll') and Exists('$(WaylithCLRDirectory)/System.Runtime.dll')">true</WaylithCLRAvailable>
   </PropertyGroup>
 
   <!-- MethodBodyTransformer is defined in WaylithCLR's System.Private.CoreLib.dll.
