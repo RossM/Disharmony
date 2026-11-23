@@ -12,8 +12,12 @@ internal interface IBackend
     /// </remarks>
     void ResolveAllTrampolines();
 
-    void ApplyPatch(MethodBaseInvocation original, Ruleset ruleset, bool useTrampolines, bool debug, bool optimize);
+    // The patch registry serializes these operations. Patch and Unpatch register changes for Apply.
+    void Patch(MethodBaseInvocation original, Ruleset ruleset, bool useTrampolines, bool debug, bool optimize);
     void Unpatch(MethodBase methodBase);
+
+    // Reports individual failures and returns the first one that requires the registry to roll back.
+    Exception? Apply();
 
 #if DEBUG
     event Action? ApplyPatchHookForTesting;

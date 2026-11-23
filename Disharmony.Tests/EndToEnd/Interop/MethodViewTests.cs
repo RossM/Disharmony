@@ -54,7 +54,8 @@ public sealed class MethodViewTests : PatchTestBase
         FileLog.LogWriter = writer;
         try
         {
-            Backend.Instance.ApplyPatch(new MethodInvocation(target), rules, false, debug: true, optimize: false);
+            Backend.Instance.Patch(new MethodInvocation(target), rules, false, debug: true, optimize: false);
+            Backend.Instance.Apply();
             target.Invoke(null, null);
             Assert.That(field.GetValue(null), Is.EqualTo(expected));
             FileLog.FlushBuffer();
@@ -63,7 +64,11 @@ public sealed class MethodViewTests : PatchTestBase
         }
         finally
         {
-            try { Backend.Instance.Unpatch(target); }
+            try
+            {
+                Backend.Instance.Unpatch(target);
+                Backend.Instance.Apply();
+            }
             finally { FileLog.LogWriter = previousWriter; }
         }
     }
@@ -100,7 +105,8 @@ public sealed class MethodViewTests : PatchTestBase
         FileLog.LogWriter = writer;
         try
         {
-            Backend.Instance.ApplyPatch(new MethodInvocation(target), rules, false, debug: true, optimize: false);
+            Backend.Instance.Patch(new MethodInvocation(target), rules, false, debug: true, optimize: false);
+            Backend.Instance.Apply();
             Assert.That(invoke(11, 42), Is.EqualTo(42));
             FileLog.FlushBuffer();
             string log = Encoding.UTF8.GetString(logStream.ToArray());
@@ -108,7 +114,11 @@ public sealed class MethodViewTests : PatchTestBase
         }
         finally
         {
-            try { Backend.Instance.Unpatch(target); }
+            try
+            {
+                Backend.Instance.Unpatch(target);
+                Backend.Instance.Apply();
+            }
             finally { FileLog.LogWriter = previousWriter; }
         }
     }
@@ -142,13 +152,15 @@ public sealed class MethodViewTests : PatchTestBase
         });
         try
         {
-            Backend.Instance.ApplyPatch(new MethodInvocation(target), rules, false, debug: false, optimize: false);
+            Backend.Instance.Patch(new MethodInvocation(target), rules, false, debug: false, optimize: false);
+            Backend.Instance.Apply();
             target.Invoke(null, null);
             Assert.That(targetType.GetField("Observed")!.GetValue(null), Is.EqualTo(42));
         }
         finally
         {
             Backend.Instance.Unpatch(target);
+            Backend.Instance.Apply();
         }
     }
 
@@ -181,14 +193,19 @@ public sealed class MethodViewTests : PatchTestBase
         Patcher.RuntimeExceptionHandler += handler;
         try
         {
-            Backend.Instance.ApplyPatch(new MethodInvocation(target), rules, false, debug: false, optimize: false);
+            Backend.Instance.Patch(new MethodInvocation(target), rules, false, debug: false, optimize: false);
+            Backend.Instance.Apply();
             Assert.That(reports, Has.Count.EqualTo(1));
             Assert.That(reports[0], Is.TypeOf<OverflowException>());
             Assert.That(target.Invoke(null, [42]), Is.EqualTo(7));
         }
         finally
         {
-            try { Backend.Instance.Unpatch(target); }
+            try
+            {
+                Backend.Instance.Unpatch(target);
+                Backend.Instance.Apply();
+            }
             finally
             {
                 Patcher.RuntimeExceptionHandler -= handler;
@@ -276,7 +293,8 @@ public sealed class MethodViewTests : PatchTestBase
 
         try
         {
-            Backend.Instance.ApplyPatch(new MethodInvocation(invoke.Method), rules, false, debug: false, optimize: false);
+            Backend.Instance.Patch(new MethodInvocation(invoke.Method), rules, false, debug: false, optimize: false);
+            Backend.Instance.Apply();
             Assert.That(invoke(), Is.EqualTo(42));
             var clause = invoke.Method.GetMethodBody()!.ExceptionHandlingClauses.Single();
             Assert.That(clause.Flags, Is.EqualTo(filtered ? ExceptionHandlingClauseOptions.Filter : ExceptionHandlingClauseOptions.Clause));
@@ -285,6 +303,7 @@ public sealed class MethodViewTests : PatchTestBase
         finally
         {
             Backend.Instance.Unpatch(invoke.Method);
+            Backend.Instance.Apply();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -637,7 +656,8 @@ public sealed class MethodViewTests : PatchTestBase
 
         try
         {
-            Backend.Instance.ApplyPatch(new MethodInvocation(invoke.Method), rules, false, debug: false, optimize: false);
+            Backend.Instance.Patch(new MethodInvocation(invoke.Method), rules, false, debug: false, optimize: false);
+            Backend.Instance.Apply();
             var value = new List<string[]>[1, 1];
             Assert.That(invoke(value), Is.SameAs(value));
             Assert.That(invoke.Method.GetMethodBody()!.LocalVariables[^1].LocalType, Is.EqualTo(local.LocalType));
@@ -645,6 +665,7 @@ public sealed class MethodViewTests : PatchTestBase
         finally
         {
             Backend.Instance.Unpatch(invoke.Method);
+            Backend.Instance.Apply();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

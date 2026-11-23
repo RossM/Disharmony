@@ -53,7 +53,8 @@ public sealed class WaylithLoggingTests : PatchTestBase
         FileLog.LogWriter = writer;
         try
         {
-            Backend.Instance.ApplyPatch(new MethodInvocation(target), rules, false, debug: true, optimize: false);
+            Backend.Instance.Patch(new MethodInvocation(target), rules, false, debug: true, optimize: false);
+            Backend.Instance.Apply();
             Assert.That(target.Invoke(null, null), Is.EqualTo(7));
             Assert.That(observedField.GetValue(null), Is.EqualTo(2.5));
             FileLog.FlushBuffer();
@@ -68,7 +69,11 @@ public sealed class WaylithLoggingTests : PatchTestBase
         }
         finally
         {
-            try { Backend.Instance.Unpatch(target); }
+            try
+            {
+                Backend.Instance.Unpatch(target);
+                Backend.Instance.Apply();
+            }
             finally { FileLog.LogWriter = previousWriter; }
         }
     }
@@ -103,7 +108,8 @@ public sealed class WaylithLoggingTests : PatchTestBase
         FileLog.LogWriter = writer;
         try
         {
-            Backend.Instance.ApplyPatch(new MethodInvocation(target), new Ruleset(), false, debug: true, optimize: false);
+            Backend.Instance.Patch(new MethodInvocation(target), new Ruleset(), false, debug: true, optimize: false);
+            Backend.Instance.Apply();
             Assert.That(invoke(false), Is.EqualTo(1));
             Assert.That(invoke(true), Is.EqualTo(2));
             FileLog.FlushBuffer();
@@ -118,7 +124,11 @@ public sealed class WaylithLoggingTests : PatchTestBase
         }
         finally
         {
-            try { Backend.Instance.Unpatch(target); }
+            try
+            {
+                Backend.Instance.Unpatch(target);
+                Backend.Instance.Apply();
+            }
             finally { FileLog.LogWriter = previousWriter; }
         }
     }
@@ -171,7 +181,8 @@ public sealed class WaylithLoggingTests : PatchTestBase
         FileLog.LogWriter = writer;
         try
         {
-            Backend.Instance.ApplyPatch(new MethodInvocation(target), new Ruleset(), false, debug: true, optimize: false);
+            Backend.Instance.Patch(new MethodInvocation(target), new Ruleset(), false, debug: true, optimize: false);
+            Backend.Instance.Apply();
             Assert.That(invoke(false), Is.EqualTo(11));
             Assert.That(invoke(true), Is.EqualTo(12));
             FileLog.FlushBuffer();
@@ -191,7 +202,11 @@ public sealed class WaylithLoggingTests : PatchTestBase
         }
         finally
         {
-            try { Backend.Instance.Unpatch(target); }
+            try
+            {
+                Backend.Instance.Unpatch(target);
+                Backend.Instance.Apply();
+            }
             finally
             {
                 FileLog.LogWriter = previousWriter;
@@ -233,7 +248,8 @@ public sealed class WaylithLoggingTests : PatchTestBase
         FileLog.LogWriter = writer;
         try
         {
-            Backend.Instance.ApplyPatch(new MethodInvocation(target), rules, false, debug: true, optimize: false);
+            Backend.Instance.Patch(new MethodInvocation(target), rules, false, debug: true, optimize: false);
+            Backend.Instance.Apply();
             Assert.That(target.Invoke(null, null), Is.EqualTo(7));
             FileLog.FlushBuffer();
             string log = Encoding.UTF8.GetString(logStream.ToArray());
@@ -251,7 +267,11 @@ public sealed class WaylithLoggingTests : PatchTestBase
         }
         finally
         {
-            try { Backend.Instance.Unpatch(target); }
+            try
+            {
+                Backend.Instance.Unpatch(target);
+                Backend.Instance.Apply();
+            }
             finally { FileLog.LogWriter = previousWriter; }
         }
     }

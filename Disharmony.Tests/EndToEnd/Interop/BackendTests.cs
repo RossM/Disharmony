@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text;
+using Disharmony.RulesEngine;
 
 namespace Disharmony.Tests.EndToEnd.Interop;
 
@@ -41,6 +42,50 @@ public sealed class BackendTests : PatchTestBase
             FileLog.FlushBuffer();
             FileLog.LogWriter = previousWriter;
             Harmony.DEBUG = previousDebug;
+        }
+    }
+
+    [Test]
+    public void PatchAndUnpatch_TakeEffectOnApply()
+    {
+        MethodInfo first = typeof(StaticMethodTargets).GetMethod(nameof(StaticMethodTargets.RegistrationResultA))!;
+        MethodInfo second = typeof(StaticMethodTargets).GetMethod(nameof(StaticMethodTargets.RegistrationResultB))!;
+        var rules = new Ruleset(new Rule
+        {
+            Mode = OutputMode.InsertBefore,
+            Pattern = [new CodeInstruction(OpCodes.Ret)],
+            Output = [new CodeInstruction(OpCodes.Ldc_I4, 40), new CodeInstruction(OpCodes.Add)],
+        });
+        IBackend backend = Backend.Instance;
+        bool useTrampolines = backend is HarmonyInterface;
+
+        try
+        {
+            backend.Patch(new MethodInvocation(first), rules, useTrampolines, debug: false, optimize: false);
+            backend.Patch(new MethodInvocation(second), rules, useTrampolines, debug: false, optimize: false);
+
+            Assert.That(StaticMethodTargets.RegistrationResultA(), Is.EqualTo(1));
+            Assert.That(StaticMethodTargets.RegistrationResultB(), Is.EqualTo(2));
+
+            Assert.That(backend.Apply(), Is.Null);
+            Assert.That(StaticMethodTargets.RegistrationResultA(), Is.EqualTo(41));
+            Assert.That(StaticMethodTargets.RegistrationResultB(), Is.EqualTo(42));
+
+            backend.Unpatch(first);
+            backend.Unpatch(second);
+
+            Assert.That(StaticMethodTargets.RegistrationResultA(), Is.EqualTo(41));
+            Assert.That(StaticMethodTargets.RegistrationResultB(), Is.EqualTo(42));
+
+            Assert.That(backend.Apply(), Is.Null);
+            Assert.That(StaticMethodTargets.RegistrationResultA(), Is.EqualTo(1));
+            Assert.That(StaticMethodTargets.RegistrationResultB(), Is.EqualTo(2));
+        }
+        finally
+        {
+            backend.Unpatch(first);
+            backend.Unpatch(second);
+            Assert.That(backend.Apply(), Is.Null);
         }
     }
 

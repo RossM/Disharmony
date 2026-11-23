@@ -1,5 +1,7 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
 using Disharmony.RulesEngine;
+using Disharmony.Utilities;
 using JetBrains.Annotations;
 using WaylithClr;
 
@@ -9,6 +11,7 @@ namespace Disharmony.WaylithCLR;
 internal class WaylithBackend : IBackend
 {
     private readonly Transformer transformer;
+    private readonly UniqueQueue<RuntimeMethodHandle> methodsToRebuild = [];
 
     public WaylithBackend()
     {
@@ -19,7 +22,7 @@ internal class WaylithBackend : IBackend
 
     public void ResolveAllTrampolines() { }
 
-    public void ApplyPatch(MethodBaseInvocation original, Ruleset ruleset, bool useTrampolines, bool debug, bool optimize)
+    public void Patch(MethodBaseInvocation original, Ruleset ruleset, bool useTrampolines, bool debug, bool optimize)
     {
 #if DEBUG
         ApplyPatchHookForTesting?.Invoke();
@@ -27,13 +30,30 @@ internal class WaylithBackend : IBackend
 
         // The pipeline passes definition handles to CanTransform. Reflection can return
         // a different handle for a struct override, so registration must use that same identity.
-        MethodBase methodBase = original.MethodBase;
-        transformer.ApplyPatch(MethodBodyUpdater.GetDefinitionHandle(methodBase), ruleset, useTrampolines, debug, optimize);
+        RuntimeMethodHandle method = MethodBodyUpdater.GetDefinitionHandle(original.MethodBase);
+        transformer.RegisterPatch(method, ruleset, debug, optimize);
+        methodsToRebuild.Enqueue(method);
     }
 
     public void Unpatch(MethodBase methodBase)
     {
-        transformer.RemovePatch(MethodBodyUpdater.GetDefinitionHandle(methodBase));
+        RuntimeMethodHandle method = MethodBodyUpdater.GetDefinitionHandle(methodBase);
+        transformer.RemovePatch(method);
+        methodsToRebuild.Enqueue(method);
+    }
+
+    public Exception? Apply()
+    {
+        if (methodsToRebuild.Count == 0)
+            return null;
+
+        RuntimeMethodHandle[] methods = [.. methodsToRebuild];
+        methodsToRebuild.Clear();
+
+        foreach (MethodBodyTransformFailure failure in transformer.Rebuild(methods))
+            Patcher.ReportException(failure.Exception);
+
+        return null;
     }
 
 #if DEBUG

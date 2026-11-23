@@ -30,6 +30,8 @@ internal abstract class HarmonyInterface : IBackend
 
     private static readonly ModuleBuilder module;
 
+    private List<Action> pendingChanges = [];
+
     // These variables must only be accessed while Locker is held
     protected readonly Dictionary<MethodBase, MethodInfo> trampolines = [];
     private int trampolineCount;
@@ -221,6 +223,37 @@ internal abstract class HarmonyInterface : IBackend
             generator.Emit(OpCodes.Ldarg_S, i);
         for (int i = 256; i < parameterTypes.Length; i++)
             generator.Emit(OpCodes.Ldarg, i);
+    }
+
+    void IBackend.Patch(MethodBaseInvocation original, Ruleset ruleset, bool useTrampolines, bool debug, bool optimize) =>
+        pendingChanges.Add(() => ApplyPatch(original, ruleset, useTrampolines, debug, optimize));
+
+    void IBackend.Unpatch(MethodBase methodBase) =>
+        pendingChanges.Add(() => Unpatch(methodBase));
+
+    Exception? IBackend.Apply()
+    {
+        if (pendingChanges.Count == 0)
+            return null;
+
+        List<Action> changes = pendingChanges;
+        pendingChanges = [];
+
+        Exception? firstFailure = null;
+        foreach (Action change in changes)
+        {
+            try
+            {
+                change();
+            }
+            catch (Exception e)
+            {
+                Patcher.ReportException(e);
+                firstFailure ??= e;
+            }
+        }
+
+        return firstFailure;
     }
 
     public abstract void ApplyPatch(MethodBaseInvocation original, Ruleset ruleset, bool useTrampolines, bool debug, bool optimize);

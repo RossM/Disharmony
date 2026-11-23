@@ -108,16 +108,12 @@ internal class Transformer() : MethodBodyTransformer(100)
         return true;
     }
 
-    public void ApplyPatch(RuntimeMethodHandle methodHandle, Ruleset ruleset, bool useTrampolines, bool debug, bool optimize)
+    public void RegisterPatch(RuntimeMethodHandle methodHandle, Ruleset ruleset, bool debug, bool optimize)
     {
         lock (sync)
         {
             methodPatches[methodHandle] = new MethodPatch { ruleset = ruleset, debug = debug, optimize = optimize };
         }
-
-        Exception? e = Rebuild(methodHandle);
-        if (e is not null)
-            Patcher.ReportException(e);
     }
 
     public void RemovePatch(RuntimeMethodHandle methodHandle)
@@ -126,9 +122,5 @@ internal class Transformer() : MethodBodyTransformer(100)
         {
             methodPatches.Remove(methodHandle);
         }
-
-        Exception? e = Rebuild(methodHandle);
-        if (e is not null)
-            Patcher.ReportException(e);
     }
 }

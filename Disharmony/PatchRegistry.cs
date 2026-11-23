@@ -399,6 +399,9 @@ internal class PatchRegistry
 
     private void ApplyPendingChanges()
     {
+        if (methodsToUpdate.Count == 0)
+            return;
+
         Exception? patchException = null;
 
         foreach (var patchedMethod in methodsToUpdate)
@@ -418,7 +421,7 @@ internal class PatchRegistry
                     bool debug = patches.Any(p => p.Debug);
                     bool optimize = patches.Any(p => p.Optimize);
 
-                    Backend.ApplyPatch(patchedMethod, ruleset, useTrampolines, debug, optimize);
+                    Backend.Patch(patchedMethod, ruleset, useTrampolines, debug, optimize);
                 }
             }
             catch (Exception e)
@@ -429,6 +432,17 @@ internal class PatchRegistry
         }
 
         methodsToUpdate.Clear();
+
+        try
+        {
+            Exception? applicationException = Backend.Apply();
+            patchException ??= applicationException;
+        }
+        catch (Exception e)
+        {
+            Patcher.ReportException(e);
+            patchException ??= e;
+        }
 
         // If any patch failed, throw the exception to indicate that the patching process was not fully successful.
         if (patchException is not null)
