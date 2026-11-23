@@ -12,6 +12,10 @@ namespace Disharmony.WaylithCLR;
 // in the original method's module and generic context.
 internal sealed class SignatureCodec : ISignatureTypeProvider<SignatureCodec.TypeSignature, object?>
 {
+    private static readonly SignatureCodec Instance = new();
+
+    private SignatureCodec() { }
+
     internal sealed record TypeSignature(byte[] Bytes, bool Pinned = false)
     {
         public Type Resolve(MethodBase method)
@@ -30,7 +34,7 @@ internal sealed class SignatureCodec : ISignatureTypeProvider<SignatureCodec.Typ
         }
     }
 
-    public unsafe TypeSignature[] ReadLocals(byte[] bytes)
+    public static unsafe TypeSignature[] ReadLocals(byte[] bytes)
     {
         if (bytes.Length == 0)
             return [];
@@ -42,7 +46,7 @@ internal sealed class SignatureCodec : ISignatureTypeProvider<SignatureCodec.Typ
             int count = reader.ReadCompressedInteger();
             if (count < 0 || count > reader.RemainingBytes)
                 throw new BadImageFormatException("Invalid local variable count.");
-            var decoder = new SignatureDecoder<TypeSignature, object?>(this, null!, null);
+            var decoder = new SignatureDecoder<TypeSignature, object?>(Instance, null!, null);
             var locals = new TypeSignature[count];
             for (int i = 0; i < count; i++)
                 locals[i] = decoder.DecodeType(ref reader);
@@ -52,12 +56,12 @@ internal sealed class SignatureCodec : ISignatureTypeProvider<SignatureCodec.Typ
         }
     }
 
-    public unsafe MethodSignature<TypeSignature> ReadMethod(byte[] bytes)
+    public static unsafe MethodSignature<TypeSignature> ReadMethod(byte[] bytes)
     {
         fixed (byte* start = bytes)
         {
             var reader = new BlobReader(start, bytes.Length);
-            var decoder = new SignatureDecoder<TypeSignature, object?>(this, null!, null);
+            var decoder = new SignatureDecoder<TypeSignature, object?>(Instance, null!, null);
             var signature = decoder.DecodeMethodSignature(ref reader);
             if (reader.RemainingBytes != 0)
                 throw new BadImageFormatException("Trailing data in call-site signature.");

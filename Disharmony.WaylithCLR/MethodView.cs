@@ -53,7 +53,7 @@ internal class MethodView
         localSignature = [.. body.LocalSignature];
 
         // Keep the local types available to the rules and stack analysis.
-        foreach (var signature in new SignatureCodec().ReadLocals(localSignature))
+        foreach (var signature in SignatureCodec.ReadLocals(localSignature))
             allocator.DeclareLocal(signature.Resolve(method), signature.Pinned);
         originalLocalCount = allocator.Locals.Count;
     }

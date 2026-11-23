@@ -7,7 +7,7 @@ namespace Disharmony.WaylithCLR;
 
 internal sealed class InlineSignature(MethodBase method, byte[] bytes) : IInlineSignature
 {
-    private readonly MethodSignature<SignatureCodec.TypeSignature> signature = new SignatureCodec().ReadMethod(bytes);
+    private readonly MethodSignature<SignatureCodec.TypeSignature> signature = SignatureCodec.ReadMethod(bytes);
 
     public int ParameterCount => signature.ParameterTypes.Length;
     public bool HasImplicitThis => signature.Header is { IsInstance: true, HasExplicitThis: false };
