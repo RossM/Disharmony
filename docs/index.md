@@ -2,7 +2,7 @@
 
 **Simpler patches for game mod authors.**
 
-Disharmony is a C# modding framework built on Harmony. It supports whole-method prefixes and postfixes, and also lets you put them around individual method calls inside a specific game method. That lets you change those calls without affecting other callers. It works on field accesses and constants too. Many changes that would need a Harmony transpiler can use ordinary C# patches instead.
+Disharmony is a C# modding framework for RimWorld and other .NET games. It supports whole-method prefixes and postfixes, and also lets you put them around individual method calls inside a specific game method. That lets you change those calls without affecting other callers. It works on field accesses and constants too. Many changes that would need a Harmony transpiler can use ordinary C# patches instead.
 
 Its bundled analyzer catches patch mistakes as you edit and compile, and its runtime checks explain problems when patches are applied. Keep your existing Harmony patches and try Disharmony on one change. [See a Disharmony patch alongside the equivalent transpiler](harmony-comparison.md#worked-comparison-change-a-call-inside-a-method).
 

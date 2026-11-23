@@ -6,7 +6,7 @@ This guide is for readers who know C# but are new to changing a game's behavior 
 
 A C# game's code is compiled into **assemblies**, often DLL files. Your mod is a separate C# project that compiles into its own assembly. Referencing the game's assemblies lets your mod use the game's classes and methods.
 
-Disharmony lets you write a **patch**: a method in your mod that changes how a selected game method runs. It uses Harmony to connect your patch to the game method while the game is running. The game's DLL files on disk stay unchanged.
+Disharmony lets you write a **patch**: a method in your mod that changes how a selected game method runs. The patch takes effect while the game is running. The game's DLL files on disk stay unchanged.
 
 The mod's patch code and the game's original method work together in the same process. A patch can change the arguments before the game method runs, change its result afterward, or replace its behavior. This page starts with changing a result.
 

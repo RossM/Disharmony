@@ -1,6 +1,6 @@
 # Getting started with Disharmony
 
-Disharmony is a C# game-modding framework built on Harmony. It lets mod authors change game behavior at runtime by
+Disharmony is a C# game-modding framework. It lets mod authors change game behavior at runtime by
 writing small methods called patches. A patch can run before or after a game method, inspect its inputs, change its
 result, or replace its behavior.
 
@@ -289,7 +289,7 @@ Patches registered by other calls remain active.
 
 ### Deferred compilation and errors
 
-The official RimWorld mod completes deferred compilation in the background and reports patching errors to the game log. RimWorld mods using that dependency ordinarily do not need to call `ForceApply` or install an error handler. The guidance below is for integrating Disharmony with other games or applications.
+The official RimWorld mod completes any deferred compilation in the background and reports patching errors to the game log. RimWorld mods using that dependency ordinarily do not need to call `ForceApply` or install an error handler. The guidance below is for integrating Disharmony with other games or applications.
 
 Disharmony may generate a patched method's body when the method is first called. Call `Patcher.ForceApply()` during
 loading if you want to do that work earlier. It keeps processing pending methods until none remain, including methods

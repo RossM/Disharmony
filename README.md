@@ -2,7 +2,7 @@
 
 **Simpler patches for game mod authors.**
 
-Disharmony is a C# modding framework built on Harmony. It supports whole-method prefixes and postfixes, and also lets you put them around individual method calls inside a specific game method. That lets you change those calls without affecting other callers. It works on field accesses and constants too. Many changes that would need a Harmony transpiler can use ordinary C# patches instead.
+Disharmony is a C# modding framework for RimWorld and other .NET games. It supports whole-method prefixes and postfixes, and also lets you put them around individual method calls inside a specific game method. That lets you change those calls without affecting other callers. It works on field accesses and constants too. Many changes that would need a Harmony transpiler can use ordinary C# patches instead.
 
 Its bundled analyzer catches patch mistakes as you edit and compile, and its runtime checks explain problems when patches are applied. Disharmony can also defer patch generation to reduce startup work. Keep your existing Harmony patches and try Disharmony on one change.
 
@@ -68,10 +68,10 @@ A: I've got a fairly substantial [RimWorld mod](https://github.com/RossM/Rimworl
 
 ### Q: Is this just a wrapper around Harmony?
 
-A: Yes and no. From Harmony's point of view, Disharmony is just a particularly complicated transpiler: it gets the instructions of the method and returns a modified version, which Harmony installs. All of the work of finding Disharmony patches, registration, error checking, and code generation is done by Disharmony.
+A: Disharmony finds patches, registers them, checks for errors, and generates the patched code. On RimWorld 1.6 and when using the NuGet package on its own, Disharmony rewrites the instructions in a transpiler, and Harmony installs the resulting method. On RimWorld 1.7 and compatible later versions, Disharmony applies patches directly through WaylithCLR.
 
 ### Q: That can't possibly be faster than Harmony.
 
-A: Disharmony uses a trick for that. When you initially register a patch, Disharmony does only a portion of the work needed to install the patch, and patches the original method with a small stub called a trampoline. The majority of patching work is done in the background after the game has finished loading and is waiting for user input. If the game tries to call a patched method before it's ready, the trampoline lets Disharmony detect that and do the deferred work for that method immediately, then redirect that call to the patched version. 
+A: With the Harmony backend, Disharmony can initially install a small stub called a trampoline. The RimWorld mod finishes pending patch generation in the background. If a caller reaches a patched method first, the trampoline generates the patched method immediately and redirects that call to it.
 
 **tl;dr:** It's magic.

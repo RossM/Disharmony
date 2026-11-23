@@ -27,7 +27,7 @@ The official Disharmony mod supports RimWorld 1.6 and 1.7 unstable. It supplies 
 | 1.6 | `net472` | 2.4.1 |
 | 1.7 unstable | `net10.0` | 3.0.0-rc.7 |
 
-The 1.7 mod includes the WaylithCLR backend for patching on RimWorld's runtime.
+The RimWorld 1.6 mod uses Harmony to apply patches. On RimWorld 1.7 and later versions with compatible WaylithCLR support, Disharmony applies its patches directly through WaylithCLR.
 
 Players should follow [installation and load-order instructions](obj/guides/rimworld-players.md); mod authors should follow [project setup and deployment](obj/guides/rimworld.md).
 

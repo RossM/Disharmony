@@ -1,6 +1,6 @@
 # Disharmony architecture
 
-This guide explains the architectural ideas needed to read Disharmony's implementation. It assumes familiarity with C# and Disharmony's public API. For build commands and runtime validation, see [Development and testing](obj/guides/testing.md).
+This guide explains Disharmony's implementation and follows the Harmony backend for method generation. It assumes familiarity with C# and Disharmony's public API. For build commands and runtime validation, see [Development and testing](obj/guides/testing.md).
 
 Start with the component map and the two stages below, then follow each stage in more detail. The [glossary](#glossary) provides a quick reference for the terminology used throughout.
 
@@ -8,7 +8,9 @@ Start with the component map and the two stages below, then follow each stage in
 
 Disharmony implements both whole-method and inner patches by rewriting the outer method's IL, the compiled .NET instruction sequence. It first describes the edits to make, then applies those descriptions to the method body.
 
-Harmony supplies the machinery that makes the rewritten body executable. It builds a replacement method, called a **wrapper**, and installs a **detour** that redirects calls to it. Disharmony participates in that process through a **transpiler**: a callback that receives instructions from Harmony and returns the rewritten sequence.
+On RimWorld 1.7 and compatible later versions, Disharmony supplies the rewritten method body directly to WaylithCLR.
+
+With the Harmony backend, Harmony builds a replacement method, called a **wrapper**, and installs a **detour** that redirects calls to it. Disharmony participates in that process through a **transpiler**: a callback that receives instructions from Harmony and returns the rewritten sequence.
 
 A Disharmony prefix or postfix becomes code within that sequence. For each outer method, Harmony sees Disharmony's transpiler as one registered patch, even when the sequence incorporates many Disharmony patches.
 
