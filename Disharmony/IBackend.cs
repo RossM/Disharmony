@@ -20,6 +20,6 @@ internal interface IBackend
     Exception? Apply();
 
 #if DEBUG
-    event Action? ApplyPatchHookForTesting;
+    event Action? PatchHookForTesting;
 #endif
 }

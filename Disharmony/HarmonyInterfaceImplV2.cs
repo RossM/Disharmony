@@ -42,7 +42,7 @@ internal sealed class HarmonyInterfaceImplV2 : HarmonyInterface
         (bool)HarmonyInternals.InlineSignature_HasThis_Getter.Invoke(signature, [])!;
 
 #if DEBUG
-    public override event Action? ApplyPatchHookForTesting = null;
+    public override event Action? PatchHookForTesting = null;
 #endif
 
     /// <summary>
@@ -94,7 +94,7 @@ internal sealed class HarmonyInterfaceImplV2 : HarmonyInterface
     public override void ApplyPatch(MethodBaseInvocation original, Ruleset ruleset, bool useTrampolines, bool debug, bool optimize)
     {
 #if DEBUG
-        ApplyPatchHookForTesting?.Invoke();
+        PatchHookForTesting?.Invoke();
 #endif
 
         lock (Locker)

@@ -133,7 +133,7 @@ public sealed class PatchRollbackTests : PatchTestBase
         Action<Exception> handler = reportedExceptions.Add;
         Patcher.RuntimeExceptionHandler -= RecordRuntimeException;
         Patcher.RuntimeExceptionHandler += handler;
-        Backend.Instance.ApplyPatchHookForTesting += hook;
+        Backend.Instance.PatchHookForTesting += hook;
 
         try
         {
@@ -151,7 +151,7 @@ public sealed class PatchRollbackTests : PatchTestBase
         }
         finally
         {
-            Backend.Instance.ApplyPatchHookForTesting -= hook;
+            Backend.Instance.PatchHookForTesting -= hook;
             Patcher.RuntimeExceptionHandler -= handler;
             Patcher.RuntimeExceptionHandler += RecordRuntimeException;
         }
@@ -187,7 +187,7 @@ public sealed class PatchRollbackTests : PatchTestBase
         };
         Patcher.RuntimeExceptionHandler -= RecordRuntimeException;
         Patcher.RuntimeExceptionHandler += handler;
-        Backend.Instance.ApplyPatchHookForTesting += hook;
+        Backend.Instance.PatchHookForTesting += hook;
 
         try
         {
@@ -198,7 +198,7 @@ public sealed class PatchRollbackTests : PatchTestBase
         }
         finally
         {
-            Backend.Instance.ApplyPatchHookForTesting -= hook;
+            Backend.Instance.PatchHookForTesting -= hook;
             Patcher.RuntimeExceptionHandler -= handler;
             Patcher.RuntimeExceptionHandler += RecordRuntimeException;
         }
@@ -245,7 +245,7 @@ public sealed class PatchRollbackTests : PatchTestBase
         Action<Exception> handler = reportedExceptions.Add;
         Patcher.RuntimeExceptionHandler -= RecordRuntimeException;
         Patcher.RuntimeExceptionHandler += handler;
-        Backend.Instance.ApplyPatchHookForTesting += hook;
+        Backend.Instance.PatchHookForTesting += hook;
 
         try
         {
@@ -260,7 +260,7 @@ public sealed class PatchRollbackTests : PatchTestBase
         }
         finally
         {
-            Backend.Instance.ApplyPatchHookForTesting -= hook;
+            Backend.Instance.PatchHookForTesting -= hook;
             Patcher.RuntimeExceptionHandler -= handler;
             Patcher.RuntimeExceptionHandler += RecordRuntimeException;
         }
@@ -294,7 +294,7 @@ public sealed class PatchRollbackTests : PatchTestBase
 
         int applicationAttempts = 0;
         Action hook = () => applicationAttempts++;
-        Backend.Instance.ApplyPatchHookForTesting += hook;
+        Backend.Instance.PatchHookForTesting += hook;
         PatchHandle handle;
 
         try
@@ -303,7 +303,7 @@ public sealed class PatchRollbackTests : PatchTestBase
         }
         finally
         {
-            Backend.Instance.ApplyPatchHookForTesting -= hook;
+            Backend.Instance.PatchHookForTesting -= hook;
         }
 
         Assert.Multiple(() =>

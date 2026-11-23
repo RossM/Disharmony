@@ -57,7 +57,7 @@ internal abstract class HarmonyInterface : IBackend
         typeof(Harmony).Assembly.GetType(name) ?? throw new NotSupportedException($"Unsupported Harmony internals: {name} in {typeof(Harmony).Assembly.FullName}.");
 
 #if DEBUG
-    public abstract event Action? ApplyPatchHookForTesting;
+    public abstract event Action? PatchHookForTesting;
 #endif
 
     protected abstract Exception? PatchDirectly(MethodBase original);

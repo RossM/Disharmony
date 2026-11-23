@@ -25,7 +25,7 @@ internal class WaylithBackend : IBackend
     public void Patch(MethodBaseInvocation original, Ruleset ruleset, bool useTrampolines, bool debug, bool optimize)
     {
 #if DEBUG
-        ApplyPatchHookForTesting?.Invoke();
+        PatchHookForTesting?.Invoke();
 #endif
 
         // The pipeline passes definition handles to CanTransform. Reflection can return
@@ -61,6 +61,6 @@ internal class WaylithBackend : IBackend
     }
 
 #if DEBUG
-    public event System.Action? ApplyPatchHookForTesting;
+    public event System.Action? PatchHookForTesting;
 #endif
 }
