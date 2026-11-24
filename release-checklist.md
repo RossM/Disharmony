@@ -1,6 +1,6 @@
 # Release checklist
 
-Use this procedure for beta and final releases. Keep release-specific checkmarks and results in a working copy outside source control. Run each command separately from the repository root in PowerShell 7.4 or later, and stop if it fails.
+Use this procedure for prereleases and final releases. Keep release-specific checkmarks and results in a working copy outside source control. Run each command separately from the repository root in PowerShell 7.4 or later, and stop if it fails.
 
 Replace these placeholders before running commands:
 
@@ -19,7 +19,6 @@ The [validation fixtures](validation/README.md) supply the package consumers. Re
 
 - [ ] Merge the release changes into `main`. Set `Version` in `Directory.Build.props` and `<modVersion>` in [About.xml](Disharmony.RimWorld/About/About.xml) to the same release version, including any prerelease suffix. Confirm that version is absent from the [NuGet version list](https://www.nuget.org/packages/Disharmony#versions-body-tab).
 - [ ] Move any diagnostic changes from [Unshipped](Disharmony.Analyzers/AnalyzerReleases.Unshipped.md) to [Shipped](Disharmony.Analyzers/AnalyzerReleases.Shipped.md), using a numeric release heading and a comment naming the first beta where applicable. Leave the files unchanged if there are no diagnostic changes.
-- [ ] Update [release-notes.md](release-notes.md) for this version. It supplies the GitHub notes and Workshop change notes.
 - [ ] Update affected documentation and install-command versions in `Disharmony/README.md` and `Disharmony/PackageReadme.md`. If support changes, update `docs/compatibility.md`, `About.xml`, and `LoadFolders.xml`. For a final release, update beta wording on the landing pages.
 - [ ] Verify that the package and mod versions both equal `VERSION`. Then create a new output directory.
 
@@ -30,10 +29,17 @@ New-Item -ItemType Directory ./artifacts/release-VERSION
 
 ## 2. Test and tag
 
-- [ ] Run all runtime and analyzer suites in Debug and Release. The runner checks the manifest version first, then tests CLR/net472 and Mono/net472 with Harmony 2 and CLR/net10.0 with Harmony 2 and 3. It stops on failure and retains logs and separate result files.
+- [ ] Run the standard runtime and analyzer suites in Debug and Release. The runner checks the manifest version first, then tests CLR/net472 and Mono/net472 with Harmony 2 and CLR/net10.0 with Harmony 2 and 3. It stops on failure and retains logs and separate result files.
 
 ```powershell
 ./scripts/Test-ReleaseCandidate.ps1 -OutputDirectory ./artifacts/release-VERSION/tests
+```
+
+- [ ] Run the WaylithCLR suite separately in Debug and Release. In `Directory.Build.local.props`, set `WaylithCLRDirectory` to the RimWorld 1.7 installation and `HarmonyRuntimeILDirectory` to the Harmony mod's RimWorld 1.7 `Assemblies` directory. See [the example configuration](Directory.Build.local.example.props). Confirm that both runs execute tests and pass the WaylithCLR backend selection test.
+
+```powershell
+dotnet test ./Disharmony.Tests.WaylithCLR/Disharmony.Tests.WaylithCLR.csproj --configuration Debug --logger trx --results-directory ./artifacts/release-VERSION/tests/Debug/waylith
+dotnet test ./Disharmony.Tests.WaylithCLR/Disharmony.Tests.WaylithCLR.csproj --configuration Release --logger trx --results-directory ./artifacts/release-VERSION/tests/Release/waylith
 ```
 
 - [ ] Generate the HTML and Workshop description. Review changed HTML pages and `artifacts/workshop-description.txt` for stale version/support information and broken links. For a browser preview, add `-Serve` to the docs command.
@@ -71,7 +77,7 @@ gh run watch BUILD_RUN_ID --exit-status
 gh run download BUILD_RUN_ID --name nuget-release --dir ./artifacts/release-VERSION/build-only
 ```
 
-- [ ] Create a clean worktree at the tag for the NuGet validation scripts and release notes. Close RimWorld, then make a **clean Release build of `Disharmony.RimWorld` in the main checkout at the tagged commit**. Use the exact output of that build for packaging, in-game validation, and publication. The packaging script reads the existing output, checks the Disharmony assemblies, including the 1.7 WaylithCLR backend, against the local Release binaries, and verifies the extracted archive.
+- [ ] Create a clean worktree at the tag for the validation scripts. In the main checkout, close RimWorld and make a **clean Release build of `Disharmony.RimWorld` from the release commit**. The mod build can run while CI checks that commit. Verify it is the commit that receives the tag, and use the exact build output for packaging, in-game validation, and publication. The packaging script reads the existing output, checks the Disharmony assemblies, including the 1.7 WaylithCLR backend, against the local Release binaries, and verifies the extracted archive.
 
   Builds that bundle Disharmony from this checkout, such as XylXenos, copy the DLLs returned by `GetRimWorldModAssemblies` from `Disharmony.RimWorld/bin/Release/<target-framework>`. A release built in another worktree can pass validation while those local DLLs are still stale. The clean build refreshes the files downstream projects bundle, and the hash checks verify that the Workshop candidate contains those same files.
 
@@ -110,17 +116,29 @@ Copy-Item ./artifacts/release-VERSION/mod/Disharmony.RimWorld.VERSION.zip ./arti
 & ./artifacts/release-VERSION/source/scripts/Test-ReleaseFiles.ps1 -ExpectedDirectory ./artifacts/release-VERSION/mod/mod-upload -ActualDirectory ./Disharmony.RimWorld/bin/Release/Mod
 ```
 
-- [ ] Launch RimWorld 1.6 with Disharmony and XylXenos enabled, then repeat with 1.7. Confirm startup and loading a colony succeed. After each run, inspect `%USERPROFILE%/AppData/LocalLow/Ludeon Studios/RimWorld by Ludeon Studios/Player.log` for new warnings/errors from these mods and retain the log in the private release record.
+- [ ] Check startup and colony loading in RimWorld 1.7 with Disharmony and XylXenos enabled. Repeat the check if a RimWorld 1.6 test installation is available. An isolated game installation can use a copy of the verified mod files. Inspect each run's log for new warnings or errors from these mods and retain it in the private release record. For a normal game launch, the log is `%USERPROFILE%/AppData/LocalLow/Ludeon Studios/RimWorld by Ludeon Studios/Player.log`. If only 1.7 is available, confirm with the release author that the automated Mono/Harmony 2 tests and mod archive checks are sufficient for this release. Record the checks that ran for 1.6.
 - [ ] Close the game and repeat the file comparison above. Keep the upload files fixed through publication.
-- [ ] Create a draft GitHub release with the tagged notes and three assets. The example is for a beta; omit `--prerelease` for a final release.
+- [ ] Create a draft GitHub release with the three assets. Save any initial notes for the release author to review in `artifacts/release-VERSION/release-notes.md`, which Git ignores. For a blank draft, replace `--notes-file` and its path with `--notes=`. Omit `--prerelease` for a final release.
 
 ```powershell
-gh release create vVERSION --verify-tag --draft --prerelease --title 'Disharmony VERSION' --notes-file ./artifacts/release-VERSION/source/release-notes.md ./artifacts/release-VERSION/assets/Disharmony.VERSION.nupkg ./artifacts/release-VERSION/assets/Disharmony.VERSION.snupkg ./artifacts/release-VERSION/assets/Disharmony.RimWorld.VERSION.zip
+gh release create vVERSION --verify-tag --draft --prerelease --title 'Disharmony VERSION' --notes-file ./artifacts/release-VERSION/release-notes.md ./artifacts/release-VERSION/assets/Disharmony.VERSION.nupkg ./artifacts/release-VERSION/assets/Disharmony.VERSION.snupkg ./artifacts/release-VERSION/assets/Disharmony.RimWorld.VERSION.zip
 ```
 
-## 5. Publish and verify NuGet
+## 5. Update and verify Workshop
 
-- [ ] Dispatch the publishing run from `main`. This publishes to NuGet. Use its ID for `PUBLISH_RUN_ID`; the run must succeed and its Build summary must name the same tag/commit. Download this run's artifacts.
+- [ ] Repeat the section 4 upload-file comparison. Through RimWorld, update item `3818084845` from the prepared upload directory. Paste `artifacts/release-VERSION/mod/workshop-description.txt` as its description. The release author writes the change notes directly in Steam Workshop.
+- [ ] Confirm the Workshop page remains public, keeps the same item ID, and shows the new description/change notes, project link, and supported-version tags `1.6` and `1.7`.
+- [ ] Wait for Steam to download the update, then compare the subscribed installation with the frozen archive verified in section 4. Every relative file path and SHA-256 hash must match.
+
+```powershell
+& ./artifacts/release-VERSION/source/scripts/Test-ReleaseFiles.ps1 -ExpectedDirectory ./artifacts/release-VERSION/mod/mod-upload -ActualDirectory 'STEAM_LIBRARY/steamapps/workshop/content/294100/3818084845'
+```
+
+- [ ] If the Workshop files differ, stop the release. Fix the release build or upload process and verify the subscribed files again. If the fix changes the candidate, rebuild and revalidate it before uploading again.
+
+## 6. Publish and verify NuGet
+
+- [ ] After the Workshop file comparison passes, dispatch the publishing run from `main`. This publishes to NuGet. Use its ID for `PUBLISH_RUN_ID`; the run must succeed and its Build summary must name the same tag/commit. Download this run's artifacts.
 
 ```powershell
 gh workflow run publish-nuget.yml --ref main -f tag=vVERSION -f publish=true
@@ -135,12 +153,14 @@ gh run download PUBLISH_RUN_ID --name nuget-release --dir ./artifacts/release-VE
 & ./artifacts/release-VERSION/source/scripts/Test-NuGetPackage.ps1 -Version VERSION -PackageDirectory ./artifacts/release-VERSION/published -OutputDirectory ./artifacts/release-VERSION/published-validation
 ```
 
-- [ ] Replace the draft's two package assets with this run's exact files; retain the frozen mod archive. Save the final asset hashes.
+- [ ] Replace the draft's two package assets with this run's exact files and retain the frozen mod archive. Save the final hashes. Download the three assets from the GitHub draft and verify their filenames and hashes against the local assets.
 
 ```powershell
 Copy-Item ./artifacts/release-VERSION/published/* ./artifacts/release-VERSION/assets -Force
 gh release upload vVERSION ./artifacts/release-VERSION/assets/Disharmony.VERSION.nupkg ./artifacts/release-VERSION/assets/Disharmony.VERSION.snupkg --clobber
 Get-ChildItem ./artifacts/release-VERSION/assets -File | Get-FileHash -Algorithm SHA256 | Export-Csv ./artifacts/release-VERSION/assets-sha256.csv -NoTypeInformation
+gh release download vVERSION --dir ./artifacts/release-VERSION/draft-verification
+& ./artifacts/release-VERSION/source/scripts/Test-ReleaseFiles.ps1 -ExpectedDirectory ./artifacts/release-VERSION/assets -ActualDirectory ./artifacts/release-VERSION/draft-verification
 ```
 
 - [ ] Wait for this version to complete validation and appear on the [NuGet package page](https://www.nuget.org/packages/Disharmony). Run the public-feed check: all four consumers, signature verification, and comparison with the publishing artifact must pass. NuGet's added signature is excluded from the payload comparison.
@@ -149,37 +169,15 @@ Get-ChildItem ./artifacts/release-VERSION/assets -File | Get-FileHash -Algorithm
 & ./artifacts/release-VERSION/source/scripts/Test-NuGetPackage.ps1 -Version VERSION -PackageDirectory ./artifacts/release-VERSION/published -OutputDirectory ./artifacts/release-VERSION/public-validation -PublicFeed
 ```
 
-## 6. Update Workshop and publish GitHub
+## 7. Publish GitHub
 
-- [ ] Repeat the section 4 upload-file comparison. Through RimWorld, update item `3818084845` from the prepared upload directory. Paste `artifacts/release-VERSION/mod/workshop-description.txt` as its description and use the tagged `release-notes.md` for change notes.
-- [ ] Confirm the Workshop page remains public, keeps the same item ID, and shows the new description/change notes, project link, and supported-version tags `1.6` and `1.7`.
-- [ ] Wait for Steam to download the update, then compare the subscribed installation with the archive. The comparison must pass.
-
-```powershell
-& ./artifacts/release-VERSION/source/scripts/Test-ReleaseFiles.ps1 -ExpectedDirectory ./artifacts/release-VERSION/mod/mod-upload -ActualDirectory 'STEAM_LIBRARY/steamapps/workshop/content/294100/3818084845'
-```
-
-- [ ] Close RimWorld and temporarily move the development symlink outside `Mods`, so the subscribed copy is used. The destination must not already exist. Repeat the section 4 in-game checks on both game versions using the Workshop copy, then close the game and restore the symlink.
-
-```powershell
-Move-Item -LiteralPath 'RIMWORLD/Mods/Disharmony' -Destination 'RIMWORLD/Disharmony-development-link'
-```
-
-After the subscribed-install tests:
-
-```powershell
-Move-Item -LiteralPath 'RIMWORLD/Disharmony-development-link' -Destination 'RIMWORLD/Mods/Disharmony'
-```
-
-- [ ] Publish the GitHub draft, download its public assets, and compare them with the final local assets. All three filenames and hashes must match.
+- [ ] The release author reviews any draft text and finalizes the release notes directly in GitHub. Publish the draft after the author confirms the final notes and the draft assets pass the comparison in section 6.
 
 ```powershell
 gh release edit vVERSION --draft=false
-gh release download vVERSION --dir ./artifacts/release-VERSION/public-release
-& ./artifacts/release-VERSION/source/scripts/Test-ReleaseFiles.ps1 -ExpectedDirectory ./artifacts/release-VERSION/assets -ActualDirectory ./artifacts/release-VERSION/public-release
 ```
 
-- [ ] On GitHub, confirm tag `vVERSION`, the approved notes, and the prerelease label for a beta. On the [HTML home page](https://rossm.github.io/Disharmony/), follow the NuGet and Workshop links and confirm they reach the published downloads.
+- [ ] On the public GitHub release page, confirm tag `vVERSION`, the approved notes, the three asset downloads, and the prerelease label if applicable. Follow the Workshop link from the [HTML home page](https://rossm.github.io/Disharmony/). Verify `VERSION` on the [NuGet package page](https://www.nuget.org/packages/Disharmony).
 - [ ] Optionally announce the release. The author writes the posts.
 
 Retain the release output directory and private execution record. Do not move a published tag or reuse a published NuGet version; corrections require a new version.
