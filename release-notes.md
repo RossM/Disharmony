@@ -1,5 +1,5 @@
-# 1.1.0-rc.1
+# 1.1.0-rc.2
 
-- Bundle Harmony 3.0.0-rc.7 with the RimWorld 1.7 mod.
-- Log and suppress exceptions thrown by `Patcher.RuntimeExceptionHandler` subscribers.
-- Use the WaylithCLR backend to patch methods in RimWorld 1.7.
+- Apply Disharmony patches in batches on RimWorld 1.7, rebuilding each affected method once per batch.
+- Report WaylithCLR rebuild failures through the runtime error handler.
+- Clarify which RimWorld versions use Harmony and which patch directly through WaylithCLR.
