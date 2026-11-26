@@ -10,6 +10,13 @@ namespace Disharmony.Tests.EndToEnd.Interop;
 [TestFixture]
 public sealed class WaylithLoggingTests : PatchTestBase
 {
+    [OneTimeSetUp]
+    public void RequireWaylithBackend()
+    {
+        if (!TestRunSetup.RegistersHarmonyMethodBodyProvider)
+            Assert.Ignore("These tests exercise the WaylithCLR backend's emitted IL log.");
+    }
+
     [Test]
     public void Locals_IncludeOriginalAndRewriteDeclarations()
     {

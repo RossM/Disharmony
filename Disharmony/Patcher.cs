@@ -79,6 +79,12 @@ public static class Patcher
     public static event Action<Exception>? RuntimeExceptionHandler;
 
     /// <summary>
+    ///     Used to log informational messages such as version and backend selection.
+    /// </summary>
+    public static event Action<string>? InformationalMessageHandler;
+
+
+    /// <summary>
     ///     Reports a patching exception to the configured runtime handler or Harmony's file log.
     /// </summary>
     /// <param name="exception">The exception to report.</param>
@@ -103,6 +109,11 @@ public static class Patcher
         }
         else
             FileLog.Log($"!!! Unhandled exception: {exception}");
+    }
+
+    internal static void ReportInformationalMessage(string message)
+    {
+        InformationalMessageHandler?.Invoke(message);
     }
 
     private static void ValidatePatchingAllowed()

@@ -61,6 +61,8 @@ To run this group from the command line:
 dotnet test .\Disharmony.Tests.WaylithCLR\Disharmony.Tests.WaylithCLR.csproj --configuration Debug
 ```
 
+Set `HARMONY_DETOURS=1` for the test process to exercise the Harmony fallback on WaylithCLR with the provider disabled.
+
 ## Build the NuGet package
 
 From the repository root, build the library package in Release configuration:

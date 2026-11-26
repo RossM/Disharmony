@@ -17,6 +17,13 @@ public static class MethodViewPatches
 [TestFixture]
 public sealed class MethodViewTests : PatchTestBase
 {
+    [OneTimeSetUp]
+    public void RequireWaylithBackend()
+    {
+        if (!TestRunSetup.RegistersHarmonyMethodBodyProvider)
+            Assert.Ignore("These tests exercise the WaylithCLR backend's method-body encoding.");
+    }
+
     [TestCase(nameof(OpCodes.Ldc_I4), (byte)200, typeof(int), 200, 10)]
     [TestCase(nameof(OpCodes.Ldc_I4), (short)-129, typeof(int), -129, 10)]
     [TestCase(nameof(OpCodes.Ldc_I4), 1000L, typeof(int), 1000, 10)]

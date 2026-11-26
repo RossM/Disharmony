@@ -17,6 +17,7 @@ public sealed class DisharmonyMod : Mod
     public DisharmonyMod(ModContentPack content) : base(content)
     {
         Patcher.RuntimeExceptionHandler += e => Log.Error($"Disharmony exception: {e}");
+        Patcher.InformationalMessageHandler += message => Log.Message($"[Disharmony] {message}");
         LongEventHandler.QueueLongEvent(EagerApplyPatches, null, true, e => Log.Error($"Disharmony patching error: {e}"));
     }
 
