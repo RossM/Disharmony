@@ -48,7 +48,7 @@ A: It started out as a small utility to make it easier to write transpilers for 
 
 ### Q: Isn't this just a copy of Harmony 3?
 
-A: Harmony 3 and Disharmony were developed during similar timeframes and a lot of ideas were shared between the projects. I was originally inspired by the unimplemented Harmony infix design, and decided to implement it myself. I shared my progress on Discord and Brrainz was, let's say, "inspired" to add many of my features to Harmony.
+A: Harmony 3 and Disharmony were developed during similar timeframes and a lot of ideas were shared between the projects. I was originally inspired by the unimplemented Harmony infix design, and decided to implement it myself. I shared my progress on Discord and Brrainz was inspired to add many of my features to Harmony.
 
 Here's a timeline from Brrainz:
 
