@@ -52,6 +52,7 @@ A: Harmony 3 and Disharmony were developed during similar timeframes. I was orig
 
 Here's a timeline from Brrainz:
 
+> ```
 > 2019-01  Harmony Discord: first Infix idea
 > 2023-08  Harmony Discord: detailed Infix design
 > 2024-02  Gist: draft of infixes on inner methods
@@ -63,8 +64,8 @@ Here's a timeline from Brrainz:
 > 2026-07  xyl names it Disharmony
 > 2026-09  Current Harmony 3 infix code written
 > 2026-10  Disharmony public (10-07), beta (10-11)
-> 2026-10  Harmony 3.0.0-rc.1 with Infixes (10-08) 
-
+> 2026-10  Harmony 3.0.0-rc.1 with Infixes (10-08)
+> ```
 > Disharmony didn't copy Harmony 3. It was built it on top of transpilers and had it working months before the current Harmony 3 implementation existed. The idea and the name are older. I described infixes here in 2019, posted a design in 2023 and draft gists in 2024, and infix code was on Harmony master in 2025. Same idea, separate implementations, and xyl had a working one first.
 
 ### Q: Why should I use this over Harmony 3?
