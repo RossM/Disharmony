@@ -82,7 +82,7 @@ A: There are over 2000 tests, with the goal of having full code coverage of non-
 
 ### Q: Has this been used in a real mod?
 
-A: I've got a fairly substantial [RimWorld mod](https://github.com/RossM/RimworldMods/tree/main/XylXenos/README.md) in progress that has been entirely switched from Harmony to Disharmony. It should be released Soon(tm).
+A: I've got a fairly substantial [RimWorld mod](https://github.com/RossM/RimworldMods/tree/main/XylXenos/README.md) that has been entirely switched from Harmony to Disharmony.
 
 ### Q: Is this just a wrapper around Harmony?
 
