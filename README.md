@@ -48,7 +48,24 @@ A: It started out as a small utility to make it easier to write transpilers for 
 
 ### Q: Isn't this just a copy of Harmony 3?
 
-A: I implemented infix first, back in [this commit](https://github.com/RossM/RimworldMods/commit/46b8564870c7956e7f0341cde2a660a6f8136916). I shared my progress on Discord and Brrainz was, let's say, "inspired" to add many of my features to Harmony.
+A: Harmony 3 and Disharmony were developed during similar timeframes. I was originally inspired by the unimplemented Harmony infix design, and decided to implement it myself. I shared my progress on Discord and Brrainz was, let's say, "inspired" to add many of my features to Harmony.
+
+Here's a timeline from Brrainz:
+
+> 2019-01  Harmony Discord: first Infix idea
+> 2023-08  Harmony Discord: detailed Infix design
+> 2024-02  Gist: draft of infixes on inner methods
+> 2025-02  First infix code on Harmony master
+> 2025-04  Infix branch, community PRs merged
+> 2025-08  Harmony 2.4.0 ships infix code, API off
+> 2025-09  Infix design docs on master
+> 2026-05  xyl has his own infix transpiler
+> 2026-07  xyl names it Disharmony
+> 2026-09  Current Harmony 3 infix code written
+> 2026-10  Disharmony public (10-07), beta (10-11)
+> 2026-10  Harmony 3.0.0-rc.1 with Infixes (10-08) 
+
+> Disharmony didn't copy Harmony 3. It was built it on top of transpilers and had it working months before the current Harmony 3 implementation existed. The idea and the name are older. I described infixes here in 2019, posted a design in 2023 and draft gists in 2024, and infix code was on Harmony master in 2025. Same idea, separate implementations, and xyl had a working one first.
 
 ### Q: Why should I use this over Harmony 3?
 
